@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" executers="Dot_Admin,Dot_Member" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="Dot_Admin,Dot_12Bet" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[DOT_Dep_Rpt_MemberSummary_Agent_V2]
 	@fromDate smalldatetime,
 	@toDate smalldatetime,
@@ -83,6 +83,7 @@ Revisions:
 --20231225@KenYang(DB06.bodb02): Add JILISlot, PGSoft Report Data
 --20240104@Benson: Add Saba Reward Risk free Rebate (bettype: 17007) in the promotion 
 --20240207@KenYang(DB06.bodb02): Add Virtual Football League(SportType:178), Virtual Soccer Bundesliga(SportType:195) Report Data
+--20240313@MaxCheng(DB06.bodb02): Combine Virtual Sports 2,3 to Virtual Sports ,and remove Cash Out
 */
 BEGIN
 	SET NOCOUNT ON
@@ -104,9 +105,7 @@ BEGIN
 		RNDraw money default(0), RNTOver money default(0), RNWL money default(0), --RNG
 		VBDraw money default(0), VBTOver money default(0), VBWL money default(0), --VB
 		ALLBETDraw money default(0), ALLBETTOver money default(0), ALLBETWL money default(0), --ALLBET
-		CODraw money default(0), COTOver money default(0), COWL money default(0), --Cash Out
 		KLDraw money default(0), KLTOver money default(0), KLWL money default(0), --KENO Lottery
-		VS2Draw money default(0), VS2TOver money default(0), VS2WL money default(0), --BetRadar Virtual Sports
 		H5Draw money default(0), H5TOver money default(0), H5WL money default(0), --Happy5
 		VGDraw money default(0), VGTOver money default(0), VGWL money default(0), --Virtual Games
 		TGDraw money default(0), TGTOver money default(0), TGWL money default(0), --Table Game
@@ -116,7 +115,6 @@ BEGIN
 		SLDraw money default(0), SLTOver money default(0), SLWL money default(0), --Sports Lottery
 		ARCADraw money default(0), ARCATOver money default(0), ARCAWL money default(0), --Arcadia Gaming
 		VgamingDraw money default(0), VgamingTOver money default(0), VgamingWL money default(0), --Vgaming
-		VS3Draw money default(0), VS3TOver money default(0), VS3WL money default(0), --LG Virtual Sports
 		MaxGameDraw money default(0), MaxGameTOver money default(0), MaxGameWL money default(0), --MaxGame
 		BTCDraw money default(0), BTCTOver money default(0), BTCWL money default(0), --Bitcoin
 		Winloss money default(0), ClosingBalance money default(0), Transfer3rd money default(0), DrawGame money default(0),
@@ -139,9 +137,7 @@ BEGIN
 		RNDraw money default(0), RNTOver money default(0), RNWL money default(0), --RNG
 		VBDraw money default(0), VBTOver money default(0), VBWL money default(0), --VB
 		ALLBETDraw money default(0), ALLBETTOver money default(0), ALLBETWL money default(0), --ALLBET
-		CODraw money default(0), COTOver money default(0), COWL money default(0), --Cash Out
 		KLDraw money default(0), KLTOver money default(0), KLWL money default(0), --KENO Lottery
-		VS2Draw money default(0), VS2TOver money default(0), VS2WL money default(0), --BetRadar Virtual Sports
 		H5Draw money default(0), H5TOver money default(0), H5WL money default(0), --Happy5
 		VGDraw money default(0), VGTOver money default(0), VGWL money default(0), --Virtual Games
 		TGDraw money default(0), TGTOver money default(0), TGWL money default(0), --Table Game
@@ -151,7 +147,6 @@ BEGIN
 		SLDraw money default(0), SLTOver money default(0), SLWL money default(0), --Sports Lottery
 		ARCADraw money default(0), ARCATOver money default(0), ARCAWL money default(0), --Arcadia Gaming
 		VgamingDraw money default(0), VgamingTOver money default(0), VgamingWL money default(0), --Vgaming
-		VS3Draw money default(0), VS3TOver money default(0), VS3WL money default(0), --LG Virtual Sports
 		MaxGameDraw money default(0), MaxGameTOver money default(0), MaxGameWL money default(0), --MaxGame
 		BTCDraw money default(0), BTCTOver money default(0), BTCWL money default(0), --Bitcoin
 		Winloss money default(0), ClosingBalance money default(0), Transfer3rd money default(0), DrawGame money default(0),
@@ -176,9 +171,7 @@ BEGIN
 			   ISNULL(p1.RNDraw, 0) AS RNDraw, ISNULL(p1.RNTOver, 0) AS RNTOver, ISNULL(p1.RNWL, 0) AS RNWL, --RNG
 			   ISNULL(p1.VBDraw, 0) AS VBDraw, ISNULL(p1.VBTOver, 0) AS VBOver, ISNULL(p1.VBWL, 0) AS VBWL, --VB
 			   ISNULL(p1.ALLBETDraw, 0) AS ALLBETDraw, ISNULL(p1.ALLBETTOver, 0) AS ALLBETTOver, ISNULL(p1.ALLBETWL, 0) AS ALLBETWL, --ALLBET
-			   ISNULL(p1.CODraw, 0) AS CODraw, ISNULL(p1.COTOver, 0) AS COTOver, ISNULL(p1.COWL, 0) AS COWL, --Cash Out
 			   ISNULL(p1.KLDraw, 0) AS KLDraw, ISNULL(p1.KLTOver, 0) AS KLTOver, ISNULL(p1.KLWL, 0) AS KLWL, --KENO Lottery
-			   ISNULL(p1.VS2Draw, 0) AS VS2Draw, ISNULL(p1.VS2TOver, 0) AS VS2TOver, ISNULL(p1.VS2WL, 0) AS VS2WL, --BetRadar Virtual Sports
 			   ISNULL(p1.H5Draw, 0) AS H5Draw, ISNULL(p1.H5TOver, 0) AS H5TOver, ISNULL(p1.H5WL, 0) AS H5WL, --Happy5
 			   ISNULL(p1.VGDraw, 0) AS VGDraw, ISNULL(p1.VGTOver, 0) AS VGTOver, ISNULL(p1.VGWL, 0) AS VGWL, --Virtual Games
 			   ISNULL(p1.TGDraw, 0) AS TGDraw, ISNULL(p1.TGTOver, 0) AS TGTOver, ISNULL(p1.TGWL, 0) AS TGWL, --Table Game
@@ -188,7 +181,6 @@ BEGIN
 			   ISNULL(p1.SLDraw, 0) AS SLDraw, ISNULL(p1.SLTOver, 0) AS SLTOver, ISNULL(p1.SLWL, 0) AS SLWL, --Sports Lottery
 			   ISNULL(p1.ARCADraw, 0) AS ARCADraw, ISNULL(p1.ARCATOver, 0) AS ARCTOver, ISNULL(p1.ARCAWL, 0) AS ARCAWL, --Arcadia Gaming
 			   ISNULL(p1.VgamingDraw, 0) AS VgamingDraw, ISNULL(p1.VgamingTOver, 0) AS VgamingTOver, ISNULL(p1.VgamingWL, 0) AS VgamingWL, --Vgaming
-			   ISNULL(p1.VS3Draw, 0) AS VS3Draw, ISNULL(p1.VS3TOver, 0) AS VS3TOver, ISNULL(p1.VS3WL, 0) AS VS3WL, --LG Virtual Sports
 			   ISNULL(p1.MaxGameDraw, 0) AS MaxGameDraw, ISNULL(p1.MaxGameTOver, 0) AS MaxGameTOver, ISNULL(p1.MaxGameWL, 0) AS MaxGameWL, --MaxGame
 			   ISNULL(p1.BTCDraw, 0) AS BTCDraw, ISNULL(p1.BTCTOver, 0) AS BTCTOver, ISNULL(p1.BTCWL, 0) AS BTCWL, --Bitcoin
 			   b.Winloss, b.ClosingBalance, b.Transfer3rd, b.DrawGame,
@@ -202,9 +194,9 @@ BEGIN
 								SUM(CASE WHEN p.sporttype = 161 THEN p.drawTO ELSE 0 END) AS NODraw, 
 								SUM(CASE WHEN p.sporttype = 161 THEN p.turnover ELSE 0 END) AS NOTOver,
 								SUM(CASE WHEN p.sporttype = 161 THEN p.winlost ELSE 0 END) AS NOWL,
-								SUM(CASE WHEN p.sporttype = 180 THEN p.drawTO ELSE 0 END) AS VSDraw, 
-								SUM(CASE WHEN p.sporttype = 180 THEN p.turnover ELSE 0 END) AS VSTOver,
-								SUM(CASE WHEN p.sporttype = 180 THEN p.winlost ELSE 0 END) AS VSWL, 
+								SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.drawTO ELSE 0 END) AS VSDraw, 
+								SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.turnover ELSE 0 END) AS VSTOver,
+								SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.winlost ELSE 0 END) AS VSWL, 
 								SUM(CASE WHEN p.sporttype = 202 THEN p.drawTO ELSE 0 END) AS KEDraw, 
 								SUM(CASE WHEN p.sporttype = 202 THEN p.turnover ELSE 0 END) AS KETOver,
 								SUM(CASE WHEN p.sporttype = 202 THEN p.winlost ELSE 0 END) AS KEWL ,
@@ -220,12 +212,6 @@ BEGIN
 								SUM(CASE WHEN p.sporttype = 220 THEN p.drawTO ELSE 0 END) AS KLDraw, 
 								SUM(CASE WHEN p.sporttype = 220 THEN p.turnover ELSE 0 END) AS KLTOver,
 								SUM(CASE WHEN p.sporttype = 220 THEN p.winlost ELSE 0 END) AS KLWL ,
-								SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,195,196) THEN p.drawTO ELSE 0 END) AS VS2Draw, 
-								SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,195,196) THEN p.turnover ELSE 0 END) AS VS2TOver,
-								SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,195,196) THEN p.winlost ELSE 0 END) AS VS2WL ,
-								SUM(CASE WHEN p.sporttype = -6 THEN p.drawTO ELSE 0 END) AS CODraw,
-								SUM(CASE WHEN p.sporttype = -6 THEN p.turnover ELSE 0 END) AS COTOver,
-								SUM(CASE WHEN p.sporttype = -6 THEN p.winlost ELSE 0 END) AS COWL,
 								SUM(CASE WHEN p.sporttype = 164 THEN p.drawTO ELSE 0 END) AS H5Draw,
 								SUM(CASE WHEN p.sporttype = 164 THEN p.turnover ELSE 0 END) AS H5TOver,
 								SUM(CASE WHEN p.sporttype = 164 THEN p.winlost ELSE 0 END) AS H5WL,
@@ -253,9 +239,6 @@ BEGIN
 								SUM(CASE WHEN p.sporttype = 171 THEN p.drawTO ELSE 0 END) AS VgamingDraw,
 								SUM(CASE WHEN p.sporttype = 171 THEN p.turnover ELSE 0 END) AS VgamingTOver,
 								SUM(CASE WHEN p.sporttype = 171 THEN p.winlost ELSE 0 END) AS VgamingWL,
-								SUM(CASE WHEN p.sporttype IN (178,231) THEN p.drawTO ELSE 0 END) AS VS3Draw,
-								SUM(CASE WHEN p.sporttype IN (178,231) THEN p.turnover ELSE 0 END) AS VS3TOver,
-								SUM(CASE WHEN p.sporttype IN (178,231) THEN p.winlost ELSE 0 END) AS VS3WL,
 								SUM(CASE WHEN p.sporttype = 237 THEN p.drawTO ELSE 0 END) AS MaxGameDraw,
 								SUM(CASE WHEN p.sporttype = 237 THEN p.turnover ELSE 0 END) AS MaxGameTOver,
 								SUM(CASE WHEN p.sporttype = 237 THEN p.winlost ELSE 0 END) AS MaxGameWL,
@@ -264,7 +247,7 @@ BEGIN
 								SUM(CASE WHEN p.sporttype = 175 THEN p.winlost ELSE 0 END) AS BTCWL
 						FROM bodb_Report.dbo.rptDepWinlostByProduct_BK p WITH(NOLOCK)
 						WHERE winlostdate BETWEEN @fromDate AND @toDate 
-							AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,-6,164,194,196,245,222,243,244,168,169,165,171,231,237,175,195,178) 
+							AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,164,194,196,245,222,243,244,168,169,165,171,231,237,175,195,178) 
 							AND p.custid = @CustId 
 						GROUP BY p.winlostdate, p.custid
 					) p1 ON b.winlostdate = p1.winlostdate
@@ -322,9 +305,7 @@ BEGIN
 			   ISNULL(p1.RNDraw, 0) AS RNDraw, ISNULL(p1.RNTOver, 0) AS RNTOver, ISNULL(p1.RNWL, 0) AS RNWL, --RNG
 			   ISNULL(p1.VBDraw, 0) AS VBDraw, ISNULL(p1.VBTOver, 0) AS VBOver, ISNULL(p1.VBWL, 0) AS VBWL, --VB
 			   ISNULL(p1.ALLBETDraw, 0) AS ALLBETDraw, ISNULL(p1.ALLBETTOver, 0) AS ALLBETTOver, ISNULL(p1.ALLBETWL, 0) AS ALLBETWL, --ALLBET
-			   ISNULL(p1.CODraw, 0) AS CODraw, ISNULL(p1.COTOver, 0) AS COTOver, ISNULL(p1.COWL, 0) AS COWL, --Cash Out
 			   ISNULL(p1.KLDraw, 0) AS KLDraw, ISNULL(p1.KLTOver, 0) AS KLTOver, ISNULL(p1.KLWL, 0) AS KLWL, --KENO Lottery
-			   ISNULL(p1.VS2Draw, 0) AS VS2Draw, ISNULL(p1.VS2TOver, 0) AS VS2TOver, ISNULL(p1.VS2WL, 0) AS VS2WL, --BetRadar Virtual Sports
 			   ISNULL(p1.H5Draw, 0) AS H5Draw, ISNULL(p1.H5TOver, 0) AS H5TOver, ISNULL(p1.H5WL, 0) AS H5WL, --Happy5
 			   ISNULL(p1.VGDraw, 0) AS VGDraw, ISNULL(p1.VGTOver, 0) AS VGTOver, ISNULL(p1.VGWL, 0) AS VGWL, --Virtual Games
 			   ISNULL(p1.TGDraw, 0) AS TGDraw, ISNULL(p1.TGTOver, 0) AS TGTOver, ISNULL(p1.TGWL, 0) AS TGWL, --Table Game
@@ -334,7 +315,6 @@ BEGIN
 			   ISNULL(p1.SLDraw, 0) AS SLDraw, ISNULL(p1.SLTOver, 0) AS SLTOver, ISNULL(p1.SLWL, 0) AS SLWL, --Sports Lottery
 			   ISNULL(p1.ARCADraw, 0) AS ARCADraw, ISNULL(p1.ARCATOver, 0) AS ARCTOver, ISNULL(p1.ARCAWL, 0) AS ARCAWL, --Arcadia Gaming
 			   ISNULL(p1.VgamingDraw, 0) AS VgamingDraw, ISNULL(p1.VgamingTOver, 0) AS VgamingTOver, ISNULL(p1.VgamingWL, 0) AS VgamingWL, --Vgaming
-			   ISNULL(p1.VS3Draw, 0) AS VS3Draw, ISNULL(p1.VS3TOver, 0) AS VS3TOver, ISNULL(p1.VS3WL, 0) AS VS3WL, --LG Virtual Sports
 			   ISNULL(p1.MaxGameDraw, 0) AS MaxGameDraw, ISNULL(p1.MaxGameTOver, 0) AS MaxGameTOver, ISNULL(p1.MaxGameWL, 0) AS MaxGameWL, --MaxGame
 			   ISNULL(p1.BTCDraw, 0) AS BTCDraw, ISNULL(p1.BTCTOver, 0) AS BTCTOver, ISNULL(p1.BTCWL, 0) AS BTCWL, --Bitcoin
 			   b.Winloss, b.ClosingBalance, b.Transfer3rd, b.DrawGame,
@@ -348,9 +328,9 @@ BEGIN
 								SUM(CASE WHEN p.sporttype = 161 THEN p.drawTO ELSE 0 END) AS NODraw, 
 								SUM(CASE WHEN p.sporttype = 161 THEN p.turnover ELSE 0 END) AS NOTOver,
 								SUM(CASE WHEN p.sporttype = 161 THEN p.winlost ELSE 0 END) AS NOWL,
-								SUM(CASE WHEN p.sporttype = 180 THEN p.drawTO ELSE 0 END) AS VSDraw, 
-								SUM(CASE WHEN p.sporttype = 180 THEN p.turnover ELSE 0 END) AS VSTOver,
-								SUM(CASE WHEN p.sporttype = 180 THEN p.winlost ELSE 0 END) AS VSWL, 
+								SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.drawTO ELSE 0 END) AS VSDraw, 
+								SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.turnover ELSE 0 END) AS VSTOver,
+								SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.winlost ELSE 0 END) AS VSWL, 
 								SUM(CASE WHEN p.sporttype = 202 THEN p.drawTO ELSE 0 END) AS KEDraw, 
 								SUM(CASE WHEN p.sporttype = 202 THEN p.turnover ELSE 0 END) AS KETOver,
 								SUM(CASE WHEN p.sporttype = 202 THEN p.winlost ELSE 0 END) AS KEWL ,
@@ -366,12 +346,6 @@ BEGIN
 								SUM(CASE WHEN p.sporttype = 220 THEN p.drawTO ELSE 0 END) AS KLDraw, 
 								SUM(CASE WHEN p.sporttype = 220 THEN p.turnover ELSE 0 END) AS KLTOver,
 								SUM(CASE WHEN p.sporttype = 220 THEN p.winlost ELSE 0 END) AS KLWL ,
-								SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,195,196) THEN p.drawTO ELSE 0 END) AS VS2Draw, 
-								SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,195,196) THEN p.turnover ELSE 0 END) AS VS2TOver,
-								SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,195,196) THEN p.winlost ELSE 0 END) AS VS2WL,
-								SUM(CASE WHEN p.sporttype = -6 THEN p.drawTO ELSE 0 END) AS CODraw,
-								SUM(CASE WHEN p.sporttype = -6 THEN p.turnover ELSE 0 END) AS COTOver,
-								SUM(CASE WHEN p.sporttype = -6 THEN p.winlost ELSE 0 END) AS COWL,
 								SUM(CASE WHEN p.sporttype = 164 THEN p.drawTO ELSE 0 END) AS H5Draw,
 								SUM(CASE WHEN p.sporttype = 164 THEN p.turnover ELSE 0 END) AS H5TOver,
 								SUM(CASE WHEN p.sporttype = 164 THEN p.winlost ELSE 0 END) AS H5WL,
@@ -399,9 +373,6 @@ BEGIN
 								SUM(CASE WHEN p.sporttype = 171 THEN p.drawTO ELSE 0 END) AS VgamingDraw,
 								SUM(CASE WHEN p.sporttype = 171 THEN p.turnover ELSE 0 END) AS VgamingTOver,
 								SUM(CASE WHEN p.sporttype = 171 THEN p.winlost ELSE 0 END) AS VgamingWL,
-								SUM(CASE WHEN p.sporttype IN (178,231) THEN p.drawTO ELSE 0 END) AS VS3Draw,
-								SUM(CASE WHEN p.sporttype IN (178,231) THEN p.turnover ELSE 0 END) AS VS3TOver,
-								SUM(CASE WHEN p.sporttype IN (178,231) THEN p.winlost ELSE 0 END) AS VS3WL,
 								SUM(CASE WHEN p.sporttype = 237 THEN p.drawTO ELSE 0 END) AS MaxGameDraw,
 								SUM(CASE WHEN p.sporttype = 237 THEN p.turnover ELSE 0 END) AS MaxGameTOver,
 								SUM(CASE WHEN p.sporttype = 237 THEN p.winlost ELSE 0 END) AS MaxGameWL,
@@ -411,7 +382,7 @@ BEGIN
 
 						FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)
 						WHERE winlostdate BETWEEN @fromDate AND @toDate 
-							AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,-6,164,194,196,245,222,243,244,168,169,165,171,231,237,175,195,178)
+							AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,164,194,196,245,222,243,244,168,169,165,171,231,237,175,195,178)
 							AND p.custid = @CustId 
 						GROUP BY p.winlostdate, p.custid
 					) p1 ON b.winlostdate = p1.winlostdate
@@ -565,9 +536,7 @@ BEGIN
 			RNDraw = ISNULL(p1.RNDraw,0), RNTOver = ISNULL(p1.RNTOver,0), RNWL = ISNULL(p1.RNWL,0),  --RNG
 			VBDraw = ISNULL(p1.VBDraw,0), VBTOver = ISNULL(p1.VBTOver,0), VBWL = ISNULL(p1.VBWL,0),  --VB
 			ALLBETDraw = ISNULL(p1.ALLBETDraw,0), ALLBETTOver = ISNULL(p1.ALLBETTOver,0), ALLBETWL = ISNULL(p1.ALLBETWL,0),  --ALLBET
-			CODraw = ISNULL(p1.CODraw,0), COTOver = ISNULL(p1.COTOver,0), COWL = ISNULL(p1.COWL,0), --Cash Out
 			KLDraw = ISNULL(p1.KLDraw,0), KLTOver = ISNULL(p1.KLTOver,0), KLWL = ISNULL(p1.KLWL,0), --KENO Lottery
-			VS2Draw = ISNULL(p1.VS2Draw,0), VS2TOver = ISNULL(p1.VS2TOver,0), VS2WL = ISNULL(p1.VS2WL,0), --BetRadar Virtual Sports
 			H5Draw = ISNULL(p1.H5Draw,0), H5TOver = ISNULL(p1.H5TOver,0), H5WL = ISNULL(p1.H5WL,0), --Happy5
 			VGDraw = ISNULL(p1.VGDraw,0), VGTOver = ISNULL(p1.VGTOver,0), VGWL = ISNULL(p1.VGWL,0),  --Virtual Games
 			TGDraw = ISNULL(p1.TGDraw,0), TGTOver = ISNULL(p1.TGTOver,0), TGWL = ISNULL(p1.TGWL,0),  --Table Game
@@ -577,7 +546,6 @@ BEGIN
 			SLDraw = ISNULL(p1.SLDraw,0), SLTOver = ISNULL(p1.SLTOver,0), SLWL = ISNULL(p1.SLWL,0),  --Sports Lottery
 			ARCADraw = ISNULL(p1.ARCADraw,0), ARCATOver = ISNULL(p1.ARCATOver,0), ARCAWL = ISNULL(p1.ARCAWL,0),  --Arcadia Gaming
 			VgamingDraw = ISNULL(p1.VgamingDraw,0), VgamingTOver = ISNULL(p1.VgamingTOver,0), VgamingWL = ISNULL(p1.VgamingWL,0), --Vgaming
-			VS3Draw = ISNULL(p1.VS3Draw,0), VS3TOver = ISNULL(p1.VS3TOver,0), VS3WL = ISNULL(p1.VS3WL,0), --LG Virtual Sports  
 			MaxGameDraw = ISNULL(p1.MaxGameDraw,0), MaxGameTOver = ISNULL(p1.MaxGameTOver,0), MaxGameWL = ISNULL(p1.MaxGameWL,0),  --MaxGame
 			BTCDraw = ISNULL(p1.BTCDraw,0), BTCTOver = ISNULL(p1.BTCTOver,0), BTCWL = ISNULL(p1.BTCWL,0)  --Bitcoin
 		FROM @TodayData d
@@ -590,9 +558,9 @@ BEGIN
 							   SUM(CASE WHEN p.sporttype = 161 THEN p.drawTO ELSE 0 END) AS NODraw, 
 							   SUM(CASE WHEN p.sporttype = 161 THEN p.turnover ELSE 0 END) AS NOTOver,
 							   SUM(CASE WHEN p.sporttype = 161 THEN p.winlost ELSE 0 END) AS NOWL,
-							   SUM(CASE WHEN p.sporttype = 180 THEN p.drawTO ELSE 0 END) AS VSDraw, 
-							   SUM(CASE WHEN p.sporttype = 180 THEN p.turnover ELSE 0 END) AS VSTOver,
-							   SUM(CASE WHEN p.sporttype = 180 THEN p.winlost ELSE 0 END) AS VSWL, 
+							   SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.drawTO ELSE 0 END) AS VSDraw, 
+							   SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.turnover ELSE 0 END) AS VSTOver,
+							   SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.winlost ELSE 0 END) AS VSWL, 
 							   SUM(CASE WHEN p.sporttype = 202 THEN p.drawTO ELSE 0 END) AS KEDraw, 
 							   SUM(CASE WHEN p.sporttype = 202 THEN p.turnover ELSE 0 END) AS KETOver,
 							   SUM(CASE WHEN p.sporttype = 202 THEN p.winlost ELSE 0 END) AS KEWL ,
@@ -608,12 +576,6 @@ BEGIN
 							   SUM(CASE WHEN p.sporttype = 220 THEN p.drawTO ELSE 0 END) AS KLDraw, 
 							   SUM(CASE WHEN p.sporttype = 220 THEN p.turnover ELSE 0 END) AS KLTOver,
 							   SUM(CASE WHEN p.sporttype = 220 THEN p.winlost ELSE 0 END) AS KLWL ,
-							   SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,195,196) THEN p.drawTO ELSE 0 END) AS VS2Draw, 
-							   SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,195,196) THEN p.turnover ELSE 0 END) AS VS2TOver,
-							   SUM(CASE WHEN p.sporttype IN (190,191,192,193,194,195,196) THEN p.winlost ELSE 0 END) AS VS2WL ,
-							   SUM(CASE WHEN p.sporttype = -6 THEN p.drawTO ELSE 0 END) AS CODraw,
-							   SUM(CASE WHEN p.sporttype = -6 THEN p.turnover ELSE 0 END) AS COTOver,
-							   SUM(CASE WHEN p.sporttype = -6 THEN p.winlost ELSE 0 END) AS COWL,
 							   SUM(CASE WHEN p.sporttype = 164 THEN p.drawTO ELSE 0 END) AS H5Draw,
 							   SUM(CASE WHEN p.sporttype = 164 THEN p.turnover ELSE 0 END) AS H5TOver,
 							   SUM(CASE WHEN p.sporttype = 164 THEN p.winlost ELSE 0 END) AS H5WL,
@@ -641,9 +603,6 @@ BEGIN
 							   SUM(CASE WHEN p.sporttype = 171 THEN p.drawTO ELSE 0 END) AS VgamingDraw,
 							   SUM(CASE WHEN p.sporttype = 171 THEN p.turnover ELSE 0 END) AS VgamingTOver,
 							   SUM(CASE WHEN p.sporttype = 171 THEN p.winlost ELSE 0 END) AS VgamingWL,
-							   SUM(CASE WHEN p.sporttype IN (178,231) THEN p.drawTO ELSE 0 END) AS VS3Draw,
-							   SUM(CASE WHEN p.sporttype IN (178,231) THEN p.turnover ELSE 0 END) AS VS3TOver,
-							   SUM(CASE WHEN p.sporttype IN (178,231) THEN p.winlost ELSE 0 END) AS VS3WL,
 							   SUM(CASE WHEN p.sporttype = 237 THEN p.drawTO ELSE 0 END) AS MaxGameDraw,
 							   SUM(CASE WHEN p.sporttype = 237 THEN p.turnover ELSE 0 END) AS MaxGameTOver,
 							   SUM(CASE WHEN p.sporttype = 237 THEN p.winlost ELSE 0 END) AS MaxGameWL,
@@ -652,7 +611,7 @@ BEGIN
 							   SUM(CASE WHEN p.sporttype = 175 THEN p.winlost ELSE 0 END) AS BTCWL
 						FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)
 						WHERE winlostdate = @dbtodaydate
-							AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,-6,164,194,196,245,222,243,244,168,169,165,171,231,237,175,195,178)
+							AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,164,194,196,245,222,243,244,168,169,165,171,231,237,175,195,178)
 							AND p.custid = @CustId 
 						GROUP BY p.winlostdate, p.custid
 					) p1 ON d.custid = p1.custid
