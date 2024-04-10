@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" executers="Dot_Admin,Dot_Member" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="ow_12bet" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Dot_Dep_Rpt_DailySummaryTopV2_Agent]	
 	@currency int,
 	@fromDate datetime,
@@ -10,7 +10,8 @@ AS
 /*
 DB: DB061.bodb02
 Revisions:
---20191218@Benson: Add select promotion column
+-- 20191218@Benson: Add select promotion column
+-- 20240410@Eddie: Change metadata 'Dot_Admin,Dot_Member' to 'ow_12bet' - [Redmine: #202118]
 */
 CREATE TABLE #SumWinlost
 (custid int,

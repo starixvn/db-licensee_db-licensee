@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" executers="Dot_Admin" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="ow_12bet" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[DOT_Dep_Rpt_DailySummaryCurrency_Agent]
 	@currency int,
 	@fromDate datetime,
@@ -13,6 +13,7 @@ Revisions:
 -- 20130103@Cooper(DB06):performance tuning about rptDepWinlost_bk table query
 -- 20191218@Benson: Add select promotion column
 -- 20210422@Sol: enhance performance - [Redmine: #153015]
+-- 20240410@Eddie: Change metadata 'Dot_Admin' to 'ow_12bet' - [Redmine: #202118]
 */
 DECLARE @CutDate datetime
 SELECT @CutDate =  min(winlostdate) from bodb_report.dbo.rptdepwinlost with(nolock) 
