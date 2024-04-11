@@ -403,7 +403,7 @@ BEGIN
 		SET b.SportType = sbm.SportType
 		FROM #tmpBettype b 
 			INNER JOIN dbo.SportBettypeMatrix sbm (NOLOCK) ON b.Bettype = sbm.BetType
-		WHERE b.EventType = 0
+		WHERE b.EventType IN (0,5)
 		
 		--BA
 		IF ',' + @ProductCodes + ',' LIKE '%,BA,%'
@@ -481,7 +481,7 @@ BEGIN
 			 , b.CurrencyID
 			 , CASE
 				   WHEN b.bettype = 10 THEN 103
-				   WHEN bt.EventType = 0 THEN  bt.SportType 
+				   WHEN bt.EventType IN (0,5) THEN  bt.SportType 
 				   ELSE ISNULL(l.sporttype, 0)
 			   END AS SportType
 			 , SUM(b.turnover) turnover
@@ -507,7 +507,7 @@ BEGIN
 			   , b.CurrencyID
 			   , CASE
 					 WHEN b.bettype = 10 THEN 103
-					 WHEN bt.EventType = 0 THEN  bt.SportType 
+					 WHEN bt.EventType IN (0,5) THEN  bt.SportType 
 					 ELSE ISNULL(l.sporttype, 0)
 				 END
 				 

@@ -212,7 +212,7 @@ BEGIN
 	
 	CREATE TABLE #tmpBettype ( Bettype INT, ProductCode VARCHAR(10))
 	INSERT INTO #tmpBettype
-	SELECT a.Bettype,b.ProductCode 
+	SELECT a.Bettype,IIF(a.ProductId IN (63,69),'SB',b.ProductCode) AS ProductCode
 	FROM dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductCodes,null,null,@SBBACheck) a 
 	INNER JOIN (SELECT DISTINCT ProductID, ProductCode FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductCodes)) b ON a.ProductId = b.ProductID
 	WHERE NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = a.Bettype) AND a.Bettype <> 72
