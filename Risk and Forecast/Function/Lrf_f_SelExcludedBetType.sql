@@ -22,6 +22,7 @@ RETURNS TABLE
 		- 20231018@Evan: Integrate Saba Casino Royale Tournament Prize [redmine: #194505]
 		- 20231018@Evan: Integrate Saba Reward Risk-free Rebate [redmine: #196881]
 		- 20231213@Evan: Integrate Live22 Promotion [RedmineID: #197702]
+		- 20240416@Evan: Integrate Saba Coins [RedmineID: #202281]
 */
 
 RETURN
@@ -44,6 +45,12 @@ RETURN
 	SELECT 'SPR', 17006									-- Casino Royale Tournament
 	UNION ALL
 	SELECT 'SPR', 17007									-- Saba Reward Risk-free Rebate
+	UNION ALL
+	SELECT 'SPR', 17008									-- Saba Coins Cash Exchange
+	UNION ALL
+	SELECT 'SPR', 17009									-- Promotion Jackpot Prize
+	UNION ALL
+	SELECT 'SPR', 17010									-- Promotion Cash Prize
 	UNION ALL
 	SELECT 'SAG', 3007									-- SA Gaming Tip ticket
 	UNION ALL

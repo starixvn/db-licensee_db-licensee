@@ -3,6 +3,7 @@ ALTER PROCEDURE [dbo].[LAP_Statement_Mem]
     @CustID			INT,  
     @FromDate		SMALLDATETIME,  
     @ToDate			SMALLDATETIME,  
+    @ReportViewType	TINYINT	= 1,
     @BalanceUpDay	SMALLDATETIME,  
     @MoveBetsDay	SMALLDATETIME,  
     @PageSize		INT = 50,  
@@ -32,8 +33,12 @@ Revisions:
 	- 20230227@Evan: Ensure correct balance calculation when allow to transfer 247 (BU) [Redmine: #173554]
 	- 20231018@Evan: Integrate Saba Reward Risk-free Rebate + add missing bettype 17006 [redmine: #196881]
 	- 20240503@Kelvin: Change excuters login [RedmineID: #204744]
+	- 20240416@Evan: Integrate Saba Coins [RedmineID: #202281]
 
 Param's Explanation:     
+	- @ReportViewType : TINYINT
+		+ 1 - Main Wallet
+		+ 2 - Saba coins 
 */
 BEGIN
 	SET NOCOUNT ON
@@ -56,6 +61,7 @@ BEGIN
 			, @TRAN_KEY			TINYINT = 2
 			, @CBGP_KEY			TINYINT = 4
 			, @BAL_BETTYPE		INT = 20000
+			, @PromoBettypes 	VARCHAR(MAX)
 
 	CREATE TABLE #statementRpt
     (  
@@ -76,11 +82,31 @@ BEGIN
 		betTypeId		SMALLINT
     )
 
+	DECLARE @PROMO_BETTPE TABLE  
+    (  
+		betTypeId		SMALLINT
+    )
+
+	INSERT INTO @PROMO_BETTPE (betTypeId)
+	SELECT b.typeid FROM bettype b WITH(NOLOCK) 
+	WHERE b.typeid BETWEEN 17000 AND 17010
+		OR b.typeid BETWEEN 11001 AND 11007
+
+	SELECT @PromoBettypes = STRING_AGG(betTypeId, ',')
+	FROM @PROMO_BETTPE
+
 	SELECT @TotalRows	= 0
 		, @currentDate	= CURRENT_TIMESTAMP
 		, @_CustID		= ISNULL(@CustID, 0)
 		, @_startDate	= @FromDate
 		, @_endDate		= @ToDate
+
+	IF @ReportViewType = 2
+	BEGIN
+		SELECT @_CustID = c.custid
+		FROM Customer c WITH(NOLOCK)
+		WHERE c.username2 = 'sabacoins$' + CAST(@_CustID AS VARCHAR(10))
+	END
 
 	SELECT TOP(1) @currency	= currency, @_recommend = recommend
 	FROM dbo.custinfo (NOLOCK) 
@@ -179,7 +205,7 @@ BEGIN
 
 			INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission)
 			SELECT f.orderkey, f.winlostdate, f.transtype, f.transdesc, f.turnover, f.TotalAmt, f.commission
-			FROM bodb02.dbo.LAP_f_Statement_Mem_Summary(@_CustID, @_tempStartDate, @_tempEndDate) AS f
+			FROM bodb02.dbo.LAP_f_Statement_Mem_Summary(@_CustID, @_tempStartDate, @_tempEndDate, @PromoBettypes) AS f
 			LEFT JOIN #statementRpt temp 
 				ON f.winlostdate = temp.winlostdate AND f.transtype = temp.transtype
 			WHERE temp.winlostdate IS NULL
@@ -195,11 +221,11 @@ BEGIN
 			INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,totalamt,commission)
 			SELECT 
 				CASE
-					WHEN statusID IN (101, 102, 103) AND bettype NOT IN (17000, 17003, 17004, 17006, 17007) THEN @VOID_KEY
-					WHEN bettype IN (17000, 17003, 17004, 17006, 17007) THEN @PROMO_KEY
+					WHEN statusID IN (101, 102, 103) AND pb.betTypeId IS NULL THEN @VOID_KEY
+					WHEN pb.betTypeId IS NOT NULL THEN @PROMO_KEY
 					ELSE @BET_KEY END AS orderkey, 
 				winlostdate,
-				CASE WHEN bettype IN (17000, 17003, 17004, 17006, 17007) THEN 'PROMO' ELSE 'BET' END AS transtype,
+				CASE WHEN pb.betTypeId IS NOT NULL THEN 'PROMO' ELSE 'BET' END AS transtype,
 				NULL AS transdesc,
 				SUM(CASE 
 					WHEN bettype IN (33, 43) AND liveawayscore = 0 AND livehomescore <> 0 AND ruben = 1 THEN stake/2 
@@ -208,6 +234,7 @@ BEGIN
 				SUM(winlost-actual_stake) AS totalamt,
 				SUM(playercomm) AS commission
 			FROM bodb02.dbo.bettrans14 b WITH (NOLOCK)  
+				LEFT JOIN @PROMO_BETTPE pb ON pb.betTypeId = b.bettype
 			WHERE
 				b.custid = @_CustID  
 				AND b.winlostdate >= @_tempStartDate and winlostdate <= @_tempEndDate
@@ -215,11 +242,11 @@ BEGIN
 				AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			GROUP BY
 				CASE
-					WHEN statusID IN (101, 102, 103) AND bettype NOT IN (17000, 17003, 17004, 17006, 17007) THEN @VOID_KEY
-					WHEN bettype IN (17000, 17003, 17004, 17006, 17007) THEN @PROMO_KEY
+					WHEN statusID IN (101, 102, 103) AND pb.betTypeId IS NULL THEN @VOID_KEY
+					WHEN pb.betTypeId IS NOT NULL THEN @PROMO_KEY
 					ELSE @BET_KEY END, 
 				winlostdate,
-				CASE WHEN bettype IN (17000, 17003, 17004, 17006, 17007) THEN 'PROMO' ELSE 'BET' END
+				CASE WHEN pb.betTypeId IS NOT NULL THEN 'PROMO' ELSE 'BET' END
 		END  
 
 		-- bettrans tickets -- after @MoveBetsDay
@@ -238,11 +265,11 @@ BEGIN
 				SELECT 
 					CASE
 						WHEN statusID IN (0, 1) THEN @OUT_KEY
-						WHEN statusID IN (101, 102, 103) AND bettype NOT IN (17000, 17003, 17004, 17006, 17007) THEN @VOID_KEY
-						WHEN bettype IN (17000, 17003, 17004, 17006, 17007) THEN @PROMO_KEY
+						WHEN statusID IN (101, 102, 103) AND pb.betTypeId IS NULL THEN @VOID_KEY
+						WHEN pb.betTypeId IS NOT NULL THEN @PROMO_KEY
 						ELSE @BET_KEY END AS orderkey,  
 					winlostdate,
-					CASE WHEN bettype IN (17000, 17003, 17004, 17006, 17007) THEN 'PROMO' ELSE 'BET' END AS transtype,
+					CASE WHEN pb.betTypeId IS NOT NULL THEN 'PROMO' ELSE 'BET' END AS transtype,
 					NULL transdesc,
 					SUM(CASE 
 						WHEN bettype IN (33, 43) AND liveawayscore = 0 AND livehomescore <> 0 AND ruben = 1 THEN stake/2 
@@ -254,6 +281,7 @@ BEGIN
 
 				FROM 
 					bodb02.dbo.bettrans b WITH (NOLOCK)  
+					LEFT JOIN @PROMO_BETTPE pb ON pb.betTypeId = b.bettype 
 				WHERE
 					custid = @_CustID  
 					AND winlostdate >= @_tempStartDate
@@ -268,11 +296,11 @@ BEGIN
 				GROUP BY
 					CASE
 						WHEN statusID IN (0, 1) THEN @OUT_KEY
-						WHEN statusID IN (101, 102, 103) AND bettype NOT IN (17000, 17003, 17004, 17006, 17007) THEN @VOID_KEY
-						WHEN bettype IN (17000, 17003, 17004, 17006, 17007) THEN @PROMO_KEY
+						WHEN statusID IN (101, 102, 103) AND pb.betTypeId IS NULL THEN @VOID_KEY
+						WHEN pb.betTypeId IS NOT NULL THEN @PROMO_KEY
 						ELSE @BET_KEY END,  
 					winlostdate,
-					CASE WHEN bettype IN (17000, 17003, 17004, 17006, 17007) THEN 'PROMO' ELSE 'BET' END
+					CASE WHEN pb.betTypeId IS NOT NULL THEN 'PROMO' ELSE 'BET' END
 			
 				--include running Keno bet
 				UNION ALL
@@ -386,7 +414,7 @@ BEGIN
 	BEGIN
 		INSERT INTO #statementRpt (orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission)
 		SELECT f.orderkey, f.winlostdate, f.transtype, f.transdesc, f.turnover, f.TotalAmt, f.commission
-		FROM bodb02.dbo.LAP_f_Statement_Mem_Summary(@_CustID, @_startDate, @_endDate) AS f
+		FROM bodb02.dbo.LAP_f_Statement_Mem_Summary(@_CustID, @_startDate, @_endDate, @PromoBettypes) AS f
 		LEFT JOIN #statementRpt temp 
 			ON f.winlostdate = temp.winlostdate AND f.transtype = temp.transtype
 		WHERE temp.winlostdate IS NULL

@@ -28,6 +28,7 @@ AS
 		- 20231018@Evan: Integrate Saba Casino Royale Tournament Prize [redmine: #194505]
 		- 20231018@Evan: Integrate Saba Reward Risk-free Rebate [redmine: #196881]
 		- 20231213@Evan: Integrate Live22 Promotion [RedmineID: #197702]
+		- 20240416@Evan: Integrate Saba Coins [RedmineID: #202281]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -46,6 +47,9 @@ AS
 			- 3705: Saba Red Envelope (BetType: 17004)
 			- 3706: Casino Royale Tournament (BetType: 17006)
 			- 3707: Saba Reward Risk-free Rebate (BetType: 17007)
+			- 3708: Saba Coins Cash Exchange (BetType: 17008)
+			- 3709: Promotion Jackpot Prize (BetType: 17009)
+			- 3710: Promotion Cash Prize (BetType: 17010)
 			- 3901: SA Gaming - Tip (BetType: 3007)
 			- 4201: Saba.club - Free Bets (SportType: 150)
 			- 4202: Saba.club - Jackpot Prize (BetType: 1699)
@@ -138,6 +142,9 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3705,%' AND BetType = 17004 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3706,%' AND BetType = 17006 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3707,%' AND BetType = 17007 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3708,%' AND BetType = 17008 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3709,%' AND BetType = 17009 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3710,%' AND BetType = 17010 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3901,%' AND BetType = 3007 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4201,%' AND ProductPrefix = 'SBC' AND BetType NOT IN (1698, 1699) THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4202,%' AND BetType = 1699 THEN 1
