@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBBOF-bodb02,DBSID-bodb02" selecters="wsv_alp,wsv_alpv,wsv_lap,bodbLicenseeNet" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBBOF-bodb02,DBSID-bodb02" selecters="wsv_alp,wsv_alpv,wsv_lap" isFunction="1" isNested="1"></info>*/
 CREATE FUNCTION [dbo].[Lrf_f_GroupProduct]
 (
 )

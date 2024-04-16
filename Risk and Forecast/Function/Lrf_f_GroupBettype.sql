@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02" selecters="wsv_alp,wsv_alpv,wsv_lap,bodbLicenseeNet" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02" selecters="wsv_alp,wsv_alpv,wsv_lap" isFunction="1" isNested="1"></info>*/
 ALTER FUNCTION [dbo].[Lrf_f_GroupBettype] ()
 RETURNS TABLE
 RETURN
