@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" selecters="wsv_lap,wsv_alp" viewers="" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02" selecters="bodbLicenseeNet,wsv_lap,wsv_alp" viewers="" isFunction="1" isNested="1"></info>*/
 ALTER FUNCTION [dbo].[LAP_f_WinlossAnalysis_BettypeMatrix] (
 	@ProductCheck	VARCHAR(MAX),
 	@SportCheck		VARCHAR(MAX),
@@ -17,7 +17,6 @@ AS
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465] 
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240304@Evan: Grant execute new acc [RedmineID: #201283]
-		- 20242901@Evan: Enhance code use function Lrf_f_GroupBettype [RedmineID: #199347]
 		
 */
 RETURN
@@ -48,7 +47,20 @@ RETURN
 		SELECT sporttype FROM CTE_SportInput
 	),
 	CTE_GroupBettype AS (
-		SELECT Bettype, GroupTypeID FROM bodb02.dbo.Lrf_f_GroupBettype()	
+		SELECT DISTINCT t.bettype, t.GroupTypeId 
+		FROM
+		(
+			SELECT bt.typeid AS bettype, bt.DisplayedTypeId AS GroupTypeId
+			FROM dbo.bettype bt WITH (NOLOCK)
+			WHERE bt.typeid <> bt.DisplayedTypeId
+				AND EXISTS (SELECT 1 FROM dbo.SportBettypeMatrix s WITH (NOLOCK) WHERE bt.typeid = s.bettype AND s.ProductId  = 1)
+		) a 
+		CROSS APPLY 
+		(
+			SELECT bettype, GroupTypeId
+			UNION ALL
+			SELECT GroupTypeId, GroupTypeId
+		) t	
 	),
 	CTE_BettypeInput AS (
 		SELECT CAST(value AS INT) AS Bettype 

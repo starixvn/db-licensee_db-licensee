@@ -142,7 +142,7 @@ BEGIN
 			OUTER APPLY
 			(
 				SELECT	CASE WHEN BA.TransID IS NOT NULL THEN 1 ELSE 0 END AS IsBA,
-						ISNULL(CASE WHEN b.bettype IN (9,29,2799,10449) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
+						ISNULL(CASE WHEN b.bettype IN (9,29,2799) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 			) s
 		WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND b.statusID IN (111, 112, 113)
