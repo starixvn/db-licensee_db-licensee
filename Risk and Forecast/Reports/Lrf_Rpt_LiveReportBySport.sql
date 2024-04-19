@@ -153,6 +153,13 @@ BEGIN
 		 , BetType
 	FROM Lrf_f_SelExcludedBetType()
 
+	---
+	DROP TABLE IF EXISTS #tmpWinloss
+	DROP TABLE IF EXISTS #TempExchange
+	DROP TABLE IF EXISTS #LicenseeList
+	DROP TABLE IF EXISTS #tmpBettype
+	DROP TABLE IF EXISTS #tmpVS
+
 	CREATE TABLE #TempAg (CustId INT, Currency INT)
 
 	CREATE CLUSTERED INDEX CIX_TempAg ON #TempAg (CustId);
@@ -170,11 +177,13 @@ BEGIN
 		, Betcount INT
 	)
 
+	CREATE TABLE #tmpVS (Orid INT,SportType SMALLINT) 
+
 	DECLARE @DocHandler INT
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT,@AgentList
 
-		INSERT INTO #TempAg (CustId, currency)
+		INSERT INTO #TempAg (custID, currency)
 		SELECT AgentId, Currency
 		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
 
@@ -211,7 +220,7 @@ BEGIN
 				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 2) 
 				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,BA,%' THEN 1 ELSE 0 END, 3))
 	
-	CREATE TABLE #tmpBettype ( Bettype INT, EventType TINYINT)
+	CREATE TABLE #tmpBettype ( Bettype INT, EventType TINYINT, SportType SMALLINT)
 	INSERT INTO #tmpBettype (Bettype, EventType)
 	SELECT DISTINCT a.Bettype,a.EventType
 	FROM dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductCodes,null,null,@SBBACheck) a 
@@ -227,96 +236,21 @@ BEGIN
 		ELSE
 			SET @TempFromDate = @FDate
 
-		--BA
-		IF ',' + @ProductCodes + ',' LIKE '%,BA,%'
-		BEGIN
-			
-			--Get data from bettrans for BA
-			INSERT INTO #tmpWinloss (winlostdate, Currency, SportType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
-			SELECT b.winlostdate
-				 , b.Currency
-				 , CASE
-					   WHEN b.bettype = 10 THEN 103 -- Outright
-					   ELSE m.SportType
-				   END AS Sporttype
-				 , SUM(stake) turnover
-				 , SUM(b.winlost - b.actual_stake) AS Winlost
-				 , 0 AS LicenseeWL
-				 , SUM(comm) AS Comm
-				 , SUM(playercomm) AS PlayerComm
-				 , -SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd
-				 , COUNT(b.TransId) BetCount
-			FROM bettrans b WITH (NOLOCK)
-				INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active ba WITH (NOLOCK) ON b.recommend = ba.recommend
-					AND b.TransId = ba.TransId
-				INNER JOIN #TempAg t ON b.recommend = t.custid
-					AND b.Currency = t.Currency
-				LEFT JOIN [match] m WITH (NOLOCK) ON b.matchid = m.matchid
-			WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
-				AND b.statusID IN (111, 112, 113)
-				AND b.bettype NOT IN (9, 29)
-				AND NOT EXISTS (
-					SELECT 1
-					FROM @ExcludedBetType e
-					WHERE e.BetType = b.BetType
-				)
-				AND (b.bettype < 901 OR b.bettype > 904)
-				AND (b.bettype < 911 OR b.bettype > 914)
-				AND (@Liveindicator = b.liveindicator OR @Liveindicator = 2)
-			GROUP BY b.winlostdate
-				   , b.Currency
-				   , CASE
-						 WHEN b.bettype = 10 THEN 103 -- Outright
-						 ELSE m.SportType
-					 END
-
-			--BA for parlay
-			INSERT INTO #tmpWinloss (winlostdate, Currency, SportType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
-			SELECT b.winlostdate
-				 , b.Currency
-				 , CASE
-					   WHEN b.bettype = 9 THEN 101 --Mix Parlay
-					   WHEN b.bettype = 29 THEN 102 --System Parlay
-				   END AS Sporttype
-				 , SUM(stake) turnover
-				 , SUM(b.winlost - b.actual_stake) AS Winlost
-				 , 0 AS LicenseeWL
-				 , SUM(comm) AS Comm
-				 , SUM(playercomm) AS PlayerComm
-				 , -SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd
-				 , COUNT(b.TransId) BetCount
-			FROM bettrans b WITH (NOLOCK)
-				INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active ba WITH (NOLOCK) ON b.recommend = ba.recommend
-					AND b.TransId = ba.TransId
-				INNER JOIN #TempAg t ON b.recommend = t.custid
-					AND b.Currency = t.Currency
-			WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
-				AND b.statusID IN (111, 112, 113)
-				AND b.bettype IN (9, 29)
-				AND (@Liveindicator = b.livehomescore OR @Liveindicator = 2)
-			GROUP BY b.winlostdate
-				   , b.Currency
-				   , CASE
-						 WHEN b.bettype = 9 THEN 101 --Mix Parlay
-						 WHEN b.bettype = 29 THEN 102 --System Parlay
-					 END
-			
-		END
-
-		--Get data from bettrans for non-BA
-
+		INSERT INTO #tmpVS (Orid, SportType)
 		SELECT DISTINCT o.Orid
 			, r.SportType
-		INTO #tmpVS
 		FROM VSOutright o WITH (NOLOCK)
 			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
 		WHERE EventDate BETWEEN @TempFromDate AND @TDate
-
+		
 		INSERT INTO #tmpWinloss (winlostdate, Currency, SportType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
 		SELECT b.winlostdate
-			, b.Currency
+			, t.Currency
 			, CASE 
 				WHEN b.bettype = 10 THEN 103 --Outright
+				WHEN b.bettype = 9 THEN 101 --Mix Parlay
+				WHEN b.bettype = 29 THEN 102 --System Parlay
+				WHEN b.bettype IN (2799, 10449) THEN 104 --VS Parlay
 				WHEN bt.EventType = 0 THEN ISNULL(b.matchid, @NASportType)
 				WHEN bt.EventType = 1 THEN ISNULL(m.sporttype,@NASportType)
 				WHEN bt.EventType = 3 THEN ISNULL(vs.SportType,@NASportType)
@@ -324,72 +258,43 @@ BEGIN
 			ELSE @NASportType END
 			, SUM(stake) turnover
 			, SUM(b.winlost - b.actual_stake) AS Winlost
-			, -SUM(b.winlost - b.actual_stake) AS LicenseeWL
+			, -SUM(CASE WHEN s.IsBA = 1 THEN 0 ELSE (b.winlost - b.actual_stake) END) AS LicenseeWL
 			, SUM(comm) AS Comm
 			, SUM(playercomm) AS PlayerComm
 			, -SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd
 			, COUNT(b.TransId) BetCount
 		FROM bettrans b WITH (NOLOCK)
-			INNER JOIN #TempAg t ON b.recommend = t.custid AND b.Currency = t.Currency
+			INNER JOIN #TempAg t ON b.recommend = t.custid
 			INNER JOIN #tmpBettype bt ON b.bettype = bt.Bettype
 			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.recommend = BA.recommend AND b.TransId = BA.TransId 
 			LEFT JOIN [match] m WITH (NOLOCK) ON b.matchid = m.matchid 
 			LEFT JOIN [bodb02].[dbo].[Match3rd] m3rd WITH(NOLOCK) ON m3rd.Match3rdId = b.matchid
 			LEFT JOIN #tmpVS vs ON b.oddsid = vs.Orid
+			OUTER APPLY
+			(
+				SELECT	CASE WHEN BA.TransID IS NOT NULL THEN 1 ELSE 0 END AS IsBA,
+						ISNULL(CASE WHEN b.bettype IN (9,29,2799,10449) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
+			) s
 		WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
-			AND (@Liveindicator = b.liveindicator OR @Liveindicator = 2)
-			AND b.bettype NOT IN (9, 29, 2799, 10449)
-			AND b.tpositiontaking <> 0
+			AND (@Liveindicator = s.liveindicator OR @Liveindicator = 2)
 			AND b.statusID IN (111, 112, 113)
-			AND BA.TransId IS NULL
+			AND 1 = CASE WHEN @SBBACheck & 8 != 8 AND s.IsBA = 1 THEN 0 ELSE 1 END
 			AND 1 = CASE WHEN b.bettype BETWEEN 1611 AND 1697 AND b.matchid = 150 THEN 0
 						WHEN b.bettype BETWEEN 3801 AND 3899 AND b.matchid = 173 THEN 0
 					ELSE 1 END	
 		GROUP BY b.winlostdate
-				, b.Currency
+				, t.Currency
 				, CASE 
 					WHEN b.bettype = 10 THEN 103 --Outright
+					WHEN b.bettype = 9 THEN 101 --Mix Parlay
+					WHEN b.bettype = 29 THEN 102 --System Parlay
+					WHEN b.bettype IN (2799, 10449) THEN 104 --VS Parlay
 					WHEN bt.EventType = 0 THEN ISNULL(b.matchid, @NASportType)
 					WHEN bt.EventType = 1 THEN ISNULL(m.sporttype,@NASportType)
 					WHEN bt.EventType = 3 THEN ISNULL(vs.SportType,@NASportType)
 					WHEN bt.EventType = 5 THEN ISNULL(m3rd.SportType,@NASportType)
 				ELSE @NASportType END
 
-		-- Get Tikect Parlay
-		INSERT INTO #tmpWinloss (winlostdate, Currency, SportType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
-		SELECT b.winlostdate
-				, b.currency
-				, CASE
-					WHEN b.bettype = 9 THEN 101 --Mix Parlay
-					WHEN b.bettype = 29 THEN 102 --System Parlay
-					WHEN b.bettype IN (2799, 10449) THEN 104 --VS Parlay
-				END AS Sporttype
-				, SUM(stake) turnover
-				, SUM(b.winlost - b.actual_stake) AS Winlost
-				, SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL
-				, SUM(comm) AS Comm
-				, SUM(playercomm) AS PlayerComm
-				, -SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd
-				, COUNT(b.TransId) BetCount
-		FROM bettrans b WITH (NOLOCK)
-			INNER JOIN #TempAg t ON b.recommend = t.custid AND b.Currency = t.Currency
-			INNER JOIN #tmpBettype bt ON b.bettype = bt.Bettype
-			LEFT JOIN bodb_licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.recommend = BA.recommend AND b.TransId = BA.TransId
-		WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
-			AND (@Liveindicator = b.livehomescore OR @Liveindicator = 2)
-			AND b.bettype IN (9, 29, 2799, 10449)
-			AND b.tpositiontaking <> 0
-			AND b.statusID IN (111, 112, 113)
-			AND BA.TransId IS NULL
-		GROUP BY b.winlostdate
-				, b.currency
-				, CASE
-						WHEN b.bettype = 9 THEN 101 --Mix Parlay
-						WHEN b.bettype = 29 THEN 102 --System Parlay
-						WHEN b.bettype IN (2799, 10449) THEN 104 --VS Parlay
-					END
-
-		DROP TABLE IF EXISTS #tmpVS
 	END
 	
 	IF @FDate <= @MoveBetsDay
@@ -399,30 +304,37 @@ BEGIN
 		ELSE
 			SET @TempToDate = @TDate
 		
+		-- Update sporttype by bettype from table SportBettypeMatrix 
+		UPDATE b
+		SET b.SportType = sbm.SportType
+		FROM #tmpBettype b 
+			INNER JOIN dbo.SportBettypeMatrix sbm (NOLOCK) ON b.Bettype = sbm.BetType
+		WHERE b.EventType IN (0,5)
+		
 		--BA
 		IF ',' + @ProductCodes + ',' LIKE '%,BA,%'
 		BEGIN
-			-- Get data for BA
+			-- Get data from rpt_Betting_BA for BA
 			INSERT INTO #tmpWinloss (winlostdate, Currency, SportType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
-			SELECT b.WinlostDate
-				 , t.Currency
+			SELECT b.rptDate
+				 , b.CurrencyID
 				 , CASE
-						WHEN b.bettype = 10 THEN 103 -- Outright
-						WHEN b.bettype = 9 THEN 101 --Mix Parlay
-						WHEN b.bettype = 29 THEN 102 --System Parlay
-						ELSE b.Sporttype
-					END AS Sporttype
-				 , SUM(b.Turnover) turnover
-				 , SUM(b.Winlost) winlost
+					   WHEN b.bettype = 10 THEN 103 -- Outright
+					   ELSE l.SportType
+				   END AS Sporttype
+				 , SUM(b.turnover) turnover
+				 , SUM(b.WinLoss) winlost
 				 , 0 AS LicenseeWL
-				 , SUM(b.AComm) AS Comm
-				 , SUM(b.PComm) AS PlayerComm
-				 , -SUM(b.Winlost + b.AWinlost + b.AComm) AmountDueTo3rd
+				 , SUM(CommissionA) AS Comm
+				 , SUM(CommissionP) AS PlayerComm
+				 , -SUM(b.WinLoss + b.WinLossA + b.CommissionA) AmountDueTo3rd
 				 , SUM(b.betcount) BetCount
-			FROM bodb_licenseereport.dbo.rptLicenseeWinloss b WITH (NOLOCK)
-				INNER JOIN #TempAg t ON b.Recommend = t.CustId
-			WHERE b.WinlostDate BETWEEN @FDate AND @TempToDate
-				AND b.StatusId NOT IN (-1, 103)
+			FROM bodb_LicenseeReport.dbo.rpt_Betting_BA b WITH (NOLOCK)
+				INNER JOIN #LicenseeList ll ON b.SiteID = ll.LicenseeID AND b.CurrencyID = ll.Currency
+				LEFT JOIN League l WITH (NOLOCK) ON b.LeagueID = l.LeagueID
+			WHERE b.rptDate BETWEEN @FDate AND @TempToDate
+				AND b.status NOT IN (-1, 103)
+				AND b.bettype NOT IN (9, 29)
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
 				AND NOT EXISTS (
@@ -430,55 +342,112 @@ BEGIN
 					FROM @ExcludedBetType e
 					WHERE e.BetType = b.BetType
 				)
-				AND (b.LiveIndicator = @Liveindicator OR @Liveindicator = 2) 
-				AND b.Product3rdId = 3 --BA
-			GROUP BY b.WinlostDate
-				   , t.Currency
+				AND (b.IsLive = @Liveindicator OR @Liveindicator = 2) 
+			GROUP BY b.rptDate
+				   , b.CurrencyID
 				   , CASE
 						 WHEN b.bettype = 10 THEN 103 -- Outright
+						 ELSE l.SportType
+					 END
+			
+			-- Get Tikect Parlay
+			INSERT INTO #tmpWinloss (winlostdate, Currency, SportType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
+			SELECT b.rptDate
+				 , b.CurrencyID
+				 , CASE
+					   WHEN b.bettype = 9 THEN 101 --Mix Parlay
+					   WHEN b.bettype = 29 THEN 102 --System Parlay
+				   END AS Sporttype
+				 , SUM(b.turnover) turnover
+				 , SUM(b.WinLoss) winlost
+				 , 0 AS LicenseeWL
+				 , SUM(CommissionA) AS Comm
+				 , SUM(CommissionP) AS PlayerComm
+				 , -SUM(b.WinLoss + b.WinLossA + b.CommissionA) AmountDueTo3rd
+				 , SUM(b.betcount) BetCount
+			FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH (NOLOCK)
+				INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency
+			WHERE b.rptDate BETWEEN  @FDate AND @TempToDate
+				AND b.Status NOT IN (-1, 103)
+				AND b.bettype IN (9,29)
+				AND (b.IsLive = @Liveindicator OR @Liveindicator = 2)
+				AND b.isBA = 1
+			GROUP BY b.rptDate
+				   , b.CurrencyID
+				   , CASE
 						 WHEN b.bettype = 9 THEN 101 --Mix Parlay
 						 WHEN b.bettype = 29 THEN 102 --System Parlay
-						 ELSE b.Sporttype
 					 END
+			
 		END
 		
-		--Get data for non-BA
+		--Get data from rpt_Betting for non-BA
 		INSERT INTO #tmpWinloss (winlostdate, Currency, SportType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
-		SELECT b.WinlostDate
-			 , t.Currency
+		SELECT b.rptDate
+			 , b.CurrencyID
 			 , CASE
 				   WHEN b.bettype = 10 THEN 103
-				   WHEN b.bettype = 9 THEN 101
-				   WHEN b.bettype = 29 THEN 102
-				   WHEN b.bettype IN (2799, 10449) THEN 104
-				   ELSE b.sporttype
+				   WHEN bt.EventType IN (0,5) THEN  bt.SportType 
+				   ELSE ISNULL(l.sporttype, 0)
 			   END AS SportType
 			 , SUM(b.turnover) turnover
-			 , SUM(b.Winlost) winlost
-			 , -SUM(b.Winlost) AS LicenseeWL
-			 , SUM(b.AComm) Comm
-			 , SUM(b.PComm) PlayerComm
-			 , -SUM(b.Winlost + b.AWinlost + b.AComm) AmountDueTo3rd
+			 , SUM(b.WinLoss) winlost
+			 , -SUM(b.WinLoss) AS LicenseeWL
+			 , SUM(b.CommissionA) Comm
+			 , SUM(b.CommissionP) PlayerComm
+			 , -SUM(b.WinLoss + b.WinLossA + b.CommissionA) AmountDueTo3rd
 			 , SUM(b.betcount) BetCount
-		FROM bodb_licenseereport.dbo.rptLicenseeWinloss b WITH (NOLOCK)
-			INNER JOIN #TempAg t ON b.Recommend = t.CustId
+		FROM bodb_LicenseeReport.dbo.rpt_Betting b WITH (NOLOCK)
+			INNER JOIN #LicenseeList ll ON b.SiteID = ll.LicenseeID AND b.CurrencyID = ll.Currency
 			INNER JOIN #tmpBettype bt ON b.Bettype = bt.Bettype
-		WHERE b.WinlostDate BETWEEN @FDate AND @TempToDate
-			AND b.StatusId NOT IN (-1, 103)
-			AND (b.LiveIndicator = @Liveindicator OR @Liveindicator = 2)
-			AND 1 = CASE WHEN b.bettype BETWEEN 1611 AND 1697 AND b.Sporttype = 150 THEN 0
-						WHEN b.bettype BETWEEN 3801 AND 3899 AND b.Sporttype = 173 THEN 0
+			LEFT JOIN League l WITH (NOLOCK) ON b.LeagueID = l.LeagueID
+		WHERE b.rptDate BETWEEN @FDate AND @TempToDate
+			AND b.status NOT IN (-1, 103)
+			AND (b.IsLive = @Liveindicator OR @Liveindicator = 2)
+			AND b.bettype NOT IN (9, 29, 2799, 10449)
+			AND b.CustomerCategory IN (-1, 1001, 1003)
+			AND 1 = CASE WHEN b.bettype BETWEEN 1611 AND 1697 AND b.TicketType = 2 THEN 0
+						WHEN b.bettype BETWEEN 3801 AND 3899 AND b.TicketType = 2 THEN 0
 					ELSE 1 END	
-			AND b.Product3rdId <> 3
-		GROUP BY b.WinlostDate
-			   , t.Currency
+		GROUP BY b.rptDate
+			   , b.CurrencyID
 			   , CASE
-					WHEN b.bettype = 10 THEN 103
+					 WHEN b.bettype = 10 THEN 103
+					 WHEN bt.EventType IN (0,5) THEN  bt.SportType 
+					 ELSE ISNULL(l.sporttype, 0)
+				 END
+				 
+		-- Get Tikect Parlay
+		INSERT INTO #tmpWinloss (winlostdate, Currency, SportType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
+		SELECT b.rptDate
+				, b.CurrencyID
+				, CASE
 					WHEN b.bettype = 9 THEN 101
 					WHEN b.bettype = 29 THEN 102
 					WHEN b.bettype IN (2799, 10449) THEN 104
-					ELSE b.sporttype
-			   	END 
+				END AS SportType
+				, SUM(b.turnover) turnover
+				, SUM(b.WinLoss) winlost
+				, SUM(-1 * b.WinLoss) AS LicenseeWL
+				, SUM(b.CommissionA) Comm
+				, SUM(b.CommissionP) PlayerComm
+				, -SUM(b.WinLoss + b.WinLossA + b.CommissionA) AmountDueTo3rd
+				, SUM(b.betcount) BetCount
+		FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH (NOLOCK)
+			INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency
+			INNER JOIN #tmpBettype bt ON b.Bettype = bt.Bettype
+		WHERE b.rptDate BETWEEN @FDate AND @TempToDate
+			AND b.status NOT IN (-1, 103)
+			AND b.bettype IN (9, 29, 2799, 10449)
+			AND (b.IsLive = @Liveindicator OR @Liveindicator = 2)
+			AND b.isBA = 0
+		GROUP BY b.rptDate
+				, b.CurrencyID
+				, CASE
+					WHEN b.bettype = 9 THEN 101
+					WHEN b.bettype = 29 THEN 102
+					WHEN b.bettype IN (2799, 10449) THEN 104
+					END
 	END
 	
 	-- Get winlost by Sport  
@@ -508,10 +477,5 @@ BEGIN
 			AND e.ExchangeId = b.currency
 	GROUP BY b.SportType
 
-	DROP TABLE IF EXISTS #TempAg
-	DROP TABLE IF EXISTS #tmpWinloss
-	DROP TABLE IF EXISTS #TempExchange
-	DROP TABLE IF EXISTS #LicenseeList
-	DROP TABLE IF EXISTS #tmpBettype
 END
 GO
