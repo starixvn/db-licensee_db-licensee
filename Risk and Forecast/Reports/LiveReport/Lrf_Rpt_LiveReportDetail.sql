@@ -107,9 +107,10 @@ BEGIN
 	
 	CREATE TABLE #tmpBettype ( Bettype INT, ProductCode VARCHAR(10), RefTable TINYINT)
 	INSERT INTO #tmpBettype
-	SELECT a.Bettype,IIF(a.ProductId IN (63,69),'SB',b.ProductPrefix) AS ProductCode, a.RefTable
+	SELECT a.Bettype, ISNULL(lf.GroupProductPrefix,IIF(a.ProductId IN (63,69),'SB',b.ProductPrefix)) AS ProductCode, a.RefTable
 	FROM dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductCodes,null,null,@SBBACheck) a 
 	INNER JOIN dbo.Products b WITH(NOLOCK) ON a.ProductId = b.ProductID 
+	LEFT JOIN dbo.Lrf_f_GroupProduct() lf ON a.ProductId = lf.ProductId
 	WHERE NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = a.Bettype) AND a.Bettype <> 72
 			AND (a.bettype < 901 OR a.bettype > 904)
 			AND (a.bettype < 911 OR a.bettype > 914)
