@@ -225,9 +225,9 @@ BEGIN
 				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 2) 
 				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,BA,%' THEN 1 ELSE 0 END, 3))
 	
-	CREATE TABLE #tmpBettype ( Bettype INT, ProductCode VARCHAR(10))
+	CREATE TABLE #tmpBettype ( Bettype INT, ProductCode VARCHAR(10), ProductID SMALLINT)
 	INSERT INTO #tmpBettype
-	SELECT a.Bettype,IIF(a.ProductId IN (63,69),'SB',b.ProductPrefix) AS ProductCode
+	SELECT a.Bettype,IIF(a.ProductId IN (63,69),'SB',b.ProductPrefix) AS ProductCode, a.ProductID
 	FROM dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductCodes,null,null,@SBBACheck) a
 	INNER JOIN dbo.Products b WITH(NOLOCK) ON a.ProductId = b.ProductID 
 	WHERE NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = a.Bettype) AND a.Bettype <> 72
@@ -373,6 +373,7 @@ BEGIN
 			AND 1 = CASE WHEN b.bettype BETWEEN 1611 AND 1697 AND b.TicketType = 2 THEN 0
 						WHEN b.bettype BETWEEN 3801 AND 3899 AND b.TicketType = 2 THEN 0
 					ELSE 1 END	
+			AND 1 = CASE WHEN @SBBACheck = 10 AND bt.ProductID IN (1,69,63) THEN 0 ELSE 1 END
 		GROUP BY b.rptDate
 			   , b.CurrencyID
 			   , b.bettype
@@ -399,6 +400,7 @@ BEGIN
 			AND b.bettype IN (9, 29, 2799)
 			AND b.isBA = 0
 			AND (b.IsLive = @Liveindicator OR @Liveindicator = 2)
+			AND 1 = CASE WHEN @SBBACheck = 10 AND bt.ProductID = 1 THEN 0 ELSE 1 END
 		GROUP BY b.rptDate
 			,b.CurrencyID
 			,ProductCode
