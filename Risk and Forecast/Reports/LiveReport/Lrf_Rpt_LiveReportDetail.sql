@@ -107,9 +107,9 @@ BEGIN
 	
 	CREATE TABLE #tmpBettype ( Bettype INT, ProductCode VARCHAR(10), RefTable TINYINT)
 	INSERT INTO #tmpBettype
-	SELECT a.Bettype,IIF(a.ProductId IN (63,69),'SB',b.ProductCode) AS ProductCode, a.RefTable
+	SELECT a.Bettype,IIF(a.ProductId IN (63,69),'SB',b.ProductPrefix) AS ProductCode, a.RefTable
 	FROM dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductCodes,null,null,@SBBACheck) a 
-	INNER JOIN (SELECT DISTINCT ProductID, ProductCode FROM dbo.f_LicWinLoss_ProductSportType_Sel(@ProductCodes)) b ON a.ProductId = b.ProductID
+	INNER JOIN dbo.Products b WITH(NOLOCK) ON a.ProductId = b.ProductID 
 	WHERE NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = a.Bettype) AND a.Bettype <> 72
 			AND (a.bettype < 901 OR a.bettype > 904)
 			AND (a.bettype < 911 OR a.bettype > 914)
@@ -147,7 +147,9 @@ BEGIN
 		WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND b.statusID IN (111, 112, 113)
 			AND (s.liveindicator = @Liveindicator OR @Liveindicator = 2)
-			AND 1 = CASE WHEN @SBBACheck & 8 != 8 AND s.IsBA = 1 THEN 0 ELSE 1 END 
+			AND 1 = CASE WHEN @SBBACheck = 6 AND s.IsBA = 1 THEN 0 
+						 WHEN @SBBACheck = 10 AND s.IsBA = 0 THEN 0
+					ELSE 1 END
 		GROUP BY b.winlostdate
 				, t.currency
 				, CASE WHEN s.IsBA = 1 THEN 'BA' ELSE bt.ProductCode END
@@ -244,7 +246,9 @@ BEGIN
 			AND 1 = CASE WHEN b.bettype BETWEEN 1611 AND 1697 AND b.Sporttype = 150 THEN 0
 						WHEN b.bettype BETWEEN 3801 AND 3899 AND b.Sporttype = 173 THEN 0
 					ELSE 1 END	
-			AND 1 = CASE WHEN @SBBACheck & 8 != 8 AND b.Product3rdId = 3 THEN 0 ELSE 1 END 
+			AND 1 = CASE WHEN @SBBACheck = 6 AND b.Product3rdId = 3 THEN 0 
+						 WHEN @SBBACheck = 10 AND b.Product3rdId <> 3 THEN 0
+					ELSE 1 END 
 		GROUP BY b.WinlostDate
 			   , l.Currency
 			   , IIF(b.Product3rdId = 3,'BA',bt.ProductCode)
