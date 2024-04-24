@@ -77,7 +77,7 @@ BEGIN
     INSERT INTO @PROMO_BETTPE (betTypeId)
 	SELECT b.typeid FROM bettype b WITH(NOLOCK) 
 	WHERE b.typeid BETWEEN 17000 AND 17010
-		OR b.typeid BETWEEN 11001 AND 11007
+		OR b.typeid BETWEEN 11001 AND 11008
 
 	SELECT @_custID		= @CustID
 		, @_winlostdate	= @WinLostDate
