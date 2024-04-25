@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBBOF-bodb02,DBSID-bodb02" selecters="bodbLicenseeNet" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBBOF-bodb02,DBSID-bodb02" selecters="wsv_lap" isFunction="1" isNested="1"></info>*/
 
 ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 (
@@ -29,6 +29,7 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 		- 20231103@Evan: Support add new betfrom A001,A002 [Redmine: #196463]
 		- 20231122@Evan: Handle betfrom for Jollysports [Redmine: #197192]	
 		- 20240102@Evan: Support add new betfrom I001 [Redmine: #198817]	
+		- 20240410@Eddie: Support add new betfrom W003, W004, A003 and change metadata 'bodbLicenseeNet' to 'wsv_lap' [Redmine: #202935]
 	
 
 	Param's Explanation:
@@ -98,8 +99,11 @@ RETURN
 				(14, 't',0),
 				(15, 'm',0),
 				(16, 'A000',0),
+				(16, 'A003',0),
 				(17, 'W001',0), 
+				(17, 'W003',0), 
 				(18, 'W002',0),
+				(18, 'W004',0),
 				(88, 'v',0),
 				(88, 'd',0),
 				(88, 'g',0),
@@ -142,8 +146,11 @@ RETURN
 				(99, 't',2),
 				(99, 'm',2),
 				(99, 'A000',2),
+				(99, 'A003',2),
 				(99, 'W001',2), 
-				(99, 'W002',2),
+				(99, 'W003',2),
+				(99, 'W002',2), 
+				(99, 'W004',2),
 				(99, 'v',2),
 				(99, 'd',2),
 				(99, 'g',2),
