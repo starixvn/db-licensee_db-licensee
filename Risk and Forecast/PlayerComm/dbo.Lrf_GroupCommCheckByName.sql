@@ -38,6 +38,6 @@ END
 
 END
 GO
-GRANT EXECUTE ON [dbo].[Lrf_GroupCommCheckByName] TO [bodbLicenseeNet] 
+GRANT EXECUTE ON [dbo].[Lrf_GroupCommCheckByName] TO [wsv_lap] 
 GO
 GRANT VIEW DEFINITION ON [dbo].[Lrf_GroupCommCheckByName] TO [vnteam]  

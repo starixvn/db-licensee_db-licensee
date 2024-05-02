@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" isNested="1" isFunction="0"></info>*/ 
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="wsv_lap,wsv_nap,svc_tig" isNested="1" isFunction="0"></info>*/ 
 ALTER PROCEDURE [dbo].[Lrf_CustomerSetDefaultComm]
 	@LicenseeName VARCHAR(50),
 	@CustID INT,--member

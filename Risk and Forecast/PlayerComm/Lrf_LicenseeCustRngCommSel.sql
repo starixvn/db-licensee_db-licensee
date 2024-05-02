@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-bodb_licensee" executers="bodbLicenseeNet,Dot_Casino" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-bodb_licensee" executers="wsv_lap,Dot_Casino" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
 SET ANSI_NULLS ON
 GO

@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet,bodbAdminNet,Dot_Member" viewers="" isFunction="0" isNested="1"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="wsv_lap,wsv_nap,svc_tig" viewers="" isFunction="0" isNested="1"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberComm_Main] 
 	@strCustID VARCHAR(MAX)
 	,@SBComm DECIMAL(9,8)
