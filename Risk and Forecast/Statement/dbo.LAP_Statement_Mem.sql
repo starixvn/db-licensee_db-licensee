@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" isFunction="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="wsv_lap,wsv_alp" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[LAP_Statement_Mem]  
     @CustID			INT,  
     @FromDate		SMALLDATETIME,  
@@ -31,6 +31,7 @@ Revisions:
     - 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 	- 20230227@Evan: Ensure correct balance calculation when allow to transfer 247 (BU) [Redmine: #173554]
 	- 20231018@Evan: Integrate Saba Reward Risk-free Rebate + add missing bettype 17006 [redmine: #196881]
+	- 20240503@Kelvin: Change excuters login [RedmineID: #204744]
 
 Param's Explanation:     
 */
