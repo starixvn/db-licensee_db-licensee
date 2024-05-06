@@ -18,6 +18,7 @@ Revisions:
 	- 20200803@Sophia: add Saba Loyalty [Redmine: #138493]
 	- 20210203@Louis: Saba Red Envelope [RedmineID: #149923]
 	- 20241701@Evan: Integrate Saba Reward Risk-free Rebate + add missing bettype 17006 [RedmineID: #201886]
+	- 20240503@Kelvin: LAP - Player Administration - Statement - Missing data in Statement [RedmineID: #204744]
 	
 Param's Explanation:     
 */
@@ -25,7 +26,7 @@ RETURN (
 	SELECT orderkey, winlostdate, transtype, transdesc, turnover,TotalAmt,commission
 	FROM (
 		SELECT CAST(CAST(@FromDate AS DATE) AS SMALLDATETIME) AS FromDate
-			, DATEADD(MINUTE, -1, DATEADD(DAY, 1, CAST(CAST(@ToDate AS DATE) AS SMALLDATETIME))) AS ToDate
+			, DATEADD(DAY, 1, CAST(CAST(@ToDate AS DATE) AS SMALLDATETIME)) AS ToDate
 			, @CustID AS custid
 			, 0 AS BAL_KEY
 			, 2 AS VOID_KEY
@@ -59,7 +60,7 @@ RETURN (
 			FROM bodb_archive.dbo.bettrans_bk b (NOLOCK)
 			WHERE 
 				b.custid			= temp.custid
-				AND b.winlostdate	>= temp.FromDate AND b.winlostdate <= temp.ToDate
+				AND b.winlostdate	>= temp.FromDate AND b.winlostdate < temp.ToDate
 
 			GROUP BY
 				CASE 
@@ -82,7 +83,7 @@ RETURN (
 			FROM bodb_report.dbo.[Statement] rpt WITH (NOLOCK)  
 			WHERE 
 				rpt.custid = @CustID
-				AND rpt.accdate >= temp.FromDate AND rpt.accdate <= temp.ToDate 
+				AND rpt.accdate >= temp.FromDate AND rpt.accdate < temp.ToDate 
 				AND rpt.transtype IN ('BAL')  
 
 			-- transactions
@@ -97,7 +98,7 @@ RETURN (
 			FROM bodb_report.dbo.[Statement] rpt WITH (NOLOCK)  
 			WHERE 
 				rpt.custid = @CustID
-				AND rpt.accdate >= temp.FromDate AND rpt.accdate <= temp.ToDate 
+				AND rpt.accdate >= temp.FromDate AND rpt.accdate < temp.ToDate 
 				AND rpt.transtype NOT IN ('BAL', 'BET', 'COM')  
 		) AS rpt
 		GROUP BY 
