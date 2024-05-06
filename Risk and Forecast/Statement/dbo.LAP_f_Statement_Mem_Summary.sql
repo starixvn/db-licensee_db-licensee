@@ -72,8 +72,7 @@ FROM temp
 			FROM bodb_Archive.dbo.bettrans_bk b (NOLOCK)
 				LEFT JOIN cte_PromoBettypes s ON s.bettype = b.bettype
 			WHERE b.custid = temp.custid
-				AND b.winlostdate	>= temp.FromDate AND b.winlostdate < temp.ToDate
-				AND b.winlostdate <= temp.ToDate
+				AND b.winlostdate >= temp.FromDate AND b.winlostdate < temp.ToDate
 			GROUP BY CASE
 						 WHEN b.statusID IN (101, 102, 103) AND
 							 s.bettype IS NULL THEN 2 --> Void/Reject/Refund
@@ -97,7 +96,6 @@ FROM temp
 				 , 0
 			FROM bodb_Report.dbo.[Statement] rpt WITH (NOLOCK)
 			WHERE rpt.custid = @CustID
-				AND rpt.accdate >= temp.FromDate
 				AND rpt.accdate >= temp.FromDate AND rpt.accdate < temp.ToDate 
 				AND rpt.transtype IN ('BAL')
 
@@ -112,7 +110,6 @@ FROM temp
 				 , 0
 			FROM bodb_Report.dbo.[Statement] rpt WITH (NOLOCK)
 			WHERE rpt.custid = @CustID
-				AND rpt.accdate >= temp.FromDate
 				AND rpt.accdate >= temp.FromDate AND rpt.accdate < temp.ToDate 
 				AND rpt.transtype NOT IN ('BAL', 'BET', 'COM')
 		) AS rpt

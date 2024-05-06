@@ -132,6 +132,7 @@ BEGIN
 		FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH (NOLOCK)
 			INNER JOIN #shadowRealCust AS a ON p.custid = a.shadowCustId
 		WHERE p.winlostdate BETWEEN @tmpdate AND @tdate
+			AND p.sporttype = 0
 		GROUP BY p.custid
 		
 	END
@@ -169,6 +170,7 @@ BEGIN
 		FROM bodb_Report.dbo.rptDepWinlostByProduct_bk AS p WITH (NOLOCK)
 			INNER JOIN #shadowRealCust AS a ON p.custid = a.shadowCustId
 		WHERE p.winlostdate BETWEEN @fdate AND @tmpdate
+			AND p.sporttype = 0
 		GROUP BY p.custid
 	END
 
