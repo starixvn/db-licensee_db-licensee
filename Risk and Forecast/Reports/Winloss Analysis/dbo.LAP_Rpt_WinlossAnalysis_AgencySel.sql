@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="wsv_lap,wsv_alp" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE dbo.LAP_Rpt_WinlossAnalysis_AgencySel
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
@@ -16,7 +16,7 @@ ALTER PROCEDURE dbo.LAP_Rpt_WinlossAnalysis_AgencySel
 	@SpecialPlatform	TINYINT	= 0,
 
 	-- grouping
-	@IsViewCOOnly		BIT = 0,
+	@CashoutMode	TINYINT = 0,
 	@GroupMode		TINYINT = 1,
 	@BreakdownMode	TINYINT = 1,
 
@@ -43,12 +43,14 @@ AS
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240304@Evan: Grant execute new acc [RedmineID: #201283]
 		- 20240410@Eddie: change metadata 'bodbLicenseeNet,wsv_lap,wsv_alp' to 'wsv_lap,wsv_alp' [RedmineID: #202935]
+		- 20240506@Bobby: Cashout separation [RedmineID: #200269]
 		
 
 	Param's Explanation:
 		- @SortKey: 0:GroupBy, 1:BetCount, 2:Turnover, 3:NetTurnover, 4:MemWinloss, 5:MemComm, 6:LicWinloss, 7:LicComm, 8:AmtDueToBA, 9:BetEffective, 10:Margin
 		- @SortType: 0:ASC, 1:DESC
 		- @BettypeIds: <ROOT><Bettype pc="SB" bt="1,3,4,5"/><Bettype pc="VS" bt="1,3,4,5"/></ROOT>
+		- @CashoutMode: 0-include, 1-exclude, 2-view CO only
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -71,6 +73,7 @@ BEGIN
 		@BreakBy		TINYINT,
 		@IsExportExcel	BIT,
 		@BaseDate		SMALLDATETIME = '2000-01-01',
+		@CashoutModeCheck	TINYINT,
 		@IsViewCOOnlyCheck	BIT,
 		@BettypeIdsCheck	VARCHAR(MAX),
 		@NASporttype	SMALLINT = 0
@@ -93,7 +96,9 @@ BEGIN
 		@StatusCheck	= IIF(@StatusIds='ALL', '111,112,113,114,115', @StatusIds),
 		@LiveIds		= IIF(@LiveStatusIds='ALL', '0,1,2', @LiveStatusIds),
 		@PlatformCheck	= IIF(@PlatformIds IS NULL, 'ALL', @PlatformIds),
-		@IsViewCOOnlyCheck	= ISNULL(@IsViewCOOnly, 0),
+		--- Cashout Mode
+		@CashoutModeCheck	= ISNULL(@CashoutMode, 0),
+		@IsViewCOOnlyCheck	= IIF(@CashoutModeCheck = 2, 1, 0),
 		---- EXPORT
 		@IsExportExcel	= IIF(@PageIndex=0 AND @PageSize=0, 1, 0)
 		;
@@ -314,7 +319,8 @@ BEGIN
 					b.CustId,
 					s.bettype, s.GroupTypeId,
 					s.product3rdid,s.ProductId,
-					b.betfrom, b.statusId
+					b.betfrom, b.statusId,
+					IIF(s.ProductId = 1 AND s.EventType = 1 AND b.betdaqid = -2, 1, 0) AS TicketType
 					----------------------
 					,COUNT(1) AS BetCount
 					,SUM(ABS(b.stake)) AS Turnover
@@ -337,7 +343,8 @@ BEGIN
 					b.WinlostDate, e.Rate,
 					b.CustId,
 					s.bettype, s.GroupTypeId, s.product3rdid, s.ProductId,
-					b.betfrom, b.statusId
+					b.betfrom, b.statusId,
+					IIF(s.ProductId = 1 AND s.EventType = 1 AND b.betdaqid = -2, 1, 0)
 			)
 			INSERT INTO #rptData (GroupBy, BreakBy, ParentKey,
 				BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective
@@ -389,7 +396,8 @@ BEGIN
 							WHEN b.ProductId IN (1,63,69) THEN 0 
 							ELSE b.Product3rdID END AS Product3rdIdMix
 				) AS ck
-			
+			WHERE NOT (b.ProductId = 1 AND b.TicketType = 1 AND @CashoutModeCheck = 1) -- exclude CO from SB
+
 			GROUP BY 
 				CASE 
 					WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
@@ -519,6 +527,7 @@ BEGIN
 				AND (',' + @LiveIds + ',' LIKE '%,' + CAST(ck.liveindicator AS VARCHAR(3)) + ',%')
 				AND (ck.sporttype <> 0 AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ck.sporttype AS VARCHAR(10)) + ',%'))
 				AND (',' + @strProduct3rd + ',' LIKE '%,' + CAST(ck.Product3rdIdMix AS VARCHAR(3)) + ',%')
+				AND NOT (ck.Product3rdIdMix IN (0, 3) AND ba.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB & BA
 		
 			GROUP BY CASE 
 					WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
@@ -734,6 +743,7 @@ BEGIN
 						WHEN bt.IsPriceBettype > 0 THEN 0
 						ELSE 1
 					END
+			AND NOT (b.Product3rdId IN (0, 3) AND b.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB & BA
 
 		GROUP BY 
 			CASE 
