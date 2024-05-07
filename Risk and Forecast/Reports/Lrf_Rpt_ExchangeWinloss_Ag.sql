@@ -69,7 +69,7 @@ BEGIN
 		CustComm	MONEY,
 		AmountDueTo	MONEY,
 		AgentComm	MONEY,
-		Total		MONEY,
+		PlayerTotal	MONEY,
 		LicTotal	MONEY
 	)
 
@@ -338,7 +338,7 @@ BEGIN
 		CustComm,
 		--AmountDueTo,
 		AgentComm,
-		Total
+		PlayerTotal
 		--LicTotal
 		)
 	SELECT
@@ -357,7 +357,7 @@ BEGIN
 		--			ELSE - SUM((sumbet.Winlost + sumbet.CustComm) + (-sumbet.Winlost*(1-ISNULL(rate.Rate,1)) + sumbet.AgentComm)) -- (LicWL - NetLicWL) + (LicComm - NetLicComm)
 		--		END AS AmountDueTo 
 		, SUM(sumbet.AgentComm)
-		, SUM(sumbet.Winlost + sumbet.CustComm) Total
+		, SUM(sumbet.Winlost + sumbet.CustComm) PlayerTotal
 		--, SUM(-(sumbet.Winlost + sumbet.CustComm) * (1 - ISNULL(rate.Rate, 1)))  LicTotal -- Customer Total * (1- House's rate) 
 	FROM #sumBet sumbet
 		LEFT JOIN #detailBet bet ON sumbet.userId	= bet.userId 
@@ -410,7 +410,7 @@ BEGIN
 		, SUM(r.NetTurnover * e.Rate)	AS NetTurnOver
 		, SUM(r.WinLost * e.Rate)		AS Winlost
 		, SUM(r.CustComm * e.Rate)		AS CustComm
-		, SUM(r.Total * e.Rate)			AS Total
+		, SUM(r.PlayerTotal * e.Rate)	AS PlayerTotal
 		, SUM(r.LicWinLost * e.Rate)	AS LicenseeWinlost
 		--, SUM(r.AmountDueTo * e.Rate)	AS AmountDueTo
 		--, SUM(r.LicTotal * e.Rate)	AS LicTotal
@@ -419,7 +419,7 @@ BEGIN
 		, SUM(r.NetTurnover * e.USD)	AS NetTurnOverUSD
 		, SUM(r.WinLost * e.USD)		AS WinlostUSD
 		, SUM(r.CustComm * e.USD)		AS CustCommUSD
-		, SUM(r.Total * e.USD)			AS TotalUSD
+		, SUM(r.PlayerTotal * e.USD)	AS PlayerTotalUSD
 		, SUM(r.LicWinLost * e.USD)		AS LicenseeWinlostUSD
 		--, SUM(r.AmountDueTo * e.USD)	AS AmountDueToUSD
 		--, SUM(r.LicTotal * e.USD)		AS LicTotalUSD
@@ -428,7 +428,7 @@ BEGIN
 		, SUM(r.NetTurnover * e.EUR)	AS NetTurnOverEUR
 		, SUM(r.WinLost * e.EUR)		AS WinlostEUR
 		, SUM(r.CustComm * e.EUR)		AS CustCommEUR
-		, SUM(r.Total * e.EUR)			AS TotalEUR
+		, SUM(r.PlayerTotal * e.EUR)	AS PlayerTotalEUR
 		, SUM(r.LicWinLost * e.EUR)		AS LicenseeWinlostEUR
 		--, SUM(r.AmountDueTo * e.EUR)	AS AmountDueToEUR
 		--, SUM(r.LicTotal * e.EUR)		AS LicTotalEUR
@@ -437,7 +437,7 @@ BEGIN
 		, SUM(r.NetTurnover * e.GBP)	AS NetTurnOverGBP
 		, SUM(r.WinLost * e.GBP)		AS WinlostGBP
 		, SUM(r.CustComm * e.GBP)		AS CustCommGBP
-		, SUM(r.Total * e.GBP)			AS TotalGBP
+		, SUM(r.PlayerTotal * e.GBP)	AS PlayerTotalGBP
 		, SUM(r.LicWinLost * e.GBP)		AS LicenseeWinlostGBP
 		--, SUM(r.AmountDueTo * e.GBP)	AS AmountDueToGBP
 		--, SUM(r.LicTotal * e.GBP)		AS LicTotalGBP
@@ -446,7 +446,7 @@ BEGIN
 		, SUM(r.NetTurnover * e.DefaultRate)	AS NetTurnOverBase
 		, SUM(r.WinLost * e.DefaultRate)		AS WinlostBase
 		, SUM(r.CustComm * e.DefaultRate)		AS CustCommBase
-		, SUM(r.Total * e.DefaultRate)			AS TotalBase
+		, SUM(r.PlayerTotal * e.DefaultRate)	AS PlayerTotalBase
 		, SUM(r.LicWinLost * e.DefaultRate)		AS LicenseeWinlostBase
 		--, SUM(r.AmountDueTo * e.DefaultRate)	AS AmountDueToBase
 		--, SUM(r.LicTotal * e.DefaultRate)		AS LicTotalBase
