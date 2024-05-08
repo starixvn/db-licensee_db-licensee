@@ -6,7 +6,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportSummaryDetail]
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
-	@Debug			BIT				= 0,
 	@Liveindicator	INT				= 1,
 	@BaseCurrency	VARCHAR(12)		= ''
 AS
@@ -124,7 +123,7 @@ AS
 		- 20231213@Evan: Integrate Live22 [RedmineID: #197702]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only + Remove VS3 (old) [RedmineID: #199523]
 		- 20240308@Eddie: Integrate UU Slots and change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
-
+		- 20242503@Evan: Enhance code to avoid hardcode  [RedmineID: #199843]
 	Param's Explanation:
 		+ @Liveindicator: indicate that whether the report will get live data or not
 			+ 0: Non - Live data only
@@ -142,66 +141,99 @@ BEGIN
 
 	DECLARE @TempFromDate	DATETIME,
 			@TempToDate		DATETIME,
-			@sql			VARCHAR(MAX),
 			@FDate			SMALLDATETIME,
 			@TDate			SMALLDATETIME
 
 	--to Deal With Parameter Sniffing
 	SELECT	@FDate = @FromDate,
-			@TDate = @ToDate	
+			@TDate = @ToDate
 
-	SELECT	@sql = 'SET NOCOUNT ON  ' + CHAR(13)
-
-	--declare
-	SELECT	@sql = @sql + '--Declare variable:' + CHAR(13)
- 
-	SELECT	@sql = @sql + 'DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)' + CHAR(13)
-	SELECT	@sql = @sql + 'INSERT INTO @ExcludedBetType (ProductCode, BetType)' + CHAR(13)
-	SELECT	@sql = @sql + 'SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()' + CHAR(13)
+	--Declare variable:
+	DECLARE @ExcludedBetType TABLE (
+		  ProductCode VARCHAR(10)
+		, BetType INT
+	)
+	INSERT INTO @ExcludedBetType (ProductCode, BetType)
+	SELECT ProductCode
+		 , BetType
+	FROM Lrf_f_SelExcludedBetType()
 	
-	SELECT	@sql = @sql + 'DECLARE @TempAg TABLE (CustId INT, Currency INT)' + CHAR(13)
-						+ 'CREATE TABLE #tmpWinloss (winlostdate DATETIME, Currency INT, ProductCode VARCHAR(10), BetType INT, TurnOver MONEY, Winlost MONEY, LicenseeWL MONEY, Comm MONEY, PlayerComm MONEY, AmtDueTo3rd MONEY, Betcount INT)' + CHAR(13)
-						+ 'DECLARE @DocHandler INT' + CHAR(13)
+
+	-- 
+	DROP TABLE IF EXISTS #tmpWinloss
+	DROP TABLE IF EXISTS #TempExchange
+	DROP TABLE IF EXISTS #LicenseeList
+	DROP TABLE IF EXISTS #tmpBettype
+	DROP TABLE IF EXISTS #TempAg
+	
+	CREATE TABLE #TempAg (CustId INT, Currency INT)
+
+	CREATE CLUSTERED INDEX CIX_TempAg ON #TempAg (CustId);
+
+	CREATE TABLE #tmpWinloss (
+		  winlostdate DATETIME
+		, Currency INT
+		, ProductCode VARCHAR(10)
+		, BetType INT
+		, TurnOver MONEY
+		, Winlost MONEY
+		, LicenseeWL MONEY
+		, Comm MONEY
+		, PlayerComm MONEY
+		, AmtDueTo3rd MONEY
+		, Betcount INT
+	)
+	DECLARE @DocHandler INT
 
 	--insert agentIds to temp table
-	SELECT	@sql = @sql + 'BEGIN TRY' + CHAR(13)
-						+ 'EXEC sp_xml_preparedocument @DocHandler OUTPUT ,''' + CONVERT(VARCHAR(MAX), @AgentList) + '''' + CHAR(13)
-						+ 'INSERT INTO @TempAg (custID, currency)' + CHAR(13)
-						+ 'SELECT AgentId, Currency' + CHAR(13)
-						+ 'FROM OPENXML(@DocHandler, ''/ROOT/Agent'', 1) WITH (AgentId INT, Currency INT) AS Data' + CHAR(13)
-						+ 'EXEC sp_xml_removedocument @DocHandler' + CHAR(13)
-						+ 'END TRY' + CHAR(13)
-						+ 'BEGIN CATCH' + CHAR(13)
-						+ 'SELECT ErrCode = 100, ErrMsg = N''Parameter invalid.''' + CHAR(13)
-						+ 'RETURN' + CHAR(13)
-						+ 'END CATCH;' + CHAR(13)
-						+ 'CREATE TABLE #LicenseeList(LicenseeID INT, Currency INT)' + CHAR(13)
-						+ 'CREATE CLUSTERED INDEX IX_LicenseeList_cl ON #LicenseeList(LicenseeID, Currency)' + CHAR(13)
-						+ 'INSERT INTO #LicenseeList(LicenseeID, Currency)' + CHAR(13)
-						+ 'SELECT DISTINCT LicenseeID, Currency' + CHAR(13)
-						+ 'FROM bodb_licensee.dbo.LicenseeCust lc WITH(NOLOCK)' + CHAR(13)
-						+ 'WHERE EXISTS(' + CHAR(13)
-						+ '		   SELECT 1' + CHAR(13)
-						+ '		   FROM @TempAg t' + CHAR(13)
-						+ '		   WHERE t.CustId = lc.CustID' + CHAR(13)
-						+ '			   AND t.Currency = lc.Currency' + CHAR(13)
-						+ ')' + CHAR(13)
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT
+								  , @AgentList
+		INSERT INTO #TempAg (custID, currency)
+		SELECT AgentId
+			 , Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+	BEGIN CATCH
+		SELECT ErrCode = 100
+			 , ErrMsg = N'Parameter invalid.'
+		RETURN
+	END CATCH;
+
+	CREATE TABLE #LicenseeList (
+		  LicenseeID INT
+		, Currency INT
+	)
+	CREATE CLUSTERED INDEX IX_LicenseeList_cl ON #LicenseeList (LicenseeID, Currency)
+	INSERT INTO #LicenseeList (LicenseeID, Currency)
+	SELECT DISTINCT LicenseeID
+				  , Currency
+	FROM bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK)
+	WHERE EXISTS (
+			SELECT 1
+			FROM #TempAg t
+			WHERE t.CustId = lc.CustID
+				AND t.Currency = lc.Currency
+		)
 
 	IF @ProductCodes IS NULL
 		SET @ProductCodes = ''
 	
-	SELECT @ProductCodes = STRING_AGG(b.ProductPrefix, ',')
-	FROM (
-		SELECT DISTINCT ISNULL(b.ProductPrefix,a.Value) AS ProductPrefix
-		FROM STRING_SPLIT(@ProductCodes, ',') a
-			LEFT JOIN dbo.Lrf_f_GroupProduct() b ON a.Value = b.GroupProductPrefix
-	) b
-
-	CREATE TABLE #ProductCodes (ProductCode VARCHAR(10))
-
-	INSERT INTO #ProductCodes (ProductCode)
-	SELECT ISNULL(value,'')
-	FROM STRING_SPLIT(@ProductCodes,',')
+	DECLARE @SBBACheck TINYINT;
+	SELECT @SBBACheck = (POWER(2*1, 1)
+				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 2) 
+				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,BA,%' THEN 1 ELSE 0 END, 3))
+	
+	CREATE TABLE #tmpBettype ( Bettype INT, ProductCode VARCHAR(10), ProductID SMALLINT)
+	INSERT INTO #tmpBettype
+	SELECT a.Bettype, ISNULL(lf.GroupProductPrefix,IIF(a.ProductId IN (63,69),'SB',b.ProductPrefix)) AS ProductCode, a.ProductID
+	FROM dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductCodes,null,null,@SBBACheck) a
+	INNER JOIN dbo.Products b WITH(NOLOCK) ON a.ProductId = b.ProductID 
+	LEFT JOIN dbo.Lrf_f_GroupProduct() lf ON a.ProductId = lf.ProductId
+	WHERE NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = a.Bettype) AND a.Bettype <> 72
+			AND (a.bettype < 901 OR a.bettype > 904)
+			AND (a.bettype < 911 OR a.bettype > 914)
 
 	IF @TDate > @MoveBetsDay
 	BEGIN
@@ -210,261 +242,44 @@ BEGIN
 		ELSE
 			SET @TempFromDate = @FDate
 
-		--BA
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'BA'))
-		BEGIN
-			SELECT	@sql = @sql + '-- Get data from bettrans for BA' + CHAR(13)
-
-			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13) 
-								+ 'SELECT ' + CHAR(13) + 'b.winlostdate, ' + CHAR(13) + 't.currency,' + CHAR(13) 
-								+ '''BA'' AS ProductCode,' + CHAR(13)
-								+ 'b.bettype,' + CHAR(13) 
-								+ 'SUM(CASE WHEN b.bettype = 33 AND b.liveawayscore = 0 THEN stake/2 ELSE stake END) turnover,' + CHAR(13) 
-								+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13) + '0 AS LicenseeWL,' + CHAR(13) 
-								+ 'SUM (comm ) AS Comm,' + CHAR(13) + 'SUM (b.playercomm  ) AS PlayerComm,' + CHAR(13) 
-								+ '- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,  ' + CHAR(13) 
-								+ 'COUNT(b.transid) BetCount' + CHAR(13)
-								+ 'FROM bettrans b  WITH (NOLOCK)' + CHAR(13) 
-								+ 'INNER JOIN @TempAg t  ON b.recommend =t.custid AND b.Currency = t.Currency' + CHAR(13) 
-								+ 'INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid=ba.recommend and b.transid = ba.transid' + CHAR(13) 
-								+ 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13)
-								+ 'AND b.statusID IN (111,112,113)'  + CHAR(13)
-								+ 'AND b.bettype NOT IN (9,29,2799,901,902,903,904)'  + CHAR(13)
-								+ 'AND (b.bettype < 911 OR b.bettype > 914)'  + CHAR(13)
-								+ 'AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)'  + CHAR(13)
-								+ 'AND ((' + CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.liveindicator = 0)' + CHAR(13)
-								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.liveindicator = 1)' + CHAR(13)
-								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
-								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype' + CHAR(13)
-
-			--BA for parlay
-			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-								+ 'SELECT b.winlostdate, t.currency,' + CHAR(13)
-								+ '''BA'' AS ProductCode,' + CHAR(13)
-								+ 'b.bettype,' + CHAR(13)
-								+ 'SUM(stake) turnover,' + CHAR(13)
-								+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13)
-								+ '0 AS LicenseeWL,' + CHAR(13)
-								+ 'SUM (comm ) AS Comm,' + CHAR(13)
-								+ 'SUM (b.playercomm  ) AS PlayerComm,'+ CHAR(13)
-								+ '- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd  ,  ' + CHAR(13) 
-								+ 'COUNT(b.transid) BetCount' + CHAR(13)
-								+ 'FROM bettrans b  WITH (NOLOCK)' + CHAR(13) 
-								+ 'INNER JOIN @TempAg t  ON b.recommend =t.custid AND b.Currency = t.Currency' + CHAR(13) 
-								+ 'INNER JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid=ba.recommend and b.transid = ba.transid' + CHAR(13) 
-								+ 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13)
-								+ 'AND b.statusID IN (111,112,113)'  + CHAR(13)
-								+ 'AND b.bettype IN (9,29,2799)'  + CHAR(13)
-								+ 'AND ((' + CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.livehomescore = 0)' + CHAR(13)
-								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.livehomescore = 1)' + CHAR(13)
-								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
-								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype' + CHAR(13)
-		END
-
-		--Not BA, -- exclude PP Prize 4300, 4299, 4298, 4297, 1906
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'VS2', 'LG', 'KN', 'CS', 'VB', 'AB', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'SLT', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG', 'SEA', 'WE', 'L22', 'UUSL'))
-		BEGIN
-			SELECT	@sql = @sql + '--Get data from bettrans for non - BA' + CHAR(13)
-
-			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-								+ 'SELECT b.winlostdate, t.currency, '
-								+ 'CASE' + CHAR(13)
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SB')) = 1 THEN 'WHEN b.bettype <= 30 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 OR b.Bettype BETWEEN 9001 and 9399 OR b.Bettype BETWEEN 9400 and 9998 OR b.Bettype BETWEEN 3900 AND 3999 OR b.Bettype = 38 THEN ''SB''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','NG')) = 1 THEN 'WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN ''NG''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','KN')) = 1 THEN 'WHEN b.bettype BETWEEN 1501 AND 1599 THEN ''KN''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CS')) = 1 THEN 'WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN ''CS''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VB')) = 1 THEN 'WHEN (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) THEN ''VB''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AB')) = 1 THEN 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN ''AB''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','LT')) = 1 THEN 'WHEN b.bettype BETWEEN 1021 AND 1099 THEN ''LT''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','PP')) = 1 THEN 'WHEN b.bettype BETWEEN 4101 AND 4296 OR b.bettype BETWEEN 6701 AND 7000 THEN ''PP''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CC')) = 1 THEN 'WHEN b.bettype BETWEEN 1901 AND 1999 THEN ''CC''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SG')) = 1 THEN 'WHEN b.bettype BETWEEN 4301 AND 4600 THEN ''SG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VRG')) = 1 THEN 'WHEN b.bettype BETWEEN 4601 AND 4900 THEN ''VRG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','TG')) = 1 THEN 'WHEN b.bettype BETWEEN 4901 AND 5000 THEN ''TG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','I4D')) = 1 THEN 'WHEN b.bettype BETWEEN 5001 AND 5099 THEN ''I4D''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SXG')) = 1 THEN 'WHEN b.bettype BETWEEN 3101 AND 3149 THEN ''SXG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SBC')) = 1 THEN 'WHEN (b.bettype BETWEEN 1611 AND 1697) AND b.matchid <> 150 THEN ''SBC''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SAG')) = 1 THEN 'WHEN b.bettype BETWEEN 3001 AND 3099 THEN ''SAG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','PGS')) = 1 THEN 'WHEN b.bettype BETWEEN 6001 AND 6300 THEN ''PGS''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','JK')) = 1 THEN 'WHEN b.bettype BETWEEN 6401 AND 6700 THEN ''JK''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SLT')) = 1 THEN 'WHEN b.bettype BETWEEN 3611 AND 3620 THEN ''SB''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','HB')) = 1 THEN 'WHEN b.bettype BETWEEN 7001 AND 7300 THEN ''HB''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','WM')) = 1 THEN 'WHEN b.bettype BETWEEN 3401 AND 3499 THEN ''WM''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BGG')) = 1 THEN 'WHEN b.bettype BETWEEN 3501 AND 3599 THEN ''BGG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VGA')) = 1 THEN 'WHEN (b.bettype BETWEEN 3801 AND 3899) AND b.matchid <> 173 THEN ''VGA''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CG')) = 1 THEN 'WHEN b.bettype BETWEEN 7301 AND 7600 THEN ''CG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AP')) = 1 THEN 'WHEN b.bettype BETWEEN 7701 AND 7799 THEN ''AP''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','APM')) = 1 THEN 'WHEN b.bettype BETWEEN 7801 AND 7899 THEN ''APM''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BTC')) = 1 THEN 'WHEN b.bettype BETWEEN 7901 AND 7999 THEN ''SB''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','FGGL')) = 1 THEN 'WHEN b.bettype BETWEEN 8201 AND 8299 THEN ''FGGL''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MXG')) = 1 THEN 'WHEN b.bettype BETWEEN 5401 AND 5499 THEN ''MXG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','JIG')) = 1 THEN 'WHEN b.bettype BETWEEN 5100 AND 5299 THEN ''JIG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','YB')) = 1 THEN 'WHEN b.bettype BETWEEN 3151 AND 3200 THEN ''YB''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MGRNG')) = 1 THEN 'WHEN b.bettype BETWEEN 8400 AND 8699 THEN ''MGRNG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS')) = 1 THEN 'WHEN (b.bettype BETWEEN 1201 AND 1299) OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) OR (b.bettype BETWEEN 5302 AND 5399) THEN ''VS''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SEA')) = 1 THEN 'WHEN b.bettype BETWEEN 8900 AND 8999 THEN ''SEA''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','WE')) = 1 THEN 'WHEN b.bettype BETWEEN 10300 AND 10399 THEN ''WE''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','L22')) = 1 THEN 'WHEN b.bettype BETWEEN 7601 AND 7700 THEN ''L22''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','UUSL')) = 1 THEN 'WHEN b.bettype BETWEEN 10000 AND 10299 THEN ''UUSL''' + CHAR(13) ELSE '' END
-								+ 'END AS ProductCode,' + CHAR(13)
-								+ 'b.bettype,' + CHAR(13)
-								+ 'SUM(stake) turnover,' + CHAR(13)
-								+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13)
-								+ '- SUM(b.winlost - b.actual_stake) AS LicenseeWL,' + CHAR(13)
-								+ 'SUM(comm) AS Comm,' + CHAR(13)
-								+ 'SUM(b.playercomm) AS PlayerComm,' + CHAR(13)
-								+ '- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd, ' + CHAR(13)
-								+ 'COUNT(b.transid) BetCount' + CHAR(13)
-								+ 'FROM bettrans b  WITH (NOLOCK)' + CHAR(13)
-								+ 'INNER JOIN @TempAg t  ON b.recommend = t.custid AND b.Currency = t.Currency ' + CHAR(13)
-								+ 'LEFT JOIN dbo.match m WITH (NOLOCK) ON b.matchID=m.matchID' + CHAR(13)
-								+ 'LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid=ba.recommend and  b.transid = BA.transid' + CHAR(13)
-								+ 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13)
-								+ 'AND b.Bettype <= 19999' + CHAR(13)
-								+ 'AND b.statusID IN (111,112,113)' + CHAR(13)
-								+ 'AND b.bettype NOT IN (9,29,2799,901,902,903,904,1700,1800,1900,18000)' + CHAR(13)
-								+ 'AND (b.bettype < 911 OR b.bettype > 914)' + CHAR(13)
-								+ 'AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)'  + CHAR(13)
-								+ 'AND ((' + CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.liveindicator = 0)' + CHAR(13)
-								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.liveindicator = 1)' + CHAR(13)
-								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
-								+ 'AND BA.transid IS NULL' + CHAR(13) + 'AND (1 <> 1' + CHAR(13)
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SB')) = 1 THEN 'OR (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399) OR (b.Bettype BETWEEN 9001 and 9399) OR (b.Bettype BETWEEN 9400 and 9998) OR (b.Bettype BETWEEN 3900 and 3999) OR b.Bettype = 38)' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','NG')) = 1 THEN 'OR (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) '+ CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','KN')) = 1 THEN 'OR b.bettype BETWEEN 1501 AND 1599' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CS')) = 1 THEN 'OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999)' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VB')) = 1 THEN 'OR (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999)' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AB')) = 1 THEN 'OR b.bettype BETWEEN 2401 AND 2499' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','LT')) = 1 THEN 'OR b.bettype BETWEEN 1021 AND 1099' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','PP')) = 1 THEN 'OR b.bettype BETWEEN 4101 AND 4296 OR b.bettype BETWEEN 6701 AND 7000' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CC')) = 1 THEN 'OR b.bettype BETWEEN 1901 AND 1999' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SG')) = 1 THEN 'OR b.bettype BETWEEN 4301 AND 4600' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VRG')) = 1 THEN 'OR b.bettype BETWEEN 4601 AND 4900' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','TG')) = 1 THEN 'OR b.bettype BETWEEN 4901 AND 5000' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','I4D')) = 1 THEN 'OR b.bettype BETWEEN 5001 AND 5099' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SXG')) = 1 THEN 'OR b.bettype BETWEEN 3101 AND 3149' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SBC')) = 1 THEN 'OR (b.bettype BETWEEN 1611 AND 1697 AND b.matchid <> 150)' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SAG')) = 1 THEN 'OR b.bettype BETWEEN 3001 AND 3099' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','PGS')) = 1 THEN 'OR b.bettype BETWEEN 6001 AND 6300' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','JK')) = 1 THEN 'OR b.bettype BETWEEN 6401 AND 6700' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SLT')) = 1 THEN 'OR b.bettype BETWEEN 3611 AND 3620' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','HB')) = 1 THEN 'OR b.bettype BETWEEN 7001 AND 7300' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','WM')) = 1 THEN 'OR b.bettype BETWEEN 3401 AND 3499' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BGG')) = 1 THEN 'OR b.bettype BETWEEN 3501 AND 3599' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VGA')) = 1 THEN 'OR (b.bettype BETWEEN 3801 AND 3899 AND b.matchid <> 173)' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CG')) = 1 THEN 'OR b.bettype BETWEEN 7301 AND 7600' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AP')) = 1 THEN 'OR b.bettype BETWEEN 7701 AND 7799' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','APM')) = 1 THEN 'OR b.bettype BETWEEN 7801 AND 7899' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BTC')) = 1 THEN 'OR b.bettype BETWEEN 7901 AND 7999' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','FGGL')) = 1 THEN 'OR b.bettype BETWEEN 8201 AND 8299' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MXG')) = 1 THEN 'OR b.bettype BETWEEN 5401 AND 5499' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','JIG')) = 1 THEN 'OR b.bettype BETWEEN 5100 AND 5299' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','YB')) = 1 THEN 'OR b.bettype BETWEEN 3151 AND 3200' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MGRNG')) = 1 THEN 'OR b.bettype BETWEEN 8400 AND 8699' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS')) = 1 THEN 'OR (b.bettype BETWEEN 1201 AND 1299) OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) OR (b.bettype BETWEEN 5302 AND 5399)' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SEA')) = 1 THEN 'OR b.bettype BETWEEN 8900 AND 8999' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','WE')) = 1 THEN 'OR b.bettype BETWEEN 10300 AND 10399' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','L22')) = 1 THEN 'OR b.bettype BETWEEN 7601 AND 7700' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','UUSL')) = 1 THEN 'OR b.bettype BETWEEN 10000 AND 10299' + CHAR(13) ELSE '' END
-								+ ') ' + CHAR(13)
-								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype,' + CHAR(13)
-								+ 'CASE' + CHAR(13)		
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SB')) = 1 THEN 'WHEN b.bettype <= 30 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 OR b.Bettype BETWEEN 9001 and 9399 OR b.Bettype BETWEEN 9400 and 9998 OR b.Bettype BETWEEN 3900 AND 3999 OR b.Bettype = 38 THEN ''SB''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','NG')) = 1 THEN 'WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN ''NG''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','KN')) = 1 THEN 'WHEN b.bettype BETWEEN 1501 AND 1599 THEN ''KN''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CS')) = 1 THEN 'WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN ''CS''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VB')) = 1 THEN 'WHEN (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) THEN ''VB''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AB')) = 1 THEN 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN ''AB''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','LT')) = 1 THEN 'WHEN b.bettype BETWEEN 1021 AND 1099 THEN ''LT''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','PP')) = 1 THEN 'WHEN b.bettype BETWEEN 4101 AND 4296 OR b.bettype BETWEEN 6701 AND 7000 THEN ''PP''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CC')) = 1 THEN 'WHEN b.bettype BETWEEN 1901 AND 1999 THEN ''CC''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SG')) = 1 THEN 'WHEN b.bettype BETWEEN 4301 AND 4600 THEN ''SG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VRG')) = 1 THEN 'WHEN b.bettype BETWEEN 4601 AND 4900 THEN ''VRG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','TG')) = 1 THEN 'WHEN b.bettype BETWEEN 4901 AND 5000 THEN ''TG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','I4D')) = 1 THEN 'WHEN b.bettype BETWEEN 5001 AND 5099 THEN ''I4D''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SXG')) = 1 THEN 'WHEN b.bettype BETWEEN 3101 AND 3149 THEN ''SXG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SBC')) = 1 THEN 'WHEN (b.bettype BETWEEN 1611 AND 1697) AND b.matchid <> 150 THEN ''SBC''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SAG')) = 1 THEN 'WHEN b.bettype BETWEEN 3001 AND 3099 THEN ''SAG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','PGS')) = 1 THEN 'WHEN b.bettype BETWEEN 6001 AND 6300 THEN ''PGS''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','JK')) = 1 THEN 'WHEN b.bettype BETWEEN 6401 AND 6700 THEN ''JK''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SLT')) = 1 THEN 'WHEN b.bettype BETWEEN 3611 AND 3620 THEN ''SB''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','HB')) = 1 THEN 'WHEN b.bettype BETWEEN 7001 AND 7300 THEN ''HB''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','WM')) = 1 THEN 'WHEN b.bettype BETWEEN 3401 AND 3499 THEN ''WM''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BGG')) = 1 THEN 'WHEN b.bettype BETWEEN 3501 AND 3599 THEN ''BGG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VGA')) = 1 THEN 'WHEN (b.bettype BETWEEN 3801 AND 3899) AND b.matchid <> 173 THEN ''VGA''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CG')) = 1 THEN 'WHEN b.bettype BETWEEN 7301 AND 7600 THEN ''CG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AP')) = 1 THEN 'WHEN b.bettype BETWEEN 7701 AND 7799 THEN ''AP''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','APM')) = 1 THEN 'WHEN b.bettype BETWEEN 7801 AND 7899 THEN ''APM''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BTC')) = 1 THEN 'WHEN b.bettype BETWEEN 7901 AND 7999 THEN ''SB''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','FGGL')) = 1 THEN 'WHEN b.bettype BETWEEN 8201 AND 8299 THEN ''FGGL''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MXG')) = 1 THEN 'WHEN b.bettype BETWEEN 5401 AND 5499 THEN ''MXG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','JIG')) = 1 THEN 'WHEN b.bettype BETWEEN 5100 AND 5299 THEN ''JIG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','YB')) = 1 THEN 'WHEN b.bettype BETWEEN 3151 AND 3200 THEN ''YB''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MGRNG')) = 1 THEN 'WHEN b.bettype BETWEEN 8400 AND 8699 THEN ''MGRNG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS')) = 1 THEN 'WHEN (b.bettype BETWEEN 1201 AND 1299) OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) OR (b.bettype BETWEEN 5302 AND 5399) THEN ''VS''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SEA')) = 1 THEN 'WHEN b.bettype BETWEEN 8900 AND 8999 THEN ''SEA''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','WE')) = 1 THEN 'WHEN b.bettype BETWEEN 10300 AND 10399 THEN ''WE''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','L22')) = 1 THEN 'WHEN b.bettype BETWEEN 7601 AND 7700 THEN ''L22''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','UUSL')) = 1 THEN 'WHEN b.bettype BETWEEN 10000 AND 10299 THEN ''UUSL''' + CHAR(13) ELSE '' END
-
-								+ 'END' + CHAR(13)
-
-			--SB for parlay
-			IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SB'))
-			BEGIN
-				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-									+ 'SELECT b.winlostdate, t.currency,' + CHAR(13)
-									+ '''SB'' AS ProductCode,' + CHAR(13)
-									+ 'b.bettype,' + CHAR(13)
-									+ 'SUM(stake) turnover,' + CHAR(13)
-									+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13)
-									+ 'SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,' + CHAR(13)
-									+ 'SUM (comm) AS Comm,' + CHAR(13)
-									+ 'SUM (b.playercomm) AS PlayerComm,' + CHAR(13)
-									+ '- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd, ' + CHAR(13)
-									+ 'COUNT(b.transid) BetCount' + CHAR(13)
-									+ 'FROM bettrans b  WITH (NOLOCK)' + CHAR(13)
-									+ 'INNER JOIN @TempAg t  ON b.recommend =t.custid AND b.Currency = t.Currency ' + CHAR(13)
-									+ 'LEFT JOIN dbo.match m WITH (NOLOCK) ON b.matchID = m.matchID' + CHAR(13)
-									+ 'LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid=ba.recommend and  b.transid = BA.transid' + CHAR(13)
-									+ 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13)
-									+ 'AND b.statusID IN (111,112,113)' + CHAR(13)
-									+ 'AND b.bettype IN (9,29)' + CHAR(13)
-									+ 'AND ((' + CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.livehomescore = 0)' + CHAR(13)
-									+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.livehomescore = 1)' + CHAR(13)
-									+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
-									+ 'AND BA.transid IS NULL' + CHAR(13)								
-								+ 'GROUP BY  b.winlostdate, t.currency, b.bettype	' + CHAR(13)
+		INSERT INTO #tmpWinloss (winlostdate, Currency, ProductCode, BetType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
+		SELECT b.winlostdate
+				, t.currency
+				, CASE WHEN s.IsBA = 1 THEN 'BA' ELSE bt.ProductCode END AS ProductCode
+				, b.bettype
+				, SUM(CASE WHEN b.bettype = 33 AND b.liveawayscore = 0 THEN stake / 2 ELSE stake END)
+				, SUM(b.winlost - b.actual_stake) AS Winlost
+				, - SUM(CASE WHEN s.IsBA = 1 THEN 0 ELSE (b.winlost - b.actual_stake) END) AS LicenseeWL
+				, SUM(
+				comm) AS Comm
+				, SUM(b.playercomm) AS PlayerComm
+				, -SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd
+				, COUNT(b.TransId) BetCount
+		FROM bettrans b WITH (NOLOCK)
+			INNER JOIN #TempAg t ON b.recommend = t.custid
+			INNER JOIN #tmpBettype bt ON b.bettype = bt.Bettype
+			LEFT JOIN bodb_licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid = BA.recommend AND b.TransId = BA.TransId
+			OUTER APPLY
+			(
+				SELECT	CASE WHEN BA.TransID IS NOT NULL THEN 1 ELSE 0 END AS IsBA,
+						ISNULL(CASE WHEN b.bettype IN (9,29,2799) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
+			) s
+		WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
+			AND b.statusID IN (111, 112, 113)
+			AND (s.liveindicator = @Liveindicator OR @Liveindicator = 2)
+			AND 1 = CASE WHEN @SBBACheck = 6 AND s.IsBA = 1 THEN 0 
+						 WHEN @SBBACheck = 10 AND s.IsBA = 0 THEN 0
+					ELSE 1 END
+			AND 1 = CASE
+				WHEN b.bettype BETWEEN 1611 AND 1697 AND b.matchid = 150 THEN 0
+				WHEN b.bettype BETWEEN 3801 AND 3899 AND b.matchid = 173 THEN 0
+				ELSE 1 
 			END
-
-			-- Parlay of BetRadar
-			IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'VS2'))
-			BEGIN
-				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-									+ 'SELECT b.winlostdate, t.currency,' + CHAR(13)
-									+ '''VS'' AS ProductCode,' + CHAR(13)
-									+ 'b.bettype,' + CHAR(13)
-									+ 'SUM(stake) turnover,' + CHAR(13)
-									+ 'SUM(b.winlost - b.actual_stake) AS Winlost,' + CHAR(13)
-									+ 'SUM(-1 * (b.winlost - b.actual_stake)) AS LicenseeWL,' + CHAR(13)
-									+ 'SUM (comm) AS Comm,' + CHAR(13)
-									+ 'SUM (b.playercomm) AS PlayerComm,' + CHAR(13)
-									+ '- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd, ' + CHAR(13)
-									+ 'COUNT(b.transid) BetCount' + CHAR(13)
-									+ 'FROM bettrans b  WITH (NOLOCK)' + CHAR(13)
-									+ 'INNER JOIN @TempAg t  ON b.recommend =t.custid AND b.Currency = t.Currency ' + CHAR(13)
-									+ 'LEFT JOIN dbo.match m WITH (NOLOCK) ON b.matchID = m.matchID' + CHAR(13)
-									+ 'LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON t.custid=ba.recommend and  b.transid = BA.transid' + CHAR(13)
-									+ 'WHERE b.winlostdate BETWEEN ''' + convert(VARCHAR(10), @TempFromDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TDate, 120) + '''' + CHAR(13)
-									+ 'AND b.statusID IN (111,112,113)' + CHAR(13)
-									+ 'AND b.bettype IN (2799)' + CHAR(13)
-									+ 'AND ((' + CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.livehomescore = 0)' + CHAR(13)
-									+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.livehomescore = 1)' + CHAR(13)
-									+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
-									+ 'AND BA.transid IS NULL' + CHAR(13)									
-									+ 'GROUP BY  b.winlostdate, t.currency, b.bettype	' + CHAR(13)
-			END
-		END
+		GROUP BY b.winlostdate
+				, t.currency
+				, CASE WHEN s.IsBA = 1 THEN 'BA' ELSE bt.ProductCode END
+				, b.bettype
+			
 	END
 
 	IF @FDate <= @MoveBetsDay
@@ -475,300 +290,180 @@ BEGIN
 			SET @TempToDate = @TDate
 
 		--BA
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'BA'))
+		IF ',' + @ProductCodes + ',' LIKE '%,BA,%'
 		BEGIN
-			SELECT	@sql = @sql + '--Get data from rpt_Betting_BA for BA' + CHAR(13)
+			--Get data from rpt_Betting_BA for BA
+			INSERT INTO #tmpWinloss (winlostdate, Currency, ProductCode, BetType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
+			SELECT b.rptDate
+				 , b.CurrencyID
+				 , 'BA' AS ProductCode
+				 , b.bettype
+				 , SUM(b.turnover) turnover
+				 , SUM(b.WinLoss) winlost
+				 , 0 AS LicenseeWL
+				 , SUM(CommissionA) AS Comm
+				 , SUM(CommissionP) AS PlayerComm
+				 , -SUM(b.WinLoss + b.WinLossA + b.CommissionA) AmountDueTo3rd
+				 , SUM(b.betcount) BetCount
+			FROM bodb_LicenseeReport.dbo.rpt_Betting_BA b WITH (NOLOCK)
+				INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency
+			WHERE b.rptDate BETWEEN @FDate AND @TempToDate
+				AND b.status NOT IN (-1, 103)
+				AND b.bettype NOT IN (9, 29)
+				AND (b.bettype < 901 OR b.bettype > 904)
+				AND (b.bettype < 911 OR b.bettype > 914)
+				AND NOT EXISTS (
+					SELECT 1
+					FROM @ExcludedBetType e
+					WHERE e.BetType = b.BetType
+				)
+				AND (b.IsLive = @Liveindicator OR @Liveindicator = 2) 
+			GROUP BY b.rptDate
+				   , b.CurrencyID
+				   , b.bettype
+		
+			--Get data from rpt_BettingParlay for BA
+			INSERT INTO #tmpWinloss (winlostdate, Currency, ProductCode, BetType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
+			SELECT b.rptDate
+				 , b.CurrencyID
+				 , 'BA' AS ProductCode
+				 , b.bettype
+				 , SUM(b.turnover) turnover
+				 , SUM(b.WinLoss) winlost
+				 , 0 AS LicenseeWL
+				 , SUM(CommissionA) AS Comm
+				 , SUM(CommissionP) AS PlayerComm
+				 , -SUM(b.WinLoss + b.WinLossA + b.CommissionA) AmountDueTo3rd
+				 , SUM(b.betcount) BetCount
+			FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH (NOLOCK)
+				INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID
+					AND b.CurrencyID = l.Currency
+			WHERE b.rptDate BETWEEN @FDate AND @TempToDate
+				AND b.status NOT IN (-1, 103)
+				AND b.bettype IN (9, 29)
+				AND b.isBA = 1
+				AND (b.IsLive = @Liveindicator OR @Liveindicator = 2) 
+			GROUP BY b.rptDate
+				   , b.CurrencyID
+				   , b.bettype
 
-			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-								+ 'SELECT b.rptDate, b.currencyID,'
-								+ '''BA'' AS ProductCode,' + CHAR(13)
-								+ 'b.bettype,' + CHAR(13)
-								+ 'SUM(b.turnover) turnover,' + CHAR(13)
-								+ 'SUM(b.winloss) winlost,' + CHAR(13)
-								+ '0 AS LicenseeWL,' + CHAR(13)
-								+ 'SUM (CommissionA) as Comm,'+ CHAR(13)
-								+ 'SUM (CommissionP) as PlayerComm,' + CHAR(13)
-								+ '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
-								+ 'SUM(b.betcount) BetCount' + CHAR(13)
-								+ 'FROM bodb_licenseereport.dbo.rpt_Betting_BA b WITH ( NOLOCK )' + CHAR(13)
-								+ 'INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency' + CHAR(13)
-								+ 'WHERE b.rptDate BETWEEN ''' + CONVERT(VARCHAR(10), @FDate, 120) + ''' AND ''' + CONVERT(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
-								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
-								+ 'AND b.bettype NOT IN (9,29,2799,901,902,903,904)' + CHAR(13)
-								+ 'AND (b.bettype < 911 OR b.bettype > 914)' + CHAR(13)
-								+ 'AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)'  + CHAR(13)
-								+ 'AND ((' + CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
-								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
-								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
-								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
-
-			SELECT	@sql = @sql + '--Get data from rpt_BettingParlay for BA' + CHAR(13)
-
-			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-								+ 'SELECT b.rptDate, b.currencyID,' + CHAR(13)
-								+ '''BA'' AS ProductCode,' + CHAR(13)
-								+ 'b.bettype,' + CHAR(13)
-								+ 'SUM(b.turnover) turnover,' + CHAR(13)
-								+ 'SUM(b.winloss) winlost,' + CHAR(13)
-								+ '0 AS LicenseeWL,' + CHAR(13)
-								+ 'SUM (CommissionA) as Comm,' + CHAR(13)
-								+ 'SUM (CommissionP) as PlayerComm,' + CHAR(13)
-								+ '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
-								+ 'SUM(b.betcount) BetCount' + CHAR(13)
-								+ 'FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH (NOLOCK)' + CHAR(13)
-								+ 'INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency' + CHAR(13)
-								+ 'WHERE b.rptDate BETWEEN ''' + CONVERT(VARCHAR(10), @FDate, 120) + ''' AND ''' + CONVERT(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
-								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
-								+ 'AND b.bettype IN (9,29,2799)' + CHAR(13)
-								+ 'AND b.isBA = 1' + CHAR(13)
-								+ 'AND ((' + CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
-								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
-								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
-								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
 		END
 
 		--Not BA, -- exclude PP Prize 4300, 4299, 4298, 4297
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'VS2', 'LG', 'KN', 'CS', 'VB', 'AB', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'SLT', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG', 'SEA', 'WE', 'L22', 'UUSL'))
-		BEGIN
-			SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-								+ 'SELECT b.rptDate, b.currencyID,' + CHAR(13)
-								+ 'CASE' + CHAR(13)
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SB')) = 1 THEN 'WHEN b.bettype <= 30 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 OR b.Bettype BETWEEN 9001 and 9399 OR b.Bettype BETWEEN 9400 and 9998 OR b.Bettype BETWEEN 3900 AND 3999 OR b.Bettype = 38 THEN ''SB''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','NG')) = 1 THEN 'WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN ''NG''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','KN')) = 1 THEN 'WHEN b.bettype BETWEEN 1501 AND 1599 THEN ''KN''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CS')) = 1 THEN 'WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN ''CS''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VB')) = 1 THEN 'WHEN (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) THEN ''VB''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AB')) = 1 THEN 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN ''AB''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','LT')) = 1 THEN 'WHEN b.bettype BETWEEN 1021 AND 1099 THEN ''LT''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','PP')) = 1 THEN 'WHEN b.bettype BETWEEN 4101 AND 4296 OR b.bettype BETWEEN 6701 AND 7000 THEN ''PP''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CC')) = 1 THEN 'WHEN b.bettype BETWEEN 1901 AND 1999 THEN ''CC''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SG')) = 1 THEN 'WHEN b.bettype BETWEEN 4301 AND 4600 THEN ''SG''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VRG')) = 1 THEN 'WHEN b.bettype BETWEEN 4601 AND 4900 THEN ''VRG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','TG')) = 1 THEN 'WHEN b.bettype BETWEEN 4901 AND 5000 THEN ''TG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','I4D')) = 1 THEN 'WHEN b.bettype BETWEEN 5001 AND 5099 THEN ''I4D''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SXG')) = 1 THEN 'WHEN b.bettype BETWEEN 3101 AND 3149 THEN ''SXG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SBC')) = 1 THEN 'WHEN (b.bettype BETWEEN 1611 AND 1697) AND b.TicketType <> 2 THEN ''SBC''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SAG')) = 1 THEN 'WHEN b.bettype BETWEEN 3001 AND 3099 THEN ''SAG''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','PGS')) = 1 THEN 'WHEN b.bettype BETWEEN 6001 AND 6300 THEN ''PGS''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','JK')) = 1 THEN 'WHEN b.bettype BETWEEN 6401 AND 6700 THEN ''JK''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SLT')) = 1 THEN 'WHEN b.bettype BETWEEN 3611 AND 3620 THEN ''SB''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','HB')) = 1 THEN 'WHEN b.bettype BETWEEN 7001 AND 7300 THEN ''HB''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','WM')) = 1 THEN 'WHEN b.bettype BETWEEN 3401 AND 3499 THEN ''WM''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BGG')) = 1 THEN 'WHEN b.bettype BETWEEN 3501 AND 3599 THEN ''BGG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VGA')) = 1 THEN 'WHEN (b.bettype BETWEEN 3801 AND 3899) AND b.TicketType <> 2 THEN ''VGA''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CG')) = 1 THEN 'WHEN b.bettype BETWEEN 7301 AND 7600 THEN ''CG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AP')) = 1 THEN 'WHEN b.bettype BETWEEN 7701 AND 7799 THEN ''AP''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','APM')) = 1 THEN 'WHEN b.bettype BETWEEN 7801 AND 7899 THEN ''APM''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BTC')) = 1 THEN 'WHEN b.bettype BETWEEN 7901 AND 7999 THEN ''SB''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','FGGL')) = 1 THEN 'WHEN b.bettype BETWEEN 8201 AND 8299 THEN ''FGGL''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MXG')) = 1 THEN 'WHEN b.bettype BETWEEN 5401 AND 5499 THEN ''MXG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','JIG')) = 1 THEN 'WHEN b.bettype BETWEEN 5100 AND 5299 THEN ''JIG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','YB')) = 1 THEN 'WHEN b.bettype BETWEEN 3151 AND 3200 THEN ''YB''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MGRNG')) = 1 THEN 'WHEN b.bettype BETWEEN 8400 AND 8699 THEN ''MGRNG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS')) = 1 THEN 'WHEN (b.bettype BETWEEN 1201 AND 1299) OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) OR (b.bettype BETWEEN 5302 AND 5399) THEN ''VS''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SEA')) = 1 THEN 'WHEN b.bettype BETWEEN 8900 AND 8999 THEN ''SEA''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','WE')) = 1 THEN 'WHEN b.bettype BETWEEN 10300 AND 10399 THEN ''WE''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','L22')) = 1 THEN 'WHEN b.bettype BETWEEN 7601 AND 7700 THEN ''L22''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','UUSL')) = 1 THEN 'WHEN b.bettype BETWEEN 10000 AND 10299 THEN ''UUSL''' + CHAR(13) ELSE '' END
-								+ 'END AS ProductCode,' + CHAR(13)
-								+ 'b.bettype,' + CHAR(13)
-								+ 'SUM(b.turnover) turnover,' + CHAR(13)
-								+ 'SUM(b.winloss) winlost,' + CHAR(13)
-								+ '- SUM(b.winloss) AS LicenseeWL,' + CHAR(13)
-								+ 'SUM(b.CommissionA) Comm,' + CHAR(13) + 'sum( b.CommissionP ) PlayerComm,' + CHAR(13)
-								+ '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
-								+ 'SUM(b.betcount) BetCount' + CHAR(13)
-								+ 'FROM bodb_licenseereport.dbo.rpt_Betting b WITH ( NOLOCK )' + CHAR(13)
-								+ 'INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency' + CHAR(13)
-								+ 'WHERE b.rptDate BETWEEN ''' + CONVERT(VARCHAR(10), @FDate, 120) + ''' AND ''' + CONVERT(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
-								+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
-								+ 'AND b.bettype NOT IN (9,29,2799,1700,1800,1900,901,902,903,904,18000)' + CHAR(13)
-								+ 'AND (b.bettype < 911 OR b.bettype > 914)' + CHAR(13)
-								+ 'AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)'  + CHAR(13)
-								+ 'AND b.CustomerCategory IN (-1, 1001, 1003)' + CHAR(13)
-								+ 'AND ((' + CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
-								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
-								+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)
-								+ 'AND (1 <> 1' + CHAR(13)
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SB')) = 1 THEN 'OR (b.bettype <= 30 OR (b.bettype BETWEEN 121 AND 999) OR (b.Bettype BETWEEN 1301 and 1399) OR (b.Bettype BETWEEN 9001 and 9399)  OR (b.Bettype BETWEEN 9400 and 9998) OR (b.Bettype BETWEEN 3900 and 3999) OR b.Bettype = 38)' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','NG')) = 1 THEN 'OR (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) '+ CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','KN')) = 1 THEN 'OR b.bettype BETWEEN 1501 AND 1599' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CS')) = 1 THEN 'OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999)' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VB')) = 1 THEN 'OR (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999)' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AB')) = 1 THEN 'OR b.bettype BETWEEN 2401 AND 2499' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','LT')) = 1 THEN 'OR b.bettype BETWEEN 1021 AND 1099' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','PP')) = 1 THEN 'OR b.bettype BETWEEN 4101 AND 4296 OR b.bettype BETWEEN 6701 AND 7000' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CC')) = 1 THEN 'OR b.bettype BETWEEN 1901 AND 1999' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SG')) = 1 THEN 'OR b.bettype BETWEEN 4301 AND 4600' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VRG')) = 1 THEN 'OR b.bettype BETWEEN 4601 AND 4900' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','TG')) = 1 THEN 'OR b.bettype BETWEEN 4901 AND 5000' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','I4D')) = 1 THEN 'OR b.bettype BETWEEN 5001 AND 5099' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SXG')) = 1 THEN 'OR b.bettype BETWEEN 3101 AND 3149' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SBC')) = 1 THEN 'OR (b.bettype BETWEEN 1611 AND 1697 AND b.TicketType <> 2)' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SAG')) = 1 THEN 'OR b.bettype BETWEEN 3001 AND 3099' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','PGS')) = 1 THEN 'OR b.bettype BETWEEN 6001 AND 6300' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','JK')) = 1 THEN 'OR b.bettype BETWEEN 6401 AND 6700' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SLT')) = 1 THEN 'OR b.bettype BETWEEN 3611 AND 3620' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','HB')) = 1 THEN 'OR b.bettype BETWEEN 7001 AND 7300' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','WM')) = 1 THEN 'OR b.bettype BETWEEN 3401 AND 3499' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BGG')) = 1 THEN 'OR b.bettype BETWEEN 3501 AND 3599' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VGA')) = 1 THEN 'OR (b.bettype BETWEEN 3801 AND 3899 AND b.TicketType <> 2)' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CG')) = 1 THEN 'OR b.bettype BETWEEN 7301 AND 7600' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AP')) = 1 THEN 'OR b.bettype BETWEEN 7701 AND 7799' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','APM')) = 1 THEN 'OR b.bettype BETWEEN 7801 AND 7899' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BTC')) = 1 THEN 'OR b.bettype BETWEEN 7901 AND 7999' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','FGGL')) = 1 THEN 'OR b.bettype BETWEEN 8201 AND 8299' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MXG')) = 1 THEN 'OR b.bettype BETWEEN 5401 AND 5499' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','JIG')) = 1 THEN 'OR b.bettype BETWEEN 5100 AND 5299' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','YB')) = 1 THEN 'OR b.bettype BETWEEN 3151 AND 3200' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MGRNG')) = 1 THEN 'OR b.bettype BETWEEN 8400 AND 8699' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS')) = 1 THEN 'OR (b.bettype BETWEEN 1201 AND 1299) OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) OR (b.bettype BETWEEN 5302 AND 5399)' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SEA')) = 1 THEN 'OR b.bettype BETWEEN 8900 AND 8999' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','WE')) = 1 THEN 'OR b.bettype BETWEEN 10300 AND 10399' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','L22')) = 1 THEN 'OR b.bettype BETWEEN 7601 AND 7700' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','UUSL')) = 1 THEN 'OR b.bettype BETWEEN 10000  AND 10299' + CHAR(13) ELSE '' END
-								+ ') ' + CHAR(13)
-								+ 'GROUP BY b.rptDate, b.currencyID, b.bettype,' + CHAR(13)
-								+ 'CASE' + CHAR(13)		
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SB')) = 1 THEN 'WHEN b.bettype <= 30 OR b.bettype BETWEEN 121 AND 999 OR b.Bettype BETWEEN 1301 and 1399 OR b.Bettype BETWEEN 9001 and 9399 OR b.Bettype BETWEEN 9400 and 9998 OR b.Bettype BETWEEN 3900 AND 3999 OR b.Bettype = 38 THEN ''SB''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','NG')) = 1 THEN 'WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN ''NG''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','KN')) = 1 THEN 'WHEN b.bettype BETWEEN 1501 AND 1599 THEN ''KN''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CS')) = 1 THEN 'WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 THEN ''CS''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VB')) = 1 THEN 'WHEN (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) THEN ''VB''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AB')) = 1 THEN 'WHEN b.bettype BETWEEN 2401 AND 2499 THEN ''AB''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','LT')) = 1 THEN 'WHEN b.bettype BETWEEN 1021 AND 1099 THEN ''LT''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','PP')) = 1 THEN 'WHEN b.bettype BETWEEN 4101 AND 4296 OR b.bettype BETWEEN 6701 AND 7000 THEN ''PP''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CC')) = 1 THEN 'WHEN b.bettype BETWEEN 1901 AND 1999 THEN ''CC''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SG')) = 1 THEN 'WHEN b.bettype BETWEEN 4301 AND 4600 THEN ''SG''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VRG')) = 1 THEN 'WHEN b.bettype BETWEEN 4601 AND 4900 THEN ''VRG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','TG')) = 1 THEN 'WHEN b.bettype BETWEEN 4901 AND 5000 THEN ''TG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','I4D')) = 1 THEN 'WHEN b.bettype BETWEEN 5001 AND 5099 THEN ''I4D''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SXG')) = 1 THEN 'WHEN b.bettype BETWEEN 3101 AND 3149 THEN ''SXG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SBC')) = 1 THEN 'WHEN (b.bettype BETWEEN 1611 AND 1697) AND b.TicketType <> 2 THEN ''SBC''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SAG')) = 1 THEN 'WHEN b.bettype BETWEEN 3001 AND 3099 THEN ''SAG''' + CHAR(13) ELSE '' END 
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','PGS')) = 1 THEN 'WHEN b.bettype BETWEEN 6001 AND 6300 THEN ''PGS''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','JK')) = 1 THEN 'WHEN b.bettype BETWEEN 6401 AND 6700 THEN ''JK''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SLT')) = 1 THEN 'WHEN b.bettype BETWEEN 3611 AND 3620 THEN ''SB''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','HB')) = 1 THEN 'WHEN b.bettype BETWEEN 7001 AND 7300 THEN ''HB''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','WM')) = 1 THEN 'WHEN b.bettype BETWEEN 3401 AND 3499 THEN ''WM''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BGG')) = 1 THEN 'WHEN b.bettype BETWEEN 3501 AND 3599 THEN ''BGG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VGA')) = 1 THEN 'WHEN (b.bettype BETWEEN 3801 AND 3899) AND b.TicketType <> 2 THEN ''VGA''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','CG')) = 1 THEN 'WHEN b.bettype BETWEEN 7301 AND 7600 THEN ''CG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','AP')) = 1 THEN 'WHEN b.bettype BETWEEN 7701 AND 7799 THEN ''AP''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','APM')) = 1 THEN 'WHEN b.bettype BETWEEN 7801 AND 7899 THEN ''APM''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','BTC')) = 1 THEN 'WHEN b.bettype BETWEEN 7901 AND 7999 THEN ''SB''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','FGGL')) = 1 THEN 'WHEN b.bettype BETWEEN 8201 AND 8299 THEN ''FGGL''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MXG')) = 1 THEN 'WHEN b.bettype BETWEEN 5401 AND 5499 THEN ''MXG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','JIG')) = 1 THEN 'WHEN b.bettype BETWEEN 5100 AND 5299 THEN ''JIG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','YB')) = 1 THEN 'WHEN b.bettype BETWEEN 3151 AND 3200 THEN ''YB''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','MGRNG')) = 1 THEN 'WHEN b.bettype BETWEEN 8400 AND 8699 THEN ''MGRNG''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','VS')) = 1 THEN 'WHEN (b.bettype BETWEEN 1201 AND 1299) OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) OR (b.bettype BETWEEN 5302 AND 5399) THEN ''VS''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','SEA')) = 1 THEN 'WHEN b.bettype BETWEEN 8900 AND 8999 THEN ''SEA''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','WE')) = 1 THEN 'WHEN b.bettype BETWEEN 10300 AND 10399 THEN ''WE''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','L22')) = 1 THEN 'WHEN b.bettype BETWEEN 7601 AND 7700 THEN ''L22''' + CHAR(13) ELSE '' END
-								+ CASE WHEN (SELECT TOP 1 1 FROM #ProductCodes WHERE ProductCode IN ('','UUSL')) = 1 THEN 'WHEN b.bettype BETWEEN 10000 AND 10299 THEN ''UUSL''' + CHAR(13) ELSE '' END
-								+ 'END' + CHAR(13)
+		
+		INSERT INTO #tmpWinloss (winlostdate, Currency, ProductCode, BetType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
+		SELECT b.rptDate
+			 , b.CurrencyID
+			 , bt.ProductCode
+			 , b.bettype
+			 , SUM(b.turnover) turnover
+			 , SUM(b.WinLoss) winlost
+			 , -SUM(b.WinLoss) AS LicenseeWL
+			 , SUM(b.CommissionA) Comm
+			 , SUM(b.CommissionP) PlayerComm
+			 , -SUM(b.WinLoss + b.WinLossA + b.CommissionA) AmountDueTo3rd
+			 , SUM(b.betcount) BetCount
+		FROM bodb_LicenseeReport.dbo.rpt_Betting b WITH (NOLOCK)
+			INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency
+			INNER JOIN #tmpBettype bt ON b.Bettype = bt.Bettype
+		WHERE b.rptDate BETWEEN @FDate AND @TempToDate
+			AND b.status NOT IN (-1, 103)
+			AND b.bettype NOT IN (9, 29, 2799)
+			AND b.CustomerCategory IN (-1, 1001, 1003)
+			AND (b.IsLive = @Liveindicator OR @Liveindicator = 2)
+			AND 1 = CASE WHEN b.bettype BETWEEN 1611 AND 1697 AND b.TicketType = 2 THEN 0
+						WHEN b.bettype BETWEEN 3801 AND 3899 AND b.TicketType = 2 THEN 0
+					ELSE 1 END	
+			AND 1 = CASE WHEN @SBBACheck = 10 AND bt.ProductID IN (1,69,63) THEN 0 ELSE 1 END
+		GROUP BY b.rptDate
+			   , b.CurrencyID
+			   , b.bettype
+			   , bt.ProductCode
 
-			-- parlay for SB
-			IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SB'))
-			BEGIN
-				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-									+ 'SELECT b.rptDate, b.currencyID,' + CHAR(13)
-									+ '''SB'' AS ProductCode,' + CHAR(13)
-									+ 'b.bettype,' + CHAR(13)
-									+ 'SUM(b.turnover) turnover,' + CHAR(13)
-									+ 'sum(b.winloss) winlost,' + CHAR(13)
-									+ 'SUM(-1 * b.winloss) AS LicenseeWL,' + CHAR(13)
-									+ 'sum(b.CommissionA) Comm,' + CHAR(13)
-									+ 'sum( b.CommissionP ) PlayerComm,' + CHAR(13)
-									+ '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
-									+ 'sum(b.betcount) BetCount' + CHAR(13)
-									+ 'FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )' + CHAR(13)
-									+ 'INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency' + CHAR(13)
-									+ 'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
-									+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
-									+ 'AND b.bettype IN (9,29)' + CHAR(13)
-									+ 'AND b.isBA = 0' + CHAR(13)
-									+ 'AND ((' + CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
-									+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
-									+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)					
-									+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
-			END
+		-- Get parlay tickets
+		INSERT INTO #tmpWinloss (winlostdate, Currency, ProductCode, BetType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
+		SELECT b.rptDate
+			 , b.CurrencyID
+			 , bt.ProductCode
+			 , b.bettype
+			 , SUM(b.turnover) turnover
+			 , SUM(b.WinLoss) winlost
+			 , SUM(-1 * b.WinLoss) AS LicenseeWL
+			 , SUM(b.CommissionA) Comm
+			 , SUM(b.CommissionP) PlayerComm
+			 , -SUM(b.WinLoss + b.WinLossA + b.CommissionA) AmountDueTo3rd
+			 , SUM(b.betcount) BetCount
+		FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH (NOLOCK)
+			INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency
+			INNER JOIN #tmpBettype bt ON b.Bettype = bt.Bettype
+		WHERE b.rptDate BETWEEN @FDate AND @TempToDate
+			AND b.status NOT IN (-1, 103)
+			AND b.bettype IN (9, 29, 2799)
+			AND b.isBA = 0
+			AND (b.IsLive = @Liveindicator OR @Liveindicator = 2)
+			AND 1 = CASE WHEN @SBBACheck = 10 AND bt.ProductID = 1 THEN 0 ELSE 1 END
+		GROUP BY b.rptDate
+			,b.CurrencyID
+			,ProductCode
+			,b.bettype
 
-			-- Parlay for BetRadar
-			IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'VS2'))
-			BEGIN
-				SELECT	@sql = @sql + 'INSERT INTO #tmpWinloss' + CHAR(13)
-									+ 'SELECT b.rptDate, b.currencyID,' + CHAR(13)
-									+ '''VS'' AS ProductCode,' + CHAR(13)
-									+ 'b.bettype,' + CHAR(13)
-									+ 'SUM(b.turnover) turnover,' + CHAR(13)
-									+ 'sum(b.winloss) winlost,' + CHAR(13)
-									+ 'SUM(-1 * b.winloss) AS LicenseeWL,' + CHAR(13)
-									+ 'sum(b.CommissionA) Comm,' + CHAR(13)
-									+ 'sum( b.CommissionP ) PlayerComm,' + CHAR(13)
-									+ '- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,' + CHAR(13)
-									+ 'sum(b.betcount) BetCount' + CHAR(13)
-									+ 'FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )' + CHAR(13)
-									+ 'INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency' + CHAR(13)
-									+ 'WHERE b.rptDate BETWEEN ''' + convert(VARCHAR(10), @FDate, 120) + ''' AND ''' + convert(VARCHAR(10), @TempToDate, 120) + '''' + CHAR(13)
-									+ 'AND b.status NOT IN (-1,103)' + CHAR(13)
-									+ 'AND b.bettype IN (2799)' + CHAR(13)
-									+ 'AND b.isBA = 0' + CHAR(13)
-									+ 'AND ((' + CAST(@Liveindicator AS VARCHAR(2))+' = 0 and b.IsLive = 0)' + CHAR(13)
-									+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 1 and b.IsLive = 1)' + CHAR(13)
-									+ 'OR (' + CAST(@Liveindicator AS VARCHAR(2))+' = 2))'	+ CHAR(13)		
-									+ 'GROUP BY b.rptDate, b.currencyID, b.bettype' + CHAR(13)
-			END
-		END
 	END
 
 	-- Get winlost by currency  
-	SELECT	@sql = @sql + 'CREATE NONCLUSTERED INDEX IX_tmpWinloss ON #tmpWinloss (Currency)' + CHAR(13)
+	CREATE NONCLUSTERED INDEX IX_tmpWinloss ON #tmpWinloss (Currency)
 
-	SELECT	@sql = @sql + ' SELECT FromDate, ToDate, ExchangeID, Rate INTO #TempExchange FROM Lrf_f_GetExchangeRate(''' + CONVERT(VARCHAR(10), @FDate, 120) + ''',''' + CONVERT(VARCHAR(10), @TDate, 120) + ''',''' + @BaseCurrency + ''','''''  + ')' + CHAR(13)
-						+ 'WHERE ExchangeID IN (SELECT DISTINCT Currency FROM #tmpWinloss ) ' + CHAR(13)
+	CREATE TABLE #TempExchange (FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeID INT, Rate FLOAT);
+	CREATE CLUSTERED INDEX CIX_TempExchange ON #TempExchange(ExchangeID);
 
-	SELECT	@sql = @sql + '-- Get winlost by currency  ' + CHAR(13)
+	INSERT INTO #TempExchange (FromDate , ToDate , ExchangeId , Rate)
+	SELECT FromDate
+		 , ToDate
+		 , ExchangeId
+		 , Rate
+	FROM Lrf_f_GetExchangeRate(@FDate, @TDate, @BaseCurrency, '')
+	WHERE ExchangeId IN (SELECT DISTINCT Currency FROM #tmpWinloss)
 
-	SELECT	@sql = @sql + 'SELECT b.currency AS Currency, ' + CHAR(13)
-						+ 'SUM(Betcount) AS Betcount,' + CHAR(13)
-						+ 'CAST(SUM(TurnOver*e.Rate) AS MONEY) AS Turnover,' + CHAR(13)
-						+ 'CAST(SUM(Winlost*e.Rate) AS MONEY) AS Winlost,' + CHAR(13)
-						+ 'CAST(SUM(LicenseeWL*e.Rate) AS MONEY) AS LicenseeWL,' + CHAR(13)
-						+ 'CAST(SUM(Comm * e.Rate) AS MONEY) AS Comm,' + CHAR(13)
-						+ 'CAST(SUM(PlayerComm * e.Rate) AS MONEY) AS PlayerComm,' + CHAR(13)
-						+ 'CAST(SUM(AmtDueto3rd*e.Rate) AS MONEY) AS AmtDueto3rd' + CHAR(13)
-						+ 'FROM #tmpWinloss b WITH (NOLOCK)' + CHAR(13)
-						+ 'INNER JOIN #TempExchange e ' + CHAR(13)
-						+ 'ON b.winlostdate BETWEEN e.FromDate AND e.ToDate AND e.exchangeid = b.currency ' + CHAR(13)
-						+ 'GROUP BY b.currency' + CHAR(13)
+	-- Get winlost by currency  
+	SELECT b.currency AS Currency
+		 , SUM(Betcount) AS Betcount
+		 , CAST(SUM(TurnOver * e.Rate) AS MONEY) AS Turnover
+		 , CAST(SUM(Winlost * e.Rate) AS MONEY) AS Winlost
+		 , CAST(SUM(LicenseeWL * e.Rate) AS MONEY) AS LicenseeWL
+		 , CAST(SUM(Comm * e.Rate) AS MONEY) AS Comm
+		 , CAST(SUM(PlayerComm * e.Rate) AS MONEY) AS PlayerComm
+		 , CAST(SUM(AmtDueto3rd * e.Rate) AS MONEY) AS AmtDueto3rd
+	FROM #tmpWinloss b WITH (NOLOCK)
+		INNER JOIN #TempExchange e ON b.winlostdate BETWEEN e.FromDate AND e.ToDate
+			AND e.ExchangeId = b.currency
+	GROUP BY b.currency
 
-	-- Get winlost by bettype
-	SELECT	@sql = @sql + '-- Get winlost by bettype  ' + CHAR(13)
+	-- Get winlost by bettype  
+	SELECT b.ProductCode
+		 , CASE
+			   WHEN ISNULL(ss.bettype, 0) <> 0 THEN ss.GroupTypeId
+			   ELSE b.bettype
+		   END bettype
+		 , SUM(Betcount) AS Betcount
+		 , CAST(SUM(TurnOver * e.Rate) AS MONEY) AS Turnover
+		 , CAST(SUM(Winlost * e.Rate) AS MONEY) AS Winlost
+		 , CAST(SUM(LicenseeWL * e.Rate) AS MONEY) AS LicenseeWL
+		 , CAST(SUM(Comm * e.Rate) AS MONEY) AS Comm
+		 , CAST(SUM(PlayerComm * e.Rate) AS MONEY) AS PlayerComm
+		 , CAST(SUM(AmtDueto3rd * e.Rate) AS MONEY) AS AmtDueto3rd
+	FROM #tmpWinloss b WITH (NOLOCK)
+		LEFT JOIN dbo.Lrf_f_GroupBettype() ss ON b.bettype = ss.bettype
+		INNER JOIN bettype bt WITH (NOLOCK) ON b.bettype = bt.typeid
+		INNER JOIN #TempExchange e ON b.winlostdate BETWEEN e.FromDate AND e.ToDate
+			AND e.ExchangeId = b.currency
+	GROUP BY b.ProductCode
+		   , CASE
+				 WHEN ISNULL(ss.bettype, 0) <> 0 THEN ss.GroupTypeId
+				 ELSE b.bettype
+			 END
+	ORDER BY CASE
+		WHEN ISNULL(ss.bettype, 0) <> 0 THEN ss.GroupTypeId
+		ELSE b.bettype 
+	END
 
-	SELECT	@sql = @sql + 'SELECT b.ProductCode, CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.GroupTypeID ELSE b.bettype END bettype,' + CHAR(13)
-						+ 'SUM(Betcount) AS Betcount,' + CHAR(13)
-						+ 'CAST(SUM(TurnOver*e.Rate) AS MONEY) AS Turnover, ' + CHAR(13)
-						+ 'CAST(SUM(Winlost*e.Rate) AS MONEY) AS Winlost,' + CHAR(13)
-						+ 'CAST(SUM(LicenseeWL*e.Rate) AS MONEY) AS LicenseeWL,' + CHAR(13)
-						+ 'CAST(SUM(Comm * e.Rate) AS MONEY) AS Comm,' + CHAR(13)
-						+ 'CAST(SUM(PlayerComm * e.Rate) AS MONEY) AS PlayerComm,' + CHAR(13)
-						+ 'CAST(SUM(AmtDueto3rd*e.Rate) AS MONEY) AS AmtDueto3rd' + CHAR(13)
-						+ 'FROM #tmpWinloss b  WITH (NOLOCK) ' + CHAR(13)
-						+ 'LEFT JOIN dbo.Lrf_f_GroupBettype() ss ON b.bettype = ss.bettype'+CHAR(13)
-						+ 'INNER JOIN bettype bt WITH (nolock) ON b.bettype = bt.typeid ' + CHAR(13)
-						+ 'INNER JOIN #TempExchange e' + CHAR(13)
-						+ 'ON b.winlostdate BETWEEN e.FromDate AND e.ToDate AND e.exchangeid = b.currency ' + CHAR(13)
-						+ 'GROUP BY b.ProductCode, CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.grouptypeId ELSE b.bettype END' + CHAR(13)
-						+ 'ORDER BY CASE WHEN ISNULL(ss.bettype,0) <> 0 THEN ss.GroupTypeID ELSE b.bettype END' + CHAR(13)
-						+ 'DROP TABLE #tmpWinloss' + CHAR(13)
-						+ 'DROP TABLE #TempExchange' + CHAR(13)
-						+ 'DROP TABLE #LicenseeList' + CHAR(13)
-
-	IF @Debug = 1
-		PRINT @sql
-	ELSE
-		EXEC (@sql)
 END
 GO

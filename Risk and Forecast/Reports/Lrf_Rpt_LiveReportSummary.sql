@@ -119,6 +119,7 @@ AS
 		- 20231213@Evan: Integrate Live22 [RedmineID: #197702]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only + Remove VS3 (old) [RedmineID: #199523]
 		- 20240308@Eddie: Integrate UU Slots and change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
+		- 20242503@Evan: Enhance code to avoid hardcode  [RedmineID: #199843]
 
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -136,6 +137,12 @@ AS
 BEGIN
 	SET NOCOUNT ON
 
+	--
+	DROP TABLE IF EXISTS #TempAg
+	DROP TABLE IF EXISTS #tmpWinloss
+	DROP TABLE IF EXISTS #TempExchange
+	DROP TABLE IF EXISTS #LicenseeList
+	DROP TABLE IF EXISTS #tmpBettype
 	-- Get agent list
 	CREATE TABLE #TempAg (CustId INT, Currency INT)
 
@@ -202,20 +209,21 @@ BEGIN
 	IF @ProductCodes IS NULL
 		SET @ProductCodes = ''
 
-	SELECT @ProductCodes = STRING_AGG(b.ProductPrefix, ',')
-	FROM (
-		SELECT DISTINCT ISNULL(b.ProductPrefix,a.Value) AS ProductPrefix
-		FROM STRING_SPLIT(@ProductCodes, ',') a
-			LEFT JOIN dbo.Lrf_f_GroupProduct() b ON a.Value = b.GroupProductPrefix
-	) b
-
-	CREATE TABLE #ProductCodes (ProductCode VARCHAR(10))
-
-	INSERT INTO #ProductCodes (ProductCode)
-	SELECT ISNULL(value,'')
-	FROM STRING_SPLIT(@ProductCodes,',') 
-
+	DECLARE @SBBACheck TINYINT;
+	SELECT @SBBACheck = (POWER(2*1, 1)
+				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 2) 
+				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,BA,%' THEN 1 ELSE 0 END, 3))
 	
+	CREATE TABLE #tmpBettype ( Bettype INT, ProductCode VARCHAR(10))
+	INSERT INTO #tmpBettype
+	SELECT a.Bettype, ISNULL(lf.GroupProductPrefix,IIF(a.ProductId IN (63,69),'SB',b.ProductPrefix)) AS ProductCode
+	FROM dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductCodes,null,null,@SBBACheck) a 
+	INNER JOIN dbo.Products b WITH(NOLOCK) ON a.ProductId = b.ProductID
+	LEFT JOIN dbo.Lrf_f_GroupProduct() lf ON a.ProductId = lf.ProductId
+	WHERE NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = a.Bettype) AND a.Bettype <> 72
+			AND (a.bettype < 901 OR a.bettype > 904)
+			AND (a.bettype < 911 OR a.bettype > 914)
+
 	IF @TDate > @MoveBetsDay
 	BEGIN
 		IF @FDate <= @MoveBetsDay
@@ -223,292 +231,47 @@ BEGIN
 		ELSE
 			SET @TempFromDate = @FDate
 
-		--BA
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'BA'))
-		BEGIN
-			;WITH CTE AS
+		INSERT INTO #tmpWinloss (WinLostDate, Currency, ProductCode, Turnover, WinLost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, BetCount)
+		SELECT
+			b.winlostdate,
+			t.currency,
+			CASE WHEN s.IsBA = 1 THEN 'BA' ELSE bt.ProductCode END AS ProductCode,
+			SUM(stake) turnover,
+			SUM(b.winlost - b.actual_stake) AS Winlost,
+			- SUM(CASE WHEN s.IsBA = 1 THEN 0 ELSE (b.winlost - b.actual_stake) END) AS LicenseeWL,
+			SUM(b.comm) AS Comm,
+			SUM(b.playercomm) AS PlayerComm,
+			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
+			COUNT(b.transid) BetCount
+		FROM
+			dbo.bettrans AS b WITH (NOLOCK)
+			INNER JOIN #TempAg AS t ON b.recommend = t.custid
+			INNER JOIN #tmpBettype bt ON b.bettype = bt.Bettype
+			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.recommend = BA.recommend AND b.TransId = BA.TransId
+			OUTER APPLY
 			(
-				SELECT transid
-				FROM bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK)
-					INNER JOIN #TempAg t ON BA.recommend = t.CustId
-				UNION
-				SELECT NULL
-			)
-			INSERT INTO #tmpWinloss
-			SELECT
-				b.winlostdate,
-				t.currency,
-				'BA' AS ProductCode,
-				SUM(b.stake) turnover,
-				SUM(b.winlost - b.actual_stake) AS Winlost,
-				0 AS LicenseeWL,
-				SUM(b.comm) AS Comm,
-				SUM(b.playercomm) AS PlayerComm,
-				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
-				COUNT(b.transid) BetCount
-			FROM
-				dbo.bettrans b WITH (NOLOCK)
-				INNER JOIN #TempAg t ON b.recommend = t.custid
-				INNER JOIN CTE ON b.transid = CTE.TransID
-			WHERE
-				b.winlostdate BETWEEN @TempFromDate AND @TDate
-				AND b.statusID IN (111, 112, 113)
-				AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
-				AND (b.bettype < 901 OR b.bettype > 904)
-				AND (b.bettype < 911 OR b.bettype > 914)
-				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
-			GROUP BY
-				b.winlostdate,
-				t.currency
-			OPTION(RECOMPILE)
-		END
-
-		--SB
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SB'))
-		BEGIN
-			INSERT INTO #tmpWinloss
-			SELECT
-				b.winlostdate,
-				t.currency,
-				'SB' AS ProductCode,
-				SUM(stake) turnover,
-				SUM(b.winlost - b.actual_stake) AS Winlost,
-				SUM(- 1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
-				SUM(b.comm) AS Comm,
-				SUM(b.playercomm) AS PlayerComm,
-				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
-				COUNT(b.transid) BetCount
-			FROM
-				dbo.bettrans AS b WITH (NOLOCK)
-				INNER JOIN #TempAg AS t ON b.recommend = t.custid
-			WHERE
-				b.winlostdate BETWEEN @TempFromDate AND @TDate
-				AND (
-					b.bettype <= 30
-					OR (b.bettype BETWEEN 121 AND 999)
-					OR (b.Bettype BETWEEN 1301 and 1399) --new tennis's bettypes
-					OR (b.Bettype BETWEEN 9001 and 9399) -- E-Sports 2.0
-					OR (b.Bettype BETWEEN 9400 AND 9998) -- Cricket AIO
-					OR (b.Bettype BETWEEN 3900 AND 3999) -- Volleyball AIO
-					OR b.Bettype = 38					 -- Single Match Parlay
-					OR (b.bettype BETWEEN 3611 AND 3620
-						AND EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SLT')))
-					OR (b.bettype BETWEEN 7901 AND 7999
-						AND EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'BTC')))
-					)
-				AND (b.bettype NOT IN (9,29))
-				AND (b.bettype < 901 OR b.bettype > 904)
-				AND (b.bettype < 911 OR b.bettype > 914)
-				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.ProductCode = 'SB' AND e.BetType = b.BetType)
-				AND b.tpositiontaking <> 0
-				AND b.statusID IN (111, 112, 113)
-				AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
-			GROUP BY
-				b.winlostdate,
-				t.currency,
-				b.bettype
-		END
-
-		--parlay for SB
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SB'))
-		BEGIN	
-			INSERT INTO #tmpWinloss
-			SELECT
-				b.winlostdate,
-				t.currency,
-				'SB' AS ProductCode,
-				SUM(stake) turnover,
-				SUM(b.winlost - b.actual_stake) AS Winlost,
-				SUM(- 1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
-				SUM(comm) AS Comm,
-				SUM(b.playercomm) AS PlayerComm,
-				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
-				COUNT(b.transid) BetCount
-			FROM
-				dbo.bettrans b WITH (NOLOCK)
-				INNER JOIN #TempAg t ON b.recommend = t.custid
-			WHERE
-				b.winlostdate BETWEEN @TempFromDate AND @TDate
-				AND b.bettype IN (9,29)
-				AND b.tpositiontaking <> 0
-				AND b.statusID IN (111, 112, 113)
-				AND (b.livehomescore = @Liveindicator OR @Liveindicator = 2)
-			GROUP BY
-				b.winlostdate,
-				t.currency,
-				b.bettype
-		END
-
-		-- Parlay for VS2
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'VS2'))
-		BEGIN	
-			INSERT INTO #tmpWinloss
-			SELECT
-				b.winlostdate,
-				t.currency,
-				'VS' AS ProductCode,
-				SUM(stake) turnover,
-				SUM(b.winlost - b.actual_stake) AS Winlost,
-				SUM(- 1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
-				SUM(comm) AS Comm,
-				SUM(b.playercomm) AS PlayerComm,
-				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
-				COUNT(b.transid) BetCount
-			FROM
-				dbo.bettrans b WITH (NOLOCK)
-				INNER JOIN #TempAg t ON b.recommend = t.custid
-			WHERE
-				b.winlostdate BETWEEN @TempFromDate AND @TDate
-				AND b.bettype = 2799
-				AND b.tpositiontaking <> 0
-				AND b.statusID IN (111, 112, 113)
-				AND (b.livehomescore = @Liveindicator OR @Liveindicator = 2)
-			GROUP BY
-				b.winlostdate,
-				t.currency,
-				b.bettype
-		END
-
-		--Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'VS', 'VS2', 'LG', 'KN', 'CS', 'VB', 'AB', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG', 'SEA', 'WE', 'L22', 'UUSL'))
-		BEGIN
-			INSERT INTO #tmpWinloss
-			SELECT
-				b.winlostdate,
-				t.currency,
-				CASE 
-					WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN 'NG'
-					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' -- Keno
-					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
-					WHEN (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) THEN 'VB' -- Voidbridge
-					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
-					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
-					WHEN b.bettype BETWEEN 4101 AND 4296 OR b.bettype BETWEEN 6701 AND 7000 THEN 'PP' -- PP -- exclude 4300, 4299, 4298, 4297
-					WHEN b.bettype BETWEEN 1901 AND 1999 THEN 'CC' -- CC
-					WHEN b.bettype BETWEEN 4301 AND 4600 THEN 'SG' -- SG
-					WHEN b.bettype BETWEEN 4601 AND 4900 THEN 'VRG' -- VRG
-					WHEN b.bettype BETWEEN 4901 AND 5000 THEN 'TG' -- TG
-					WHEN b.bettype BETWEEN 5001 AND 5099 THEN 'I4D' -- I4D
-					WHEN b.bettype BETWEEN 3101 AND 3149 THEN 'SXG' -- SXG
-					WHEN (b.bettype BETWEEN 1611 AND 1697) AND b.matchid <> 150 THEN 'SBC' -- SBC
-					WHEN b.bettype BETWEEN 3001 AND 3099 THEN 'SAG' -- SAG	
-					WHEN b.bettype BETWEEN 6001 AND 6300 THEN 'PGS' -- PGS
-					WHEN b.bettype BETWEEN 6401 AND 6700 THEN 'JK' -- JK
-					WHEN b.bettype BETWEEN 7001 AND 7300 THEN 'HB' -- HB
-					WHEN b.bettype BETWEEN 3401 AND 3499 THEN 'WM' -- WM
-					WHEN b.bettype BETWEEN 3501 AND 3599 THEN 'BGG'
-					WHEN (b.bettype BETWEEN 3801 AND 3899) AND b.matchid <> 173 THEN 'VGA' -- VGA
-					WHEN b.bettype  BETWEEN 7301 AND 7600 THEN 'CG'
-					WHEN b.bettype  BETWEEN 7701 AND 7799 THEN 'AP'
-					WHEN b.bettype  BETWEEN 7801 AND 7899 THEN 'APM'
-					WHEN b.bettype  BETWEEN 8201 AND 8299 THEN 'FGGL'
-					WHEN b.bettype  BETWEEN 5401 AND 5499 THEN 'MXG'
-					WHEN b.bettype  BETWEEN 5100 AND 5299 THEN 'JIG'
-					WHEN b.bettype  BETWEEN 3151 AND 3200 THEN 'YB'
-					WHEN b.bettype  BETWEEN 8400 AND 8699 THEN 'MGRNG'
-					WHEN (b.bettype BETWEEN 1201 AND 1299) OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) OR (b.bettype BETWEEN 5302 AND 5399) THEN 'VS'
-					WHEN b.bettype BETWEEN 8900  AND 8999  THEN 'SEA'
-					WHEN b.bettype BETWEEN 10300 AND 10399 THEN 'WE'
-					WHEN b.bettype BETWEEN 7601  AND 7700  THEN 'L22'
-					WHEN b.bettype BETWEEN 10000 AND 10299 THEN 'UUSL'
-					END AS ProductCode,
-				SUM(stake) turnover,
-				SUM(b.winlost - b.actual_stake) AS Winlost,
-				SUM(- 1 * (b.winlost - b.actual_stake)) AS LicenseeWL,
-				SUM(comm) AS Comm,
-				SUM(b.playercomm) AS PlayerComm,
-				- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) as AmountDueTo3rd,
-				COUNT(b.transid) BetCount
-			FROM
-				dbo.bettrans b WITH (NOLOCK)
-				INNER JOIN #TempAg t ON b.recommend = t.custid
-			WHERE
-				b.winlostdate BETWEEN @TempFromDate AND @TDate
-				AND b.statusID IN (111, 112, 113)
-				AND (
-					b.bettype BETWEEN 81 AND 120
-					OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
-					OR b.bettype BETWEEN 3601 AND 3610 -- Happy 5 Linked Games
-					OR b.bettype BETWEEN 1201 AND 1299
-					OR b.bettype BETWEEN 1501 AND 1599 -- Keno
-					OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999) -- RNG CASINO
-					OR (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) -- Voidbridge
-					OR b.bettype BETWEEN 2401 AND 2499 -- AB
-					OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) -- BetRadar VS
-					OR b.bettype BETWEEN 1021 AND 1099 -- LT
-					OR b.bettype BETWEEN 4101 AND 4296 OR b.bettype BETWEEN 6701 AND 7000 -- PP -- exclude 4300, 4299, 4298, 4297
-					OR b.bettype BETWEEN 1901  AND 1999-- CC
-					OR b.bettype BETWEEN 4301  AND 4600 -- SG
-					OR b.bettype BETWEEN 4601  AND 4900 -- VRG
-					OR b.bettype BETWEEN 4901  AND 5000 -- TG
-					OR b.bettype BETWEEN 5001  AND 5099 -- I4D
-					OR b.bettype BETWEEN 3101  AND 3149 -- SXG
-					OR (b.bettype BETWEEN 1611 AND 1697 AND b.matchid <> 150) -- SBC
-					OR b.bettype BETWEEN 3001  AND 3099 -- SAG
-					OR b.bettype BETWEEN 6001  AND 6300 -- PGS
-					OR b.bettype BETWEEN 6401  AND 6700 -- JK
-					OR b.bettype BETWEEN 7001  AND 7300 -- HB
-					OR b.bettype BETWEEN 3401  AND 3499 -- WM
-					OR b.bettype BETWEEN 3501  AND 3599 -- BGG
-					OR (b.bettype BETWEEN 3801 AND 3899 AND b.matchid <> 173)-- VGA
-					OR b.bettype BETWEEN 7301  AND 7600 -- CG
-					OR b.bettype BETWEEN 7701  AND 7799 -- AP
-					OR b.bettype BETWEEN 7801  AND 7899 -- APM
-					OR b.bettype BETWEEN 8201  AND 8299 -- FGGL
-					OR b.bettype BETWEEN 5401  AND 5499 -- MXG
-					OR b.bettype BETWEEN 5100  AND 5299 -- JIG
-					OR b.bettype BETWEEN 3151  AND 3200 -- YB
-					OR b.bettype BETWEEN 8400  AND 8699 -- MGRNG
-					OR b.bettype BETWEEN 5302  AND 5399 -- LG
-					OR b.bettype BETWEEN 8900  AND 8999 -- SEA
-					OR b.bettype BETWEEN 10300 AND 10399 -- WE
-					OR b.bettype BETWEEN 7601  AND 7700  -- L22
-					OR b.bettype BETWEEN 10000 AND 10299 -- UUSL
-				)
-				AND (b.liveindicator = @Liveindicator OR @Liveindicator = 2)
-				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
-			GROUP BY
-				b.winlostdate,
-				t.currency,
-				CASE 
-					WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN 'NG'
-					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN' -- Keno
-					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
-					WHEN (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) THEN 'VB' -- Voidbridge
-					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
-					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
-					WHEN b.bettype BETWEEN 4101 AND 4296 OR b.bettype BETWEEN 6701 AND 7000 THEN 'PP' -- PP -- exclude 4300, 4299, 4298, 4297
-					WHEN b.bettype BETWEEN 1901  AND 1999 THEN 'CC' -- CC
-					WHEN b.bettype BETWEEN 4301  AND 4600 THEN 'SG' -- SG
-					WHEN b.bettype BETWEEN 4601  AND 4900 THEN 'VRG' -- VRG
-					WHEN b.bettype BETWEEN 4901  AND 5000 THEN 'TG' -- TG
-					WHEN b.bettype BETWEEN 5001  AND 5099 THEN 'I4D' -- I4D
-					WHEN b.bettype BETWEEN 3101  AND 3149 THEN 'SXG' -- SXG
-					WHEN (b.bettype BETWEEN 1611 AND 1697) AND b.matchid <> 150 THEN 'SBC' -- SBC
-					WHEN b.bettype BETWEEN 3001  AND 3099 THEN 'SAG' -- SAG
-					WHEN b.bettype BETWEEN 6001  AND 6300 THEN 'PGS' -- PGS
-					WHEN b.bettype BETWEEN 6401  AND 6700 THEN 'JK' -- JK
-					WHEN b.bettype BETWEEN 7001  AND 7300 THEN 'HB' -- HB
-					WHEN b.bettype BETWEEN 3401  AND 3499 THEN 'WM' -- WM
-					WHEN b.bettype BETWEEN 3501  AND 3599 THEN 'BGG'
-					WHEN (b.bettype BETWEEN 3801 AND 3899) AND b.matchid <> 173 THEN 'VGA' -- VGA
-					WHEN b.bettype BETWEEN 7301  AND 7600 THEN 'CG'
-					WHEN b.bettype BETWEEN 7701  AND 7799 THEN 'AP'
-					WHEN b.bettype BETWEEN 7801  AND 7899 THEN 'APM'
-					WHEN b.bettype BETWEEN 8201  AND 8299 THEN 'FGGL'
-					WHEN b.bettype BETWEEN 5401  AND 5499 THEN 'MXG'
-					WHEN b.bettype BETWEEN 5100  AND 5299 THEN 'JIG'
-					WHEN b.bettype BETWEEN 3151  AND 3200 THEN 'YB'
-					WHEN b.bettype BETWEEN 8400  AND 8699 THEN 'MGRNG'
-					WHEN (b.bettype BETWEEN 1201 AND 1299) OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) OR (b.bettype BETWEEN 5302 AND 5399) THEN 'VS' --VS
-					WHEN b.bettype BETWEEN 8900  AND 8999  THEN 'SEA'
-					WHEN b.bettype BETWEEN 10300 AND 10399 THEN 'WE'
-					WHEN b.bettype BETWEEN 7601  AND 7700  THEN 'L22'
-					WHEN b.bettype BETWEEN 10000 AND 10299 THEN 'UUSL'
-				END
-		END
+				SELECT	CASE WHEN BA.TransID IS NOT NULL THEN 1 ELSE 0 END AS IsBA,
+						ISNULL(CASE WHEN b.bettype IN (9,29,2799) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
+			) s
+		WHERE
+			b.winlostdate BETWEEN @TempFromDate AND @TDate
+			AND b.statusID IN (111, 112, 113)
+			AND (s.liveindicator = @Liveindicator OR @Liveindicator = 2)
+			AND 1 = CASE WHEN @SBBACheck = 6 AND s.IsBA = 1 THEN 0 
+						 WHEN @SBBACheck = 10 AND s.IsBA = 0 THEN 0
+					ELSE 1 END
+			AND 1 = CASE
+				WHEN b.bettype BETWEEN 1611 AND 1697 AND b.matchid = 150 THEN 0
+				WHEN b.bettype BETWEEN 3801 AND 3899 AND b.matchid = 173 THEN 0
+				ELSE 1
+			END
+		GROUP BY
+			b.winlostdate,
+			t.currency,
+			CASE WHEN s.IsBA = 1 THEN 'BA' ELSE bt.ProductCode END
+			
 	END
-
+	
 	IF @FDate <= @MoveBetsDay
 	BEGIN
 		IF @TDate >= @MoveBetsDay
@@ -517,9 +280,9 @@ BEGIN
 			SET @TempToDate = @TDate
 
 		-- BA
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'BA'))
+		IF ',' + @ProductCodes + ',' LIKE '%,BA,%'
 		BEGIN
-			INSERT INTO #tmpWinloss
+			INSERT INTO #tmpWinloss (WinLostDate, Currency, ProductCode, Turnover, WinLost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, BetCount)
 			SELECT
 				b.rptdate,
 				b.currencyID,
@@ -537,25 +300,17 @@ BEGIN
 			WHERE
 				b.rptDate BETWEEN @FDate AND @TempToDate
 				AND b.status NOT IN (-1,103)
-				AND
-				(
-					(@Liveindicator = 0 AND b.IsLive = 0)
-					OR (@Liveindicator = 1 AND b.IsLive = 1)
-					OR (@Liveindicator = 2)
-				)
-				AND b.bettype NOT IN (9,29,2799)
+				AND (b.IsLive = @Liveindicator OR @Liveindicator = 2)
+				AND b.bettype NOT IN (9,29)
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			GROUP BY
 				b.rptdate,
 				b.currencyID
-		END
-
-		-- parlay for BA
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'BA'))
-		BEGIN
-			INSERT INTO #tmpWinloss
+			
+			-- parlay for BA
+			INSERT INTO #tmpWinloss (WinLostDate, Currency, ProductCode, Turnover, WinLost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, BetCount)
 			SELECT
 				b.rptdate,
 				b.currencyID,
@@ -572,283 +327,92 @@ BEGIN
 				INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency
 			WHERE
 				b.rptDate BETWEEN @FDate AND @TempToDate
+				AND b.bettype IN (9,29)
 				AND b.status NOT IN (-1,103)
 				AND (b.bettype < 901 OR b.bettype > 904)
 				AND (b.bettype < 911 OR b.bettype > 914)
 				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
-				AND
-				(
-					(@Liveindicator = 0 AND b.IsLive = 0)
-					OR (@Liveindicator = 1 AND b.IsLive = 1)
-					OR (@Liveindicator = 2)
-				)
+ 				AND (b.IsLive = @Liveindicator OR @Liveindicator = 2)
 				AND b.isBA = 1
 			GROUP BY 
 				b.rptdate,
 				b.currencyID
 		END
+		
+		--Get Ticket non BA
+		INSERT INTO #tmpWinloss (WinLostDate, Currency, ProductCode, Turnover, WinLost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, BetCount)
+		SELECT 
+			b.rptDate,
+			b.currencyID,
+			bt.ProductCode,
+			SUM(b.turnover) turnover,
+			SUM(b.winloss) winlost,
+			- SUM(b.winloss) AS LicenseeWL,
+			SUM(b.CommissionA) Comm,
+			SUM( b.CommissionP) PlayerComm,
+			- SUM(b.winloss + b.WinlossA + b.CommissionA) as AmountDueTo3rd,
+			SUM(b.betcount) BetCount
+		FROM
+			bodb_licenseereport.dbo.rpt_Betting b WITH (NOLOCK)
+			INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency
+			INNER JOIN #tmpBettype bt ON b.Bettype = bt.Bettype
+		WHERE
+			b.rptDate BETWEEN @FDate AND @TempToDate
+			AND b.status NOT IN (-1,103)
+			AND (b.IsLive = @Liveindicator OR @Liveindicator = 2) 
+			AND b.CustomerCategory IN (-1, 1001, 1003)
+			AND b.bettype NOT IN (9,29,2799) 
+			AND 1 = CASE WHEN b.bettype BETWEEN 1611 AND 1697 AND b.TicketType = 2 THEN 0
+						WHEN b.bettype BETWEEN 3801 AND 3899 AND b.TicketType = 2 THEN 0
+					ELSE 1 END	
+		GROUP BY
+			b.rptDate,
+			b.currencyID,
+			bt.ProductCode
 
-		-- Others
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'NG', 'SB', 'VS', 'VS2', 'LG', 'KN', 'CS', 'VB', 'AB', 'LT', 'PP', 'CC', 'SG', 'VRG', 'TG', 'I4D', 'SXG', 'SBC', 'SAG', 'PGS', 'JK', 'HB', 'WM', 'BGG', 'VGA', 'CG', 'AP', 'APM', 'FGGL', 'MXG', 'JIG', 'YB', 'MGRNG', 'SEA', 'WE', 'L22', 'UUSL'))
-		BEGIN
-			INSERT INTO #tmpWinloss
-			SELECT 
-				b.rptDate,
-				b.currencyID,
-				CASE 
-					WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN 'NG'
-					WHEN b.bettype <= 30 
-						OR (b.bettype BETWEEN 121 AND 999)
-						OR (b.Bettype BETWEEN 1301 and 1399)
-						OR (b.Bettype BETWEEN 9001 and 9399)
-						OR (b.Bettype BETWEEN 9400 AND 9998)	-- Cricket AIO
-						OR (b.Bettype BETWEEN 3900 AND 3999) -- Volleyball AIO
-						OR b.Bettype = 38						-- Single Match Parlay
-						OR b.bettype BETWEEN 3611 AND 3620		-- Sports Lottery
-						OR b.bettype BETWEEN 7901 AND 7999		-- Bitcoin
-						THEN 'SB'
-					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
-					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
-					WHEN (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) THEN 'VB' -- Voidbridge
-					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
-					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
-					WHEN b.bettype BETWEEN 4101 AND 4296 OR b.bettype BETWEEN 6701 AND 7000 THEN 'PP' -- PP -- exclude 4300, 4299, 4298, 4297
-					WHEN b.bettype BETWEEN 1901  AND 1999 THEN 'CC'
-					WHEN b.bettype BETWEEN 4301  AND 4600 THEN 'SG' -- SG
-					WHEN b.bettype BETWEEN 4601  AND 4900 THEN 'VRG'
-					WHEN b.bettype BETWEEN 4901  AND 5000 THEN 'TG'
-					WHEN b.bettype BETWEEN 5001  AND 5099 THEN 'I4D'
-					WHEN b.bettype BETWEEN 3101  AND 3149 THEN 'SXG' -- SXG
-					WHEN (b.bettype BETWEEN 1611 AND 1697) AND b.TicketType <> 2 THEN 'SBC'
-					WHEN b.bettype BETWEEN 3001  AND 3099 THEN 'SAG' -- SAG
-					WHEN b.bettype BETWEEN 6001  AND 6300 THEN 'PGS'
-					WHEN b.bettype BETWEEN 6401  AND 6700 THEN 'JK' -- JK
-					WHEN b.bettype BETWEEN 7001  AND 7300 THEN 'HB' -- HB
-					WHEN b.bettype BETWEEN 3401  AND 3499 THEN 'WM' -- WM
-					WHEN b.bettype BETWEEN 3501  AND 3599 THEN 'BGG' 
-					WHEN (b.bettype BETWEEN 3801 AND 3899) AND b.TicketType <> 2 THEN 'VGA'
-					WHEN b.bettype BETWEEN 7301  AND 7600 THEN 'CG'
-					WHEN b.bettype BETWEEN 7701  AND 7799 THEN 'AP'
-					WHEN b.bettype BETWEEN 7801  AND 7899 THEN 'APM'
-					WHEN b.bettype BETWEEN 8201  AND 8299 THEN 'FGGL'
-					WHEN b.bettype BETWEEN 5401  AND 5499 THEN 'MXG'
-					WHEN b.bettype BETWEEN 5100  AND 5299 THEN 'JIG'
-					WHEN b.bettype BETWEEN 3151  AND 3200 THEN 'YB'
-					WHEN b.bettype BETWEEN 8400  AND 8699 THEN 'MGRNG'
-					WHEN (b.bettype BETWEEN 1201 AND 1299) OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) OR (b.bettype BETWEEN 5302 AND 5399) THEN 'VS' --VS
-					WHEN b.bettype BETWEEN 8900  AND 8999  THEN 'SEA'
-					WHEN b.bettype BETWEEN 10300 AND 10399 THEN 'WE'
-					WHEN b.bettype BETWEEN 7601  AND 7700  THEN 'L22'
-					WHEN b.bettype BETWEEN 10000 AND 10299 THEN 'UUSL'
-				END AS ProductCode,
-				SUM(b.turnover) turnover,
-				SUM(b.winloss) winlost,
-				- SUM(b.winloss) AS LicenseeWL,
-				SUM(b.CommissionA) Comm,
-				SUM( b.CommissionP) PlayerComm,
-				- SUM(b.winloss + b.WinlossA + b.CommissionA) as AmountDueTo3rd,
-				SUM(b.betcount) BetCount
-			FROM
-				bodb_licenseereport.dbo.rpt_Betting b WITH (NOLOCK)
-				INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency
-			WHERE
-				b.rptDate BETWEEN @FDate AND @TempToDate
-				AND b.status NOT IN (-1,103)
-				AND
-				(
-					(@Liveindicator = 0 AND b.IsLive = 0)
-					OR (@Liveindicator = 1 AND b.IsLive = 1)
-					OR (@Liveindicator = 2)
-				)
-				AND b.CustomerCategory IN (-1, 1001, 1003)
-				AND b.bettype NOT IN (9,29,2799,1700,1800,1900) 
-				AND b.bettype NOT BETWEEN 2001 AND 2009 -- Exclude Microgamming (#44084)
-				AND (b.bettype < 901 OR b.bettype > 904)
-				AND (b.bettype < 911 OR b.bettype > 914)
-				AND (b.bettype <= 30
-					OR b.bettype BETWEEN 121  AND 999
-					OR b.Bettype BETWEEN 1301 AND 1399
-					OR b.Bettype BETWEEN 9001 AND 9399
-					OR b.Bettype BETWEEN 9400 AND 9998 -- Cricket AIO
-					OR b.Bettype BETWEEN 3900 AND 3999 -- Volleyball AIO
-					OR b.Bettype = 38				   -- Single Match Parlay
-					OR (b.bettype BETWEEN 3611 AND 3620
-						AND EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SLT')))
-					OR (b.bettype BETWEEN 7901 AND 7999
-						AND EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'BTC')))
-					OR b.bettype BETWEEN 81   AND 120
-					OR b.bettype BETWEEN 8101 AND 8120 -- Number Game: Happy 5
-					OR b.bettype BETWEEN 3601 AND 3610 -- Happy 5 Linked Games
-					OR b.bettype BETWEEN 1201 AND 1299
-					OR b.bettype BETWEEN 1501 AND 1599 -- Keno
-					OR (b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999) -- RNG CASINO
-					OR (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) -- Voidbridge
-					OR b.bettype BETWEEN 2401 AND 2499 -- AB
-					OR b.bettype BETWEEN 2701 AND 2829 -- VS2
-					OR b.bettype BETWEEN 1021 AND 1099 -- LT
-					OR b.bettype BETWEEN 4101 AND 4296 OR b.bettype BETWEEN 6701 AND 7000 -- PP -- exclude 4300, 4299, 4298, 4297
-					OR b.bettype BETWEEN 1901  AND 1999 -- CC
-					OR b.bettype BETWEEN 4301  AND 4600 -- SG
-					OR b.bettype BETWEEN 4601  AND 4900 -- VRG
-					OR b.bettype BETWEEN 4901  AND 5000 -- TG
-					OR b.bettype BETWEEN 5001  AND 5099 -- I4D
-					OR b.bettype BETWEEN 3101  AND 3149 -- SXG
-					OR (b.bettype BETWEEN 1611 AND 1697 AND b.TicketType <> 2) -- SBC
-					OR b.bettype BETWEEN 3001  AND 3099 -- SAG
-					OR b.bettype BETWEEN 6001  AND 6300 -- PGS
-					OR b.bettype BETWEEN 6401  AND 6700 -- JK
-					OR b.bettype BETWEEN 7001  AND 7300 -- HB
-					OR b.bettype BETWEEN 3401  AND 3499 -- WM
-					OR b.bettype BETWEEN 3501  AND 3599 -- BGG
-					OR (b.bettype BETWEEN 3801 AND 3899 AND b.TicketType <> 2) -- VGA
-					OR b.bettype BETWEEN 7301  AND 7600 -- CG
-					OR b.bettype BETWEEN 7701  AND 7799 -- AP
-					OR b.bettype BETWEEN 7801  AND 7899 -- APM
-					OR b.bettype BETWEEN 8201  AND 8299 -- FGGL
-					OR b.bettype BETWEEN 5401  AND 5499 -- MXG
-					OR b.bettype BETWEEN 5100  AND 5299 -- JIG
-					OR b.bettype BETWEEN 3151  AND 3200 -- YB
-					OR b.bettype BETWEEN 8400  AND 8699 -- MGRNG
-					OR b.bettype BETWEEN 5302  AND 5399 -- LG
-					OR b.bettype BETWEEN 8900  AND 8999 -- SEA
-					OR b.bettype BETWEEN 10300 AND 10399 -- WE
-					OR b.bettype BETWEEN 7601  AND 7700  -- L22
-					OR b.bettype BETWEEN 10000 AND 10299 -- UUSL
-					)
-				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
-			GROUP BY
-				b.rptDate,
-				b.currencyID,
-				CASE 
-					WHEN (b.bettype BETWEEN 81 AND 120) OR (b.bettype BETWEEN 8101 AND 8120) OR (b.bettype BETWEEN 3601 AND 3610) THEN 'NG'
-					WHEN b.bettype <= 30 
-							OR (b.bettype BETWEEN 121 AND 999) 
-							OR (b.Bettype BETWEEN 1301 AND 1399) 
-							OR (b.Bettype BETWEEN 9001 AND 9399) 
-							OR (b.Bettype BETWEEN 9400 AND 9998) -- Cricket AIO
-							OR (b.Bettype BETWEEN 3900 AND 3999) -- Volleyball AIO
-							OR b.Bettype = 38					 -- Single Match Parlay
-							OR b.bettype BETWEEN 3611 AND 3620	 -- Sports Lottery
-							OR b.bettype BETWEEN 7901 AND 7999	 -- Bitcoin
-						THEN 'SB'
-					WHEN b.bettype BETWEEN 1501 AND 1599 THEN 'KN'
-					WHEN b.bettype = 71 OR b.bettype BETWEEN 2101 AND 2399 OR b.bettype BETWEEN 2901 AND 2999 THEN 'CS' -- RNG CASINO
-					WHEN (b.bettype BETWEEN 4001 AND 4100) OR (b.bettype BETWEEN 5800 AND 5999) THEN 'VB' -- Voidbridge
-					WHEN b.bettype BETWEEN 2401 AND 2499 THEN 'AB' -- AllBet
-					WHEN b.bettype BETWEEN 1021 AND 1099 THEN 'LT'
-					WHEN b.bettype BETWEEN 4101 AND 4296 OR b.bettype BETWEEN 6701 AND 7000 THEN 'PP' -- exclude 4300, 4299, 4298, 4297
-					WHEN b.bettype BETWEEN 1901  AND 1999 THEN 'CC'
-					WHEN b.bettype BETWEEN 4301  AND 4600 THEN 'SG' -- SG
-					WHEN b.bettype BETWEEN 4601  AND 4900 THEN 'VRG'
-					WHEN b.bettype BETWEEN 4901  AND 5000 THEN 'TG'
-					WHEN b.bettype BETWEEN 5001  AND 5099 THEN 'I4D'
-					WHEN b.bettype BETWEEN 3101  AND 3149 THEN 'SXG' -- SXG
-					WHEN (b.bettype BETWEEN 1611 AND 1697) AND b.TicketType <> 2 THEN 'SBC'
-					WHEN b.bettype BETWEEN 3001  AND 3099 THEN 'SAG' -- SAG	
-					WHEN b.bettype BETWEEN 6001  AND 6300 THEN 'PGS'
-					WHEN b.bettype BETWEEN 6401  AND 6700 THEN 'JK' -- JK
-					WHEN b.bettype BETWEEN 7001  AND 7300 THEN 'HB' -- HB
-					WHEN b.bettype BETWEEN 3401  AND 3499 THEN 'WM' -- WM
-					WHEN b.bettype BETWEEN 3501  AND 3599 THEN 'BGG'
-					WHEN (b.bettype BETWEEN 3801 AND 3899) AND b.TicketType <> 2 THEN 'VGA' -- VGA
-					WHEN b.bettype BETWEEN 7301  AND 7600 THEN 'CG'
-					WHEN b.bettype BETWEEN 7701  AND 7799 THEN 'AP'
-					WHEN b.bettype BETWEEN 7801  AND 7899 THEN 'APM'
-					WHEN b.bettype BETWEEN 8201  AND 8299 THEN 'FGGL'
-					WHEN b.bettype BETWEEN 5401  AND 5499 THEN 'MXG'
-					WHEN b.bettype BETWEEN 5100  AND 5299 THEN 'JIG'
-					WHEN b.bettype BETWEEN 3151  AND 3200 THEN 'YB'
-					WHEN b.bettype BETWEEN 8400  AND 8699 THEN 'MGRNG'
-					WHEN (b.bettype BETWEEN 1201 AND 1299) OR (b.bettype BETWEEN 2701 AND 2798) OR (b.bettype BETWEEN 2800 AND 2829) OR (b.bettype BETWEEN 5302 AND 5399) THEN 'VS' --VS
-					WHEN b.bettype BETWEEN 8900  AND 8999  THEN 'SEA'
-					WHEN b.bettype BETWEEN 10300 AND 10399 THEN 'WE'
-					WHEN b.bettype BETWEEN 7601  AND 7700  THEN 'L22'
-					WHEN b.bettype BETWEEN 10000 AND 10299 THEN 'UUSL'
-				END
-		END
-
-		-- parlay for SB
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'SB'))
-		BEGIN
-			INSERT INTO #tmpWinloss
-			SELECT 
-				b.rptDate,
-				b.currencyID,
-				'SB' AS ProductCode,
-				SUM(b.turnover) turnover,
-				SUM(b.winloss) winlost,
-				SUM(-1 * b.winloss) AS LicenseeWL,
-				SUM(b.CommissionA) Comm,
-				SUM(b.CommissionP) PlayerComm,
-				- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,
-				SUM(b.betcount) BetCount
-			FROM
-				bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )
-				INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency
-			WHERE
-				b.rptDate BETWEEN @FDate AND @TempToDate
-				AND b.status NOT IN (-1,103)
-				AND (b.bettype < 901 OR b.bettype > 904)
-				AND (b.bettype < 911 OR b.bettype > 914)
-				AND b.Bettype <> 2799
-				AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
-				AND
-				(
-					(@Liveindicator = 0 AND b.IsLive = 0)
-					OR (@Liveindicator = 1 AND b.IsLive = 1)
-					OR (@Liveindicator = 2)
-				)
-				AND b.isBA = 0
-			GROUP BY
-				b.rptDate,
-				b.currencyID
-		END
-
-		-- parlay for VS2
-		IF EXISTS (SELECT 1 FROM #ProductCodes WHERE ProductCode IN ('', 'VS2'))
-		BEGIN
-			INSERT INTO #tmpWinloss
-			SELECT
-				b.rptDate,
-				b.currencyID,
-				'VS' AS ProductCode,
-				SUM(b.turnover) turnover,
-				SUM(b.winloss) winlost,
-				SUM(-1 * b.winloss) AS LicenseeWL,
-				SUM(b.CommissionA) Comm,
-				SUM(b.CommissionP) PlayerComm,
-				- SUM (b.winloss + b.WinlossA + b.CommissionA) AmountDueTo3rd,
-				SUM(b.betcount) BetCount
-			FROM
-				bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )
-				INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency
-			WHERE
-				b.rptDate BETWEEN @FDate AND @TempToDate
-				AND b.status NOT IN (-1,103)
-				AND b.Bettype = 2799
-				AND
-				(
-					(@Liveindicator = 0 AND b.IsLive = 0)
-					OR (@Liveindicator = 1 AND b.IsLive = 1)
-					OR (@Liveindicator = 2)
-				)
-				AND b.isBA = 0
-			GROUP BY
-				b.rptDate,
-				b.currencyID
-		END
+		-- Get ticket parlay
+		INSERT INTO #tmpWinloss (WinLostDate, Currency, ProductCode, Turnover, WinLost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, BetCount)
+		SELECT 
+			b.rptDate,
+			b.currencyID,
+			bt.ProductCode,
+			SUM(b.turnover) turnover,
+			SUM(b.winloss) winlost,
+			SUM(-1 * b.winloss) AS LicenseeWL,
+			SUM(b.CommissionA) Comm,
+			SUM(b.CommissionP) PlayerComm,
+			- SUM (b.winloss+b.WinlossA+b.CommissionA) AmountDueTo3rd,
+			SUM(b.betcount) BetCount
+		FROM
+			bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH ( NOLOCK )
+			INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency
+			INNER JOIN #tmpBettype bt ON b.Bettype = bt.Bettype
+		WHERE
+			b.rptDate BETWEEN @FDate AND @TempToDate
+			AND b.status NOT IN (-1,103)
+			AND b.Bettype IN (9,29,2799)
+			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
+			AND (b.IsLive = @Liveindicator OR @Liveindicator = 2) 
+			AND b.isBA = 0
+		GROUP BY
+			b.rptDate,
+			b.currencyID,
+			bt.ProductCode
 	END
 
-	----Filter again by ProductCodes
-	DELETE #tmpWinloss 
-	WHERE ProductCode NOT IN (SELECT ProductCode FROM #ProductCodes)
 	---------------------------------
 
 	CREATE NONCLUSTERED INDEX IX_tmpWinloss ON #tmpWinloss (Currency)
 
-	SELECT FromDate, ToDate, ExchangeID, Rate
-	INTO #TempExchange
-	FROM dbo.Lrf_f_GetExchangeRate(@FDate, @TDate, @BaseCurrency, '') e
+	CREATE TABLE #TempExchange (FromDate SMALLDATETIME, ToDate SMALLDATETIME, ExchangeID INT, Rate FLOAT);
+	CREATE CLUSTERED INDEX CIX_TempExchange ON #TempExchange(ExchangeID);
+
+	INSERT INTO #TempExchange (FromDate , ToDate , ExchangeId , Rate)
+	SELECT FromDate
+		 , ToDate
+		 , ExchangeId
+		 , Rate
+	FROM Lrf_f_GetExchangeRate(@FDate, @TDate, @BaseCurrency, '') e
 	WHERE EXISTS (SELECT 1 FROM #TempAg a WHERE e.ExchangeID = a.Currency)
 
 	SELECT
@@ -867,10 +431,5 @@ BEGIN
 	GROUP BY ProductCode
 	ORDER BY ProductCode
 
-	DROP TABLE #TempAg
-	DROP TABLE #tmpWinloss
-	DROP TABLE #TempExchange
-	DROP TABLE #ProductCodes
-	DROP TABLE #LicenseeList
 END
 GO
