@@ -16,12 +16,10 @@ AS
 	DB: DBEXT.bodb02
 
 	Revisions:
-		Return 3 tables:
-		WinlostBySport
-		WinlostByCurrency
-		WinlostByBetType
 
-		- 20242503@Evan: Initial SP  [RedmineID: #199843]
+		- 20240325@Evan: Initial SP  [RedmineID: #199843]
+		- 20240509@Evan: Integrate VS4 [RedmineID: #199347]
+
 	Param's Explanation:
 		+ @Liveindicator: indicate that whether the report will get live data or not
 			+ 0: Non - Live data only
@@ -143,7 +141,7 @@ BEGIN
 			OUTER APPLY
 			(
 				SELECT	CASE WHEN BA.TransID IS NOT NULL THEN 1 ELSE 0 END AS IsBA,
-						ISNULL(CASE WHEN b.bettype IN (9,29,2799) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
+						ISNULL(CASE WHEN b.bettype IN (9,29,2799,10449) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 			) s
 		WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND b.statusID IN (111, 112, 113)

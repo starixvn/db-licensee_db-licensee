@@ -58,6 +58,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20231213@Evan: Integrate Live22 [RedmineID: #197702]
 		- 20241701@Evan: Remove VS3 (old) [RedmineID: #199523]
 		- 20240308@Eddie: Integrate UU Slots and change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
+		- 20242901@Evan: Integrate VS4 [RedmineID: #199347]
 
 */
 RETURNS TABLE
@@ -112,7 +113,8 @@ RETURN
 					(72, 'SEA', 156, 0),	-- SEAL
 					(80, 'WE', 228, 0),		-- WE Live Casino (WE)
 					(79, 'L22', 227, 0),	-- Live 22
-					(78, 'UUSL', 216, 0)	-- UU Slots
+					(78, 'UUSL', 216, 0),	-- UU Slots
+					(83, 'VS4', 188, 0)		-- Virtual Sports 4
 			) d(ProductID, ProductCode, SportType, BetType)
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'
 GO

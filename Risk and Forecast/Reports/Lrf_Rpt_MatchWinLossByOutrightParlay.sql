@@ -36,6 +36,7 @@ AS
 					- Rename output column from MemberWinLost to WinLost
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
+		- 20242901@Evan: Integrate VS4 [RedmineID: #199347]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -90,8 +91,9 @@ BEGIN
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
 	INSERT INTO @BetType (BetType, ProductCode, EventType)
-	SELECT DISTINCT BetType, ProductPrefix, EventType
-	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
+	SELECT DISTINCT a.BetType, ISNULL(b.GroupProductPrefix,a.ProductPrefix), a.EventType
+	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest) a
+		LEFT JOIN dbo.Lrf_f_GroupProduct() b ON a.ProductPrefix = b.ProductPrefix
 	WHERE EventType IN (0, 2)
 		AND BetType NOT IN (SELECT BetType FROM dbo.Lrf_f_SelExcludedBetType())
 

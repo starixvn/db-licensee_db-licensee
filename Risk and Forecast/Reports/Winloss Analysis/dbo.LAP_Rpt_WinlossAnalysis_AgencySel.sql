@@ -44,6 +44,7 @@ AS
 		- 20240304@Evan: Grant execute new acc [RedmineID: #201283]
 		- 20240410@Eddie: change metadata 'bodbLicenseeNet,wsv_lap,wsv_alp' to 'wsv_lap,wsv_alp' [RedmineID: #202935]
 		- 20240506@Bobby: Cashout separation [RedmineID: #200269]
+		- 20242901@Evan: Integrate VS4 (Parlay Sport) [RedmineID: #199347]
 		
 
 	Param's Explanation:
@@ -225,19 +226,9 @@ BEGIN
 				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,BA,%' THEN 1 ELSE 0 END, 3)),
 			@ProductCheck = @ProductCodes;
 
-	--TODO: Convert GroupBettype
-	WITH cte_bettype AS (
-		SELECT ProductCode
-			 , sbm.BetType
-		FROM #BetTypeSel b
-			LEFT JOIN dbo.Lrf_f_GroupProduct() lfgp ON lfgp.GroupProductId = b.ProductId
-			LEFT JOIN bodb02.dbo.Lrf_f_GroupBettype() l ON l.GroupTypeId = b.Bettype
-			INNER JOIN SportBettypeMatrix sbm WITH(NOLOCK) ON sbm.BetType = ISNULL(l.Bettype,b.Bettype) AND ISNULL(lfgp.ProductId, b.ProductId) = sbm.ProductId
-		GROUP BY ProductCode
-			   , sbm.BetType
-	)
-	SELECT @BettypeIdsCheck = STRING_AGG(CAST(BetType AS NVARCHAR(MAX)), ',') 
-	FROM cte_bettype;
+	--TODO: Bettype filtering
+	SELECT @BettypeIdsCheck = STRING_AGG(CAST(BetType AS VARCHAR(MAX)), ',') 
+	FROM (SELECT DISTINCT bettype FROM #BetTypeSel) a;
 
 	DROP TABLE IF EXISTS #tmpBettype;
 	CREATE TABLE #tmpBettype (
@@ -258,6 +249,7 @@ BEGIN
 		IsPriceBettype,
 		GroupTypeId
 	FROM bodb02.dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductCheck, @SportCheck, @BettypeIdsCheck, @SBBACheck) AS bm
+	WHERE @BettypeIdsCheck IS NULL OR EXISTS (SELECT 1 FROM #BetTypeSel bts WHERE bts.ProductId = bm.ProductId)
 
 	;WITH CTE_ProductMap AS (
 		SELECT DISTINCT ISNULL(lf.ProductId,t.ProductId) AS ProductId
@@ -511,6 +503,7 @@ BEGIN
 								CASE 
 									WHEN b.matchid = 29 THEN -1 --Parlay Sport
 									WHEN b.matchid = 2799 THEN b.oddsid --VS Sports
+									WHEN b.matchid = 10449 THEN 188 --VS4 
 									ELSE b.matchid
 								END
 							WHEN s.EventType = 1 THEN ISNULL(saba.SabaSportType, m.sporttype)
@@ -519,7 +512,7 @@ BEGIN
 							WHEN s.EventType = 5 THEN m3rd.SportType --175-BTC Sport
 							ELSE @NASporttype
 						END AS SportType,
-						ISNULL(CASE WHEN b.bettype IN(29) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
+						ISNULL(CASE WHEN b.bettype IN(29,2799,10449) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 				) AS ck
 				INNER JOIN @PlatformSel bf ON bf.betfrom =  b.BetFrom
 			WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
