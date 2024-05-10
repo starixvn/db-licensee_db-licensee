@@ -25,6 +25,7 @@ BEGIN
 		- 20230708@Evan: Support CN3, INDO & THAI language on LAP [RedmineID: #187132]
 		- 20230920@Evan: Clean code un-use  [RedmineID: #193757]
 		- 20240304@Evan: Integrate Saba Ice Hockey [RedmineID: #201283]
+		- 20240508@Bobby: Integrate Saba Kabaddi [RedmineID: #203612]
 
 	Param's Explanation:
 		- @SportTypeList: sporttype list separated by ','
@@ -38,6 +39,8 @@ BEGIN
 			+ -7: Saba E-Sports Pingoal (SportType = 43, LeagueGroupId IN (151))
 			+ -8: Saba Virtual Tennis (SportType = 5, LeagueGroupId IN (42))
 			+ -9: Saba Ice Hockey (SportType = 4, LeagueGroupId IN (42))
+			+ -10: Saba Kabaddi (SportType = 47, LeagueGroupId IN (42))
+
 		- @BetTypeList: bettype list separated by ','
 			+ 'All': all bettypes
 		- @ReasonList: Reason list separated by ','
@@ -99,7 +102,9 @@ BEGIN
 					WHEN SportID = -3 THEN 50  
 					WHEN SportID = -7 THEN 43 
 					WHEN SportID = -8 THEN 5  
-					WHEN SportID = -9 THEN 4 END 
+					WHEN SportID = -9 THEN 4 
+					WHEN SportID = -10 THEN 47 
+				END 
         FROM #tmpSport  
 		WHERE SportID < 0
 
@@ -167,7 +172,10 @@ BEGIN
 			OR (',' + @SportTypeList + ',' LIKE '%,-9,%'
 				AND l.sporttype = 4
 				AND l.LeagueGroupID IN (42))
-			)
+			OR (',' + @SportTypeList + ',' LIKE '%,-10,%'
+				AND l.sporttype = 47
+				AND l.LeagueGroupID IN (42))
+		)
 		AND (@LeagueName = '' OR CASE
 									WHEN @SearchLanguage = 'zh-CN' AND ISNULL(l.leaguenamecn,'') <> '' THEN l.leaguenamecn
 									WHEN @SearchLanguage = 'vi-VN' AND ISNULL(l.leaguenameVN,'') <> '' THEN l.leaguenameVN
@@ -211,6 +219,13 @@ BEGIN
 		BEGIN
 			DELETE FROM #League
 			WHERE SportType = 4 AND LeagueGroupId NOT IN (42)
+		END
+
+		--Saba Kabaddi
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,47,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 47 AND LeagueGroupId NOT IN (42)
 		END
 		
 		IF ',' + @SportTypeList + ',' NOT LIKE '%,-1,%'
@@ -269,6 +284,12 @@ BEGIN
 		BEGIN	
 			DELETE FROM #League
 			WHERE SportType = 4 AND LeagueGroupId IN (42)
+		END
+		--Saba Kabaddi
+		IF ',' + @SportTypeList + ',' NOT LIKE '%,-10,%'
+		BEGIN
+			DELETE FROM #League
+			WHERE SportType = 47 AND LeagueGroupId IN (42)
 		END
 	END
 	
@@ -479,6 +500,7 @@ BEGIN
 					WHEN d.SportType = 43 AND d.LeagueGroupId IN (151) THEN -7
 					WHEN d.SportType = 5 AND d.LeagueGroupId IN (42) AND CreatedDate >= @CutoffDate THEN -8
 					WHEN d.SportType = 4 AND d.LeagueGroupId IN (42) THEN -9
+					WHEN d.SportType = 47 AND d.LeagueGroupId IN (42) THEN -10
 					ELSE d.SportType
 				END AS Sport
 				,LeagueID AS League
