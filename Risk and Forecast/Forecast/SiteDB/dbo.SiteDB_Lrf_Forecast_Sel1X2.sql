@@ -1,4 +1,4 @@
-/*<info serverAlias="DBSID-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBSID-bodb02" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 
 CREATE PROCEDURE [SiteDB_Lrf_Forecast_Sel1X2]    
     @matchid		INT ,
