@@ -7,6 +7,9 @@ Risk and Forecast\Reports\Lrf_Rpt_LicWinlossByTimeZone.sql
 Risk and Forecast\Reports\Lrf_Rpt_LiveReportBySport.sql
 Risk and Forecast\Reports\Lrf_Rpt_LiveReportSummary.sql
 Risk and Forecast\Reports\Lrf_Rpt_LiveReportSummaryDetail.sql
+Risk and Forecast\Reports\LiveReport\Lrf_Rpt_LiveReport.sql
+Risk and Forecast\Reports\LiveReport\Lrf_Rpt_LiveReportBySportType.sql
+Risk and Forecast\Reports\LiveReport\Lrf_Rpt_LiveReportDetail.sql
 Risk and Forecast\Reports\Lrf_Rpt_LiveReportWinlossByMatch.sql
 Risk and Forecast\Reports\Lrf_Rpt_MatchWinLoss.sql
 Risk and Forecast\Reports\Lrf_Rpt_MatchWinloss_ExportExcel.sql
