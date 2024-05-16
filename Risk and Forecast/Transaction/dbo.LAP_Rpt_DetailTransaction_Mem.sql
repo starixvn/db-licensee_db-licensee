@@ -86,6 +86,10 @@ BEGIN
 		SELECT @_CustID = c.custid
 		FROM Customer c WITH(NOLOCK)
 		WHERE c.username2 = 'sabacoins$' + CAST(@_CustID AS VARCHAR(10))
+
+		IF @@ROWCOUNT = 0
+			SELECT @_CustID = 0
+
 	END
 	
 	INSERT INTO #transactionRpt (
