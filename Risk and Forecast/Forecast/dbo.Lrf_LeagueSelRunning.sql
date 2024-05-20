@@ -1,4 +1,4 @@
-/*<info serverAlias="DB042-bodb02,DBSID-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DB042-bodb02,DBSID-bodb02" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_LeagueSelRunning]
 		@AgentList		VARCHAR(MAX),   
     	@Bettypes		VARCHAR(100) = '0',--0: all, 1:1,3,7,8; 5:5,15 

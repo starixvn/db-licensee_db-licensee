@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" isFunction="0" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="wsv_lap" isFunction="0" isNested="1"></info>*/
 ALTER PROCEDURE dbo.Lrf_GetSpecialPlatform
 (
 	  @SiteName NVARCHAR(50)

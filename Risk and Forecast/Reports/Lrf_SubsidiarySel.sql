@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-SiteConfig" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-SiteConfig" executers="wsv_lap" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_SubsidiarySel]
 	@LicenseeName NVARCHAR(50)

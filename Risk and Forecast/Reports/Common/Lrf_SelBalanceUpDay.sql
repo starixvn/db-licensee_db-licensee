@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBEXT-bodb02,DBBAL-bodb02" executers="bodbAdminNet,bodbLicenseeNet" isFunction="0" isNested="1"></info>*/
+﻿/*<info serverAlias="DBEXT-bodb02,DBBAL-bodb02" executers="wsv_lap" isFunction="0" isNested="1"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_SelBalanceUpDay]
 AS
 

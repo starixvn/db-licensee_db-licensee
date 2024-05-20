@@ -1,4 +1,4 @@
-/*<info serverAlias="DBPLO-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBPLO-bodb02" executers="wsv_lap" viewers="" isFunction="1" isNested="1"></info>*/
 ALTER FUNCTION [dbo].[Lrf_f_MappingAuditSite]
 (
 	@AuditSiteName VARCHAR(50)

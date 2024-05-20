@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBBOF-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+﻿/*<info serverAlias="DBBOF-bodb02" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE Lrf_LeagueMatchSelRunning
 	@SportType				TINYINT	= 1,
