@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" selecters="bodbLicenseeNet,wsv_lap,wsv_alp" viewers="" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02" selecters="wsv_lap" viewers="" isFunction="1" isNested="1"></info>*/
 ALTER FUNCTION [dbo].[LAP_f_WinlossAnalysis_BettypeMatrix] (
 	@ProductCheck	VARCHAR(MAX),
 	@SportCheck		VARCHAR(MAX),

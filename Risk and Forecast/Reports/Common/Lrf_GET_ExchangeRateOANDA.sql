@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbAdminNet,bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+﻿/*<info serverAlias="DBLIC-bodb_Licensee" executers="wsv_lap" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER  PROCEDURE [dbo].[Lrf_GET_ExchangeRateOANDA]
 	@Fromdate DATETIME=NULL,
 	@ToDate DATETIME=NULL 

@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 Alter PROCEDURE [dbo].[Lrf_CustomerSelByUsername]
 	@LicenseeName	VARCHAR(50),
 	@username		VARCHAR(50)		= NULL,

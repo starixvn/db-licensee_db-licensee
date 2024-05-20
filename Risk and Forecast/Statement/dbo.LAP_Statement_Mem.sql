@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" executers="wsv_lap,wsv_alp" isFunction="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="wsv_lap" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[LAP_Statement_Mem]  
     @CustID			INT,  
     @FromDate		SMALLDATETIME,  

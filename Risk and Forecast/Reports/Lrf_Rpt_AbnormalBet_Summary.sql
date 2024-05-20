@@ -1,4 +1,4 @@
-/*<info serverAlias="DBWH-bodb_DWRS" executers="bodbLicenseeNet,wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBWH-bodb_DWRS" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE dbo.Lrf_Rpt_AbnormalBet_Summary
 	@LicenseeName	VARCHAR(50) = '',
 	@FromDate DATE, 

@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet,wsv_lap,wsv_alp" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE dbo.LAP_Rpt_WinlossAnalysis_SportSel
 	@LicenseeID		INT = NULL,
 	@ProductCodes	VARCHAR(MAX) = 'ALL'

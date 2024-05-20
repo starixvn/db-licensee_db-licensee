@@ -1,4 +1,4 @@
-/*<info serverAlias="DBBAH-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBBAH-bodb02" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[LAP_Rpt_DetailTransaction_Mem] 
     @CustID			INT,  
     @FromDate		DATE,  

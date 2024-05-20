@@ -1,4 +1,4 @@
-/*<info serverAlias="DBPLO-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBPLO-bodb02" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_Rpt_Audit_AdminWithdrawHistory]  	
 	@CustId			INT,
 	@FromDate		SMALLDATETIME,

@@ -1,4 +1,4 @@
-/*<info serverAlias="DBWH-bodb_DWRS" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBWH-bodb_DWRS" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE Lrf_AbnormalBet_SubIssueSel
     @Langkey VARCHAR(20) = 'en-US'  
 AS  
