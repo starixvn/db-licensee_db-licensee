@@ -1,4 +1,4 @@
-/*<info serverAlias="DBSID-bodb02" executers="bodbLicenseeNet,bodbDownlineNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBSID-bodb02" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 CREATE PROCEDURE [dbo].[SiteDB_Lrf_CustomerSelByUsername]
 	@LicenseeName	VARCHAR(50),
 	@username		VARCHAR(50)		= NULL,
@@ -25,6 +25,8 @@ AS
 		- 20221109@Danny: Enhance performance [Redmine: #180045]
 		- 20230227@Evan: Ensure correct balance calculation when allow to transfer 247 (BU) [Redmine: #173554]
 		- 20240304@Johnson: HF filter Risk Level "Uncategorized" not show [redmine: #200913]
+		- 20240318@Bobby: LAP EC enhancement - [RedmineID: #191592]
+
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: '1,2,3,4,5,6,7,8,9,10' (all)
@@ -59,6 +61,19 @@ BEGIN
 	SELECT  @PageIndex = @PageIndex - 1,
 		@RowStart = @PageSize * @PageIndex + 1,
 		@RowEnd = @RowStart + @PageSize - 1 
+
+	--TODO: temp tables
+	DROP TABLE IF EXISTS #TempAg
+	DROP TABLE IF EXISTS #Temp
+	DROP TABLE IF EXISTS #OutstandingTranslog
+	DROP TABLE IF EXISTS #Data
+	DROP TABLE IF EXISTS #tmpCust
+	DROP TABLE IF EXISTS #TempMember
+	DROP TABLE IF EXISTS #Exchange
+	DROP TABLE IF EXISTS #TotalBalance
+	DROP TABLE IF EXISTS #LicenseeCustComm
+	DROP TABLE IF EXISTS #Dep_CustSpecialLevel
+	DROP TABLE IF EXISTS #LicenseeBAHistory
 
 	CREATE TABLE #TempAg (custid INT)
 	CREATE TABLE #LicenseeCustComm (LicenseeID INT, GroupCommID INT, CustID INT PRIMARY KEY, GroupName VARCHAR(100))
@@ -558,7 +573,7 @@ BEGIN
 	SELECT tl.custid, tl.currency, statusID, SUM(actual_stake) actual_stacke
 	FROM
 		dbo.translog tl WITH (NOLOCK)
-		INNER JOIN #TempAg lc ON tl.recommend=lc.CustID
+		INNER JOIN #Temp cl on cl.custid = tl.custid
 		INNER JOIN @sporttype s ON s.SportType = productID
 	WHERE
 		statusID IN (0, 1)  --running and Waiting
@@ -569,7 +584,7 @@ BEGIN
 	SELECT g.custid, g.currency, statusID, SUM(g.actual_stake) actual_stacke
 	FROM
 		dbo.bettransRnG g WITH (NOLOCK)
-		INNER JOIN #TempAg lc ON g.recommend = lc.CustID
+		INNER JOIN #Temp cl on cl.custid = g.custid
 	WHERE g.statusID IN (0, 1)  --running and Waiting
 	GROUP BY g.custid, g.currency, statusID
 
@@ -578,7 +593,7 @@ BEGIN
 	SELECT g.custid, g.currency, statusID, SUM(g.actual_stake) actual_stacke
 	FROM
 		dbo.bettransLC g WITH (NOLOCK)
-		INNER JOIN #TempAg lc ON g.recommend = lc.CustID
+		INNER JOIN #Temp cl on cl.custid = g.custid
 	WHERE g.statusID IN (0, 1)  --running and Waiting
 	GROUP BY g.custid, g.currency, statusID
 
@@ -588,12 +603,10 @@ BEGIN
 		Outstanding MONEY
 	)
 
-	DECLARE @MBBU TABLE (BalanceUpDay SMALLDATETIME, MoveBetsDay SMALLDATETIME)
-	INSERT INTO @MBBU (BalanceUpDay, MoveBetsDay)
-	EXEC dbo.Age_SelBalanceUpDay
-
-	DECLARE @MoveBetsDay SMALLDATETIME, @BalanceUpDate SMALLDATETIME
-	SELECT  @MoveBetsDay = MoveBetsDay , @BalanceUpDate = BalanceUpDay FROM @MBBU
+	--TODO: get MBU days
+	DECLARE @MoveBetsDay SMALLDATETIME,	@BalanceUpDay SMALLDATETIME
+	EXEC dbo.NAP_Admin_GetMovebetDate @MovebetDate = @MoveBetsDay OUTPUT
+	EXEC dbo.NAP_Admin_GetBalanceUpDate @BalanceUpDate = @BalanceUpDay OUTPUT
 
 	---insert data totalbalance
 	--bettrans
@@ -619,8 +632,8 @@ BEGIN
 		#Temp t
 		INNER JOIN dbo.Transfer b WITH(NOLOCK) ON t.custid = b.custid
 	WHERE 1 = CASE WHEN bettype = 19999 AND winlostdate > @MoveBetsDay THEN 0 --> new sum
-	            WHEN bettype = 20000 AND winlostdate > @BalanceUpDate THEN 0 --> new bal
-	            WHEN winlostdate < @BalanceUpDate THEN 0 --> old data
+	            WHEN bettype = 20000 AND winlostdate > @BalanceUpDay THEN 0 --> new bal
+	            WHEN winlostdate < @BalanceUpDay THEN 0 --> old data
 	            ELSE 1 END
 	GROUP BY t.custid
 
@@ -665,16 +678,5 @@ BEGIN
 		
 	ORDER BY t.username
 
-	DROP TABLE #TempAg
-	DROP TABLE #Temp
-	DROP TABLE #OutstandingTranslog
-	DROP TABLE #Data
-	DROP TABLE #tmpCust
-	DROP TABLE #TempMember
-	DROP TABLE #Exchange
-	DROP TABLE #TotalBalance
-	DROP TABLE #LicenseeCustComm
-	DROP TABLE #Dep_CustSpecialLevel
-	DROP TABLE #LicenseeBAHistory
 END
 GO
