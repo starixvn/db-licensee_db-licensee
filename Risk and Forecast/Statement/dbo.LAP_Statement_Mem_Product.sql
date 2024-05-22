@@ -3,6 +3,7 @@
 ALTER PROCEDURE [dbo].[LAP_Statement_Mem_Product]
 	@CustId			INT,
 	@WinLostDate	SMALLDATETIME,
+    @ReportViewType	TINYINT	= 1,
 	@MoveBetsDay	SMALLDATETIME,
 	@BalanceUpDay	SMALLDATETIME,
 	@BaseCurrency	VARCHAR(12)		= '',
@@ -26,6 +27,7 @@ AS
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20231018@Evan: Integrate Saba Reward Risk-free Rebate + add missing bettype 17006 [redmine: #196881]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
+		- 20240416@Evan: Integrate Saba Coins - add param @ReportViewType [RedmineID: #202281]
 
 	Param's Explanation:
 		- @ModeView: TINYINT
@@ -33,6 +35,9 @@ AS
 			+ 2 - Void_Cancelled_Bet
 			+ 3 - Outstanding_Bet
 			+ 4 - Promotion_Prize
+  		- @ReportViewType : TINYINT
+  			+ 1 - Main Wallet
+  			+ 2 - Saba coins 
 */
 
 BEGIN
@@ -64,9 +69,26 @@ BEGIN
 		Commission	DECIMAL(15,2)
 	)
 
+	DECLARE @PROMO_BETTPE TABLE  
+    (  
+		betTypeId		SMALLINT
+    )
+    
+    INSERT INTO @PROMO_BETTPE (betTypeId)
+	SELECT b.typeid FROM bettype b WITH(NOLOCK) 
+	WHERE b.typeid BETWEEN 17000 AND 17010
+		OR b.typeid BETWEEN 11001 AND 11008
+
 	SELECT @_custID		= @CustID
 		, @_winlostdate	= @WinLostDate
 		, @_ModeView	= ISNULL(@ModeView, 1)
+
+	IF @ReportViewType = 2
+	BEGIN
+		SELECT @_CustID = c.custid
+		FROM Customer c WITH(NOLOCK)
+		WHERE c.username2 = 'sabacoins$' + CAST(@_CustID AS VARCHAR(10))
+	END
 
 	SELECT TOP(1) @currency	= currency, @_recommend = recommend
 	FROM dbo.custinfo WITH(NOLOCK)
@@ -109,17 +131,17 @@ BEGIN
 			SUM(CASE WHEN b.statusID IN (0, 1) THEN 0 ELSE b.winlost - b.actual_stake END) AS winlost,
 			SUM(b.playercomm) AS playercomm
 		FROM dbo.bettrans b WITH (NOLOCK)
+			LEFT JOIN @PROMO_BETTPE pb ON pb.betTypeId = b.bettype
 		WHERE
 			b.custid = @_custID
 			AND b.winlostdate = @_winlostdate
-			AND b.bettype < 19999 -- bet tickets
 			AND b.bettype NOT IN (903, 71, 913, 914, 999)
 			AND ((ISNULL(@IsCOMember, 0) = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE
-						WHEN @_ModeView = 1 AND b.statusID IN (111, 112, 113) AND b.bettype NOT IN (17000, 17003, 17004, 17006, 17007) THEN 1
-						WHEN @_ModeView = 2 AND b.statusID IN (101, 102, 103) AND b.bettype NOT IN (17000, 17003, 17004, 17006, 17007) THEN 1
+						WHEN @_ModeView = 1 AND b.statusID IN (111, 112, 113) AND pb.betTypeId IS NULL THEN 1
+						WHEN @_ModeView = 2 AND b.statusID IN (101, 102, 103) AND pb.betTypeId IS NULL THEN 1
 						WHEN @_ModeView = 3 AND b.statusID IN (0, 1) THEN 1
-						WHEN @_ModeView = 4 AND b.bettype IN (17000, 17003, 17004, 17006, 17007) THEN 1
+						WHEN @_ModeView = 4 AND pb.betTypeId IS NOT NULL THEN 1
 						ELSE 0
 					END
 		GROUP BY b.bettype
@@ -175,15 +197,16 @@ BEGIN
 			SUM(b.winlost - b.actual_stake) AS winlost,
 			SUM(b.playercomm) AS playercomm
 		FROM dbo.bettrans14 b WITH (NOLOCK)
+			LEFT JOIN @PROMO_BETTPE pb ON pb.betTypeId = b.bettype
 		WHERE
 			b.custid = @_custid
 			AND b.winlostdate = @_winlostdate
 			AND b.bettype NOT IN (903, 71, 913, 914, 999)
 			AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE
-						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000, 17003, 17004, 17006, 17007) THEN 1
-						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) AND b.bettype NOT IN (17000, 17003, 17004, 17006, 17007) THEN 1
-						WHEN @_ModeView = 4 AND b.bettype IN (17000, 17003, 17004, 17006, 17007) THEN 1
+						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND pb.betTypeId IS NULL THEN 1
+						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) AND pb.betTypeId IS NULL THEN 1
+						WHEN @_ModeView = 4 AND pb.betTypeId IS NOT NULL THEN 1
 						ELSE 0
 					END
 		GROUP BY b.bettype
@@ -200,15 +223,16 @@ BEGIN
 			SUM(b.playercomm) AS playercomm
 		FROM
 			bodb_archive.dbo.bettrans_bk b WITH (NOLOCK)
+			LEFT JOIN @PROMO_BETTPE pb ON pb.betTypeId = b.bettype
 		WHERE 
 			b.custid = @_custid
 			AND b.winlostdate = @_winlostdate
 			AND b.bettype NOT IN (903, 71, 913, 914, 999)
 			AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE
-						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND b.bettype NOT IN (17000, 17003, 17004, 17006, 17007) THEN 1
-						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) AND b.bettype NOT IN (17000, 17003, 17004, 17006, 17007) THEN 1
-						WHEN @_ModeView = 4 AND b.bettype IN (17000, 17003, 17004, 17006, 17007) THEN 1
+						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND pb.betTypeId IS NULL THEN 1
+						WHEN @_ModeView = 2 AND b.statusID IN (101,102,103) AND pb.betTypeId IS NULL THEN 1
+						WHEN @_ModeView = 4 AND pb.betTypeId IS NOT NULL THEN 1
 						ELSE 0
 					END
 		GROUP BY b.bettype
