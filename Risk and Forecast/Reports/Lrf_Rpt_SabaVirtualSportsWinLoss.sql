@@ -29,6 +29,7 @@ AS
 		- 20221207@Evan: Support Saba E-Sports PinGoal [RedmineID: #181224]
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 		- 20240304@Evan: Integrate Saba Ice Hockey [RedmineID: #201283]
+		- 20240508@Bobby: Integrate Saba Kabaddi [RedmineID: #203612]
 
 	Param's Explanation:
 		+ @ReportType: 1: Daily, 2: Monthly
@@ -122,7 +123,8 @@ BEGIN
 			OR (@SportType IN (0, -43) AND sporttype = 43 AND LeagueGroupID IN (151))
 			OR (@sporttype IN (0, 5) AND sporttype = 5 AND LeagueGroupID IN (42))
 			OR (@sporttype IN (0, 4) AND sporttype = 4 AND LeagueGroupID IN (42))
-			)
+			OR (@sporttype IN (0, 47) AND sporttype = 47 AND LeagueGroupID IN (42))
+		)
 
 	DECLARE @Data TABLE (
 		WinLostDate		SMALLDATETIME,

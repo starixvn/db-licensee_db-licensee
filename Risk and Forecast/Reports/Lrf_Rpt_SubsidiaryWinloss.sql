@@ -42,6 +42,7 @@ AS
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240304@Evan: Integrate Saba Ice Hockey [RedmineID: #201283]
 		- 20240311@Eddie: Change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
+		- 20240508@Bobby: Integrate Saba Kabaddi [RedmineID: #203612]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -171,6 +172,7 @@ BEGIN
 		OR (sporttype = 43 AND LeagueGroupID IN (151))
 		OR (sporttype = 5 AND LeagueGroupID IN (42))
 		OR (sporttype = 4 AND LeagueGroupID IN (42))
+		OR (sporttype = 47 AND LeagueGroupID IN (42))
 
 	IF @ToDate > @MoveBetsDay
 	BEGIN
