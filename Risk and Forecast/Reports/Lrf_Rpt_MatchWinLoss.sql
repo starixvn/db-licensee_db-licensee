@@ -53,6 +53,7 @@ AS
 					- Rename output column from MemberWinLost to WinLost
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
+		- 20240508@Kelvin: LAP - Jollysports - Hide Saba text - phase 2 [RedmineID: #203258]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -396,6 +397,7 @@ BEGIN
 		b.LeagueId,
 		b.ProductName,
 		b.SportType,
+		l.LeagueGroupID,
 		SUM(b.BetCount) AS BetCount,
 		CAST(SUM(b.Turnover		* e.Rate) AS MONEY) AS Turnover,
 		CAST(SUM(b.WinLost		* e.Rate) AS MONEY) AS WinLost,
@@ -405,6 +407,7 @@ BEGIN
 		CAST(SUM((b.AmtDueToBA)	* e.Rate) AS MONEY) AS AmtDuetoBA
 	FROM @Data AS b
 		INNER JOIN @ExchangeDaily AS e ON e.ExchangeId = b.Currency
+		INNER JOIN dbo.League AS l WITH(NOLOCK) ON b.LeagueId = l.LeagueId
 	GROUP BY
 		b.MatchId,
 		ISNULL(b.MatchCode, ''),
@@ -414,7 +417,8 @@ BEGIN
 		b.IsNeutral,
 		b.LeagueId,
 		b.ProductName,
-		b.SportType
+		b.SportType,
+		l.LeagueGroupID
 	ORDER BY CASE ProductName
 				WHEN 'SB' THEN 0
 				WHEN 'NG' THEN 1
