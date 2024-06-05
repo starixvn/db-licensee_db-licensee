@@ -65,6 +65,7 @@ AS
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240311@Eddie: Change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
+		- 20240605@Kelvin: Exclude CusitID in bodb02.dbo.Dep_Customer_Archived [RedmineID: #206148]
 
 	Param's Explanation:
 		+ @TopCount:
@@ -222,6 +223,7 @@ BEGIN
 			INNER JOIN #TmpAg AS a ON b.recommend = a.CustId
 			LEFT JOIN bodb_Report.dbo.rptDepWinlost_BonusWallet AS bo WITH (NOLOCK) ON b.custid = bo.CustID AND b.winlostdate = bo.Winlostdate
 		WHERE b.winlostdate BETWEEN @fdate AND @tmpdate
+			AND NOT EXISTS (SELECT TOP 1 1 FROM bodb02.dbo.Dep_Customer_Archived da WITH(NOLOCK) WHERE b.CustID = da.CustID) 
 		GROUP BY b.CustId;
 
 		WITH sourceDATA
@@ -294,6 +296,7 @@ BEGIN
 		FROM bodb_Report.dbo.rptDepWinlost AS b WITH (NOLOCK)
 			INNER JOIN #TmpAg AS a ON b.recommend = a.CustId
 		WHERE b.winlostdate BETWEEN @tmpdate AND @tdate
+			AND NOT EXISTS (SELECT TOP 1 1 FROM bodb02.dbo.Dep_Customer_Archived da WITH(NOLOCK) WHERE b.CustID = da.CustID)
 		GROUP BY b.CustId;
 
 		WITH sourceDATA
