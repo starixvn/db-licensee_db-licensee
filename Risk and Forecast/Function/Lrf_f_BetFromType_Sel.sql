@@ -30,6 +30,7 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 		- 20231122@Evan: Handle betfrom for Jollysports [Redmine: #197192]	
 		- 20240102@Evan: Support add new betfrom I001 [Redmine: #198817]	
 		- 20240410@Eddie: Support add new betfrom W003, W004, A003 and change metadata 'bodbLicenseeNet' to 'wsv_lap' [Redmine: #202935]
+		- 20240606@Kelvin: LAP - Changes on betfrom W003, W004 [Redmine: #206176]
 	
 
 	Param's Explanation:
@@ -54,6 +55,7 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 				16: Chat Room
 				17: Desktop Galaxy
 				18: Mobile Galaxy
+				19: Desktop Compact
 				88: Others
 				-- Jollysports
 				91: Desktop
@@ -79,6 +81,7 @@ RETURN
 				(5, '%',0),
 				(6, 'c',0),
 				(6, '@',0),
+				(6, 'W004',0),
 				(7, '7',0),
 				(7, '8',0),
 				(7, '_',0),
@@ -100,10 +103,11 @@ RETURN
 				(15, 'm',0),
 				(16, 'A000',0),
 				(16, 'A003',0),
-				(17, 'W001',0), 
-				(17, 'W003',0), 
+				(17, 'W001',0), 				 
 				(18, 'W002',0),
-				(18, 'W004',0),
+				(19, 'W003',0),
+
+				
 				(88, 'v',0),
 				(88, 'd',0),
 				(88, 'g',0),
