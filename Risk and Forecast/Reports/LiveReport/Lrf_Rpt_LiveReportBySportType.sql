@@ -301,7 +301,6 @@ BEGIN
 		INNER JOIN #TempExchange e ON b.winlostdate BETWEEN e.FromDate AND e.ToDate
 			AND e.ExchangeId = b.currency
 	GROUP BY b.SportType
-	ORDER BY b.SportType
 
 END
 GO
