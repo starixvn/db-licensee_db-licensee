@@ -184,5 +184,6 @@ BEGIN
 		s.SportName AS Name
 	FROM @ProductSport AS ps
 		INNER JOIN bodb02.dbo.Sports AS s WITH (NOLOCK) ON ps.ID = s.SportType AND ps.ParentID IS NOT NULL
+	ORDER BY ps.Id
 END
 GO
