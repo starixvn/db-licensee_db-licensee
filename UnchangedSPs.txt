@@ -1,4 +1,4 @@
-Risk and Forecast\Reports\Winloss Analysis\dbo.LAP_f_WinlossAnalysis_BettypeMatrix.sql
+Risk and Forecast\Reports\api\Lrf_GetLicenseeTurnoverByPlatform.sql
+Risk and Forecast\Reports\api\Lrf_GetLicenseeWLByPlatform.sql
 Risk and Forecast\Reports\Winloss Analysis\dbo.LAP_Rpt_WinlossAnalysis_AgencySel.sql
 Risk and Forecast\Reports\Winloss Analysis\dbo.LAP_Rpt_WinlossAnalysis_PlayerSel.sql
-Risk and Forecast\Reports\Winloss Analysis\dbo.LAP_Rpt_WInlossAnalysis_SportSel.sql
