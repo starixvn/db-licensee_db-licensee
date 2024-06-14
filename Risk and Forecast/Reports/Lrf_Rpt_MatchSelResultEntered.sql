@@ -24,6 +24,7 @@ Revisions:
 	- 20230928@Evan: Integrate Virtual Sports 3 (Leap Gaming New) [RedmineID: #190908]
 	- 20231206@Evan: Integrate VS3 Sport 179 [RedmineID: #190908]
 	- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
+	- 20242901@Evan: Integrate VS4 (add missing sportid VS3) [RedmineID: #199347]
 */
 
 BEGIN
@@ -110,7 +111,7 @@ BEGIN
 
 		IF @ShowVS = 0
 		BEGIN
-			DELETE FROM @Result WHERE Sporttype BETWEEN 180 AND 199
+			DELETE FROM @Result WHERE Sporttype BETWEEN 178 AND 199
 		END
 
 	END

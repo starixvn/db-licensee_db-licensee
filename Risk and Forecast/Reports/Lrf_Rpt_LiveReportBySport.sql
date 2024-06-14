@@ -118,6 +118,7 @@ AS
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only + Remove VS3 (old) [RedmineID: #199523]
 		- 20240308@Eddie: Integrate UU Slots and change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
 		- 20242503@Evan: Enhance code to avoid hardcode  [RedmineID: #199843]
+		- 20240509@Evan: Integrate VS4 [RedmineID: #199347]
 
 	Param's Explanation:
 		@Liveindicator : indicate that whether the report will get live data or not
@@ -249,7 +250,7 @@ BEGIN
 				WHEN b.bettype = 10 THEN 103 --Outright
 				WHEN b.bettype = 9 THEN 101 --Mix Parlay
 				WHEN b.bettype = 29 THEN 102 --System Parlay
-				WHEN b.bettype IN (2799) THEN 104 --VS Parlay
+				WHEN b.bettype IN (2799,10449) THEN 104 --VS Parlay
 				WHEN bt.EventType = 0 THEN ISNULL(b.matchid, @NASportType)
 				WHEN bt.EventType = 1 THEN ISNULL(m.sporttype,@NASportType)
 				WHEN bt.EventType = 3 THEN ISNULL(vs.SportType,@NASportType)
@@ -272,7 +273,7 @@ BEGIN
 			OUTER APPLY
 			(
 				SELECT	CASE WHEN BA.TransID IS NOT NULL THEN 1 ELSE 0 END AS IsBA,
-						ISNULL(CASE WHEN b.bettype IN (9,29,2799) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
+						ISNULL(CASE WHEN b.bettype IN (9,29,2799,10449) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 			) s
 		WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND (@Liveindicator = s.liveindicator OR @Liveindicator = 2)
@@ -289,7 +290,7 @@ BEGIN
 					WHEN b.bettype = 10 THEN 103 --Outright
 					WHEN b.bettype = 9 THEN 101 --Mix Parlay
 					WHEN b.bettype = 29 THEN 102 --System Parlay
-					WHEN b.bettype IN (2799) THEN 104 --VS Parlay
+					WHEN b.bettype IN (2799,10449) THEN 104 --VS Parlay
 					WHEN bt.EventType = 0 THEN ISNULL(b.matchid, @NASportType)
 					WHEN bt.EventType = 1 THEN ISNULL(m.sporttype,@NASportType)
 					WHEN bt.EventType = 3 THEN ISNULL(vs.SportType,@NASportType)
@@ -405,7 +406,7 @@ BEGIN
 		WHERE b.rptDate BETWEEN @FDate AND @TempToDate
 			AND b.status NOT IN (-1, 103)
 			AND (b.IsLive = @Liveindicator OR @Liveindicator = 2)
-			AND b.bettype NOT IN (9, 29, 2799)
+			AND b.bettype NOT IN (9, 29, 2799,10449)
 			AND b.CustomerCategory IN (-1, 1001, 1003)
 			AND 1 = CASE WHEN b.bettype BETWEEN 1611 AND 1697 AND b.TicketType = 2 THEN 0
 						WHEN b.bettype BETWEEN 3801 AND 3899 AND b.TicketType = 2 THEN 0
@@ -426,7 +427,7 @@ BEGIN
 				, CASE
 					WHEN b.bettype = 9 THEN 101
 					WHEN b.bettype = 29 THEN 102
-					WHEN b.bettype IN (2799) THEN 104
+					WHEN b.bettype IN (2799,10449) THEN 104
 				END AS SportType
 				, SUM(b.turnover) turnover
 				, SUM(b.WinLoss) winlost
@@ -440,7 +441,7 @@ BEGIN
 			INNER JOIN #tmpBettype bt ON b.Bettype = bt.Bettype
 		WHERE b.rptDate BETWEEN @FDate AND @TempToDate
 			AND b.status NOT IN (-1, 103)
-			AND b.bettype IN (9, 29, 2799)
+			AND b.bettype IN (9, 29, 2799,10449)
 			AND (b.IsLive = @Liveindicator OR @Liveindicator = 2)
 			AND b.isBA = 0
 			AND 1 = CASE WHEN @SBBACheck = 10 AND bt.ProductID = 1 THEN 0 ELSE 1 END
@@ -449,7 +450,7 @@ BEGIN
 				, CASE
 					WHEN b.bettype = 9 THEN 101
 					WHEN b.bettype = 29 THEN 102
-					WHEN b.bettype IN (2799) THEN 104
+					WHEN b.bettype IN (2799,10449) THEN 104
 					END
 	END
 	

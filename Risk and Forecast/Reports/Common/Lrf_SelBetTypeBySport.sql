@@ -42,7 +42,7 @@ AS
 		- 20220329@Hogan: Hide Mix Parlay (bettypeID 9)[RedmineID: #170438]
 		- 20220714@Hogan: Integrate Volleyball AIO [RedmineID: #175143]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
-
+		- 20242901@Evan: Hide Upcoming bettype [RedmineID: #199347]
 	Param's Explanation:
 		- @SportList: XML format (999: Parlay sport)
 			<products>
@@ -105,11 +105,12 @@ BEGIN
 	SELECT DISTINCT s.ProductID, s.BetType
 	FROM dbo.SportBettypeMatrix AS s WITH (NOLOCK)
 		INNER JOIN @SportFilter AS f ON f.SportType = s.SportType
+		INNER JOIN bettype b WITH (NOLOCK) ON s.BetType = b.typeid
 	WHERE s.IsTest <= @IsTest
 		AND s.bettype NOT IN (901, 902, 903, 904, 500, 502, 300, 301, 302, 303, 304, 911, 912, 913, 914, 999, 18999, 9, 29, 38)
 		AND s.bettype NOT BETWEEN 801 AND 899	-- Metric Gaming
 		AND (s.SportType <> 5 OR s.BetType NOT IN (5, 15))		-- Tennis
-
+		AND b.typenamee NOT LIKE '%Upcoming%'
 	-- Insert Parlay bettypes
 	IF EXISTS (SELECT 1 FROM @SportFilter WHERE SportType = 999)
 	BEGIN

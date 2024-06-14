@@ -95,7 +95,8 @@ AS
 		- 20230801@Evan: Integrate Virtual Sports 3 (Leap Gaming New) [RedmineID: #190908]
 		- 20231120@Evan: Support INDO & THAI language on LAP [RedmineID: #196246]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
-
+		- 20242901@Evan: Integrate VS4 [RedmineID: #199347]
+		
 	Parameter's Explanation:
 		- @ReportBy: 1: daily, 2: monthly
 		- @FilterBy: 1: Win, 2: Loss, 3: Draw
@@ -350,9 +351,9 @@ BEGIN
 								INNER JOIN dbo.match m WITH (NOLOCK) ON bm.matchid = m.matchid
 							WHERE b.refno = bm.refno AND b.custid = bm.custid
 					) AS s
-		WHERE b.bettype = 2799
+		WHERE b.bettype IN (2799,10449)
 			AND b.winlostdate BETWEEN @tempFromDate AND @ToDate
-			AND b.matchid = 2799
+			AND b.matchid IN (2799,10449)
 		OPTION(RECOMPILE)
 
 		INSERT INTO #tempBettrans
@@ -365,7 +366,7 @@ BEGIN
 			, CASE
 				WHEN b.bettype IN (9, 29, 38) THEN 999
 				WHEN bt.EventType = 0 THEN CASE
-												WHEN b.bettype = 2799 THEN p.sporttype
+												WHEN b.bettype IN (2799,10449) THEN p.sporttype
 												WHEN bt.ProductID = 63 THEN b.matchid
 												ELSE 1
 											END
@@ -417,6 +418,7 @@ BEGIN
 			OR bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
 			OR bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
 			OR bettype BETWEEN 5302 AND 5399 -- Virtual Sport 3 (LG)
+			OR bettype BETWEEN 10400 AND 10448 -- Virtual Sport 4
 			OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 			OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 			OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)

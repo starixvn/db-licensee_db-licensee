@@ -16,7 +16,8 @@ AS
 	DB: DBEXT.bodb02
 
 	Revisions:
-				- 20242503@Evan: Initial SP  [RedmineID: #199843]
+		- 20240325@Evan: Initial SP  [RedmineID: #199843]
+		- 20240509@Evan: Integrate VS4 [RedmineID: #199347]
 
 
 	Param's Explanation:
@@ -133,7 +134,7 @@ BEGIN
 				WHEN b.bettype = 10 THEN 103 --Outright
 				WHEN b.bettype = 9 THEN 101 --Mix Parlay
 				WHEN b.bettype = 29 THEN 102 --System Parlay
-				WHEN b.bettype IN (2799) THEN 104 --VS Parlay
+				WHEN b.bettype IN (2799,10449) THEN 104 --VS Parlay
 				WHEN bt.EventType = 0 THEN ISNULL(b.matchid, @NASportType)
 				WHEN bt.EventType = 1 THEN ISNULL(m.sporttype,@NASportType)
 				WHEN bt.EventType = 3 THEN ISNULL(vs.SportType,@NASportType)
@@ -156,7 +157,7 @@ BEGIN
 			OUTER APPLY
 			(
 				SELECT	CASE WHEN BA.TransID IS NOT NULL THEN 1 ELSE 0 END AS IsBA,
-						ISNULL(CASE WHEN b.bettype IN (9,29,2799) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
+						ISNULL(CASE WHEN b.bettype IN (9,29,2799,10449) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 			) s
 		WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND (@Liveindicator = s.liveindicator OR @Liveindicator = 2)
@@ -170,7 +171,7 @@ BEGIN
 					WHEN b.bettype = 10 THEN 103 --Outright
 					WHEN b.bettype = 9 THEN 101 --Mix Parlay
 					WHEN b.bettype = 29 THEN 102 --System Parlay
-					WHEN b.bettype IN (2799) THEN 104 --VS Parlay
+					WHEN b.bettype IN (2799,10449) THEN 104 --VS Parlay
 					WHEN bt.EventType = 0 THEN ISNULL(b.matchid, @NASportType)
 					WHEN bt.EventType = 1 THEN ISNULL(m.sporttype,@NASportType)
 					WHEN bt.EventType = 3 THEN ISNULL(vs.SportType,@NASportType)
@@ -241,7 +242,7 @@ BEGIN
 				   WHEN b.bettype = 10 THEN 103
 				   WHEN b.bettype = 9 THEN 101
 				   WHEN b.bettype = 29 THEN 102
-				   WHEN b.bettype IN (2799) THEN 104
+				   WHEN b.bettype IN (2799,10449) THEN 104
 				   ELSE b.sporttype
 			   END AS SportType
 			 , SUM(b.turnover) turnover
@@ -269,7 +270,7 @@ BEGIN
 					WHEN b.bettype = 10 THEN 103
 					WHEN b.bettype = 9 THEN 101
 					WHEN b.bettype = 29 THEN 102
-					WHEN b.bettype IN (2799) THEN 104
+					WHEN b.bettype IN (2799,10449) THEN 104
 					ELSE b.sporttype
 			   	END 
 	END

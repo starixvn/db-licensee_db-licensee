@@ -70,6 +70,7 @@ AS
 					- Don't return column Race, showtime anymore
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
+		- 20242901@Evan: Integrate VS4 [RedmineID: #199347]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -186,6 +187,7 @@ BEGIN
 				WHEN b.bettype = 10 THEN 2
 				WHEN b.bettype = 29 THEN 4
 				WHEN b.bettype = 2799 THEN 3
+				WHEN b.bettype = 10449 THEN 3
 				WHEN bt.EventType = 0 THEN 5
 				ELSE 0
 			END AS BetGroup,
@@ -206,7 +208,7 @@ BEGIN
 			CASE
 				WHEN b.bettype = 10 THEN 103
 				WHEN b.bettype = 29 THEN 102
-				WHEN b.bettype = 2799 THEN 104
+				WHEN b.bettype IN (2799,10449) THEN 104
 				WHEN bt.EventType = 0 THEN b.matchid
 				ELSE 0
 			END AS SportType,
@@ -254,7 +256,7 @@ BEGIN
 			CASE
 				WHEN b.bettype = 10 THEN 103
 				WHEN b.bettype = 29 THEN 102
-				WHEN b.bettype = 2799 THEN 104
+				WHEN b.bettype IN (2799,10449) THEN 104
 				WHEN bt.EventType = 0 THEN b.matchid
 				ELSE 0
 			END,
@@ -320,6 +322,7 @@ BEGIN
 				WHEN 10 THEN 2
 				WHEN 29 THEN 4
 				WHEN 2799 THEN 3
+				WHEN 10449 THEN 3
 				ELSE 0
 			END AS BetGroup,
 			CASE
@@ -339,7 +342,7 @@ BEGIN
 			CASE
 				WHEN b.bettype = 10 THEN 103
 				WHEN b.bettype = 29 THEN 102
-				WHEN b.bettype = 2799 THEN 104
+				WHEN b.bettype IN (2799,10449) THEN 104
 				WHEN bt.EventType = 0 THEN b.matchid
 				ELSE 0
 			END AS SportType,
@@ -387,7 +390,7 @@ BEGIN
 			CASE
 				WHEN b.bettype = 10 THEN 103
 				WHEN b.bettype = 29 THEN 102
-				WHEN b.bettype = 2799 THEN 104
+				WHEN b.bettype IN (2799,10449) THEN 104
 				WHEN bt.EventType = 0 THEN b.matchid
 				ELSE 0
 			END,
@@ -541,7 +544,7 @@ BEGIN
 				CASE
 					WHEN ISNULL(ss.bettype, 0) <> 0 THEN ss.GroupTypeId ELSE b.BetType
 				END AS BetType,
-				b.ProductCode,
+				ISNULL(f.GroupProductPrefix,b.ProductCode) ProductCode,
 				b.LiveIndicator,
 				SUM(b.BetCount) AS BetCount,
 				CAST(SUM(b.Turnover		* e.Rate) AS MONEY) AS Turnover,
@@ -555,6 +558,7 @@ BEGIN
 				@Data AS b
 				INNER JOIN @ExchangeDaily AS e ON e.ExchangeId = b.Currency
 				LEFT JOIN @GroupBetType AS ss ON ss.bettype = b.BetType
+				LEFT JOIN dbo.Lrf_f_GroupProduct() f ON f.ProductPrefix = b.ProductCode
 			GROUP BY
 				b.BetGroup,
 				b.MatchId,
@@ -568,7 +572,7 @@ BEGIN
 				CASE
 					WHEN ISNULL(ss.bettype, 0) <> 0 THEN ss.GroupTypeId ELSE b.BetType
 				END,
-				b.ProductCode,
+				ISNULL(f.GroupProductPrefix,b.ProductCode),
 				b.LiveIndicator
 			) wl
 	WHERE wl.RowNum BETWEEN @RowStart AND @RowEnd
