@@ -29,6 +29,7 @@ AS
 		- 20230925@Evan: LAP - Enhance Exchange reports (View Resettled Ticket Data + merge code view resettled report) [Redmine: #193954]
 		- 20240102@Evan: Enhance performance [Redmine #198757]
 		- 20240506@Kelvin: LAP - Exchange Win Loss - Hide Amount Due To and Licensee Total [Redmine #204695]
+		- 20240617@Kelvin: LAP - Exchange Win Loss - Revise Net Turnover [RedmineID: #206505]
 	Param's Explanation: 
 		@ReportType : 1 - Daily, 2 - Monthly
 		@ReportViewType : 1 - Settled Date, 2 - ReSettled Date
@@ -281,8 +282,10 @@ BEGIN
 		EventID		INT,
 		MarketID	VARCHAR(50),
 		BetCount	INT,
-		Lay			MONEY,
-		Back		MONEY,
+		LayStake	MONEY,
+		BackStake	MONEY,
+		YesStake	MONEY,
+		NoStake		MONEY
 	)
 		
 	INSERT INTO #detailBet (
@@ -291,16 +294,20 @@ BEGIN
 		EventID,
 		MarketID,
 		BetCount,
-		Lay,
-		Back )
+		LayStake,
+		BackStake,
+		YesStake,
+		NoStake)
 	SELECT
 		sumbet.SettledDate,
 		bet.userId,
 		bet.eventID,
 		bet.marketID,
 		COUNT(bet.betID) AS Betcount,
-		SUM(CASE WHEN bet.matchType = 'Lay' THEN (bet.matchStake/sumbet.ExVirtualRate) ELSE 0 END) AS Lay,
-		SUM(CASE WHEN bet.matchType = 'Back' THEN (bet.matchStake/sumbet.ExVirtualRate) ELSE 0 END) AS Back
+		SUM(CASE WHEN bet.matchType = 'Lay' THEN (bet.matchStake/sumbet.ExVirtualRate) ELSE 0 END) AS LayStake,
+		SUM(CASE WHEN bet.matchType = 'Back' THEN (bet.matchStake/sumbet.ExVirtualRate) ELSE 0 END) AS BackStake,
+		SUM(CASE WHEN bet.matchType = 'Yes' THEN (bet.matchStake/sumbet.ExVirtualRate) ELSE 0 END) AS YesStake,
+		SUM(CASE WHEN bet.matchType = 'No' THEN (bet.matchStake/sumbet.ExVirtualRate) ELSE 0 END) AS NoStake
 	FROM bodb_3rdProduct.dbo.Bettrans_Exchange bet WITH (NOLOCK)
 		INNER JOIN #sumBet sumbet ON bet.userId = sumbet.UserID AND bet.eventID = sumbet.EventID AND bet.marketID = sumbet.MarketID
 	WHERE bet.betstatus = 'Settled'
@@ -329,7 +336,7 @@ BEGIN
 		sumbet.SettledDate WinLostDate
 		, sumbet.CurrencyID CurrencyId
 		, SUM(sumbet.Turnover) Turnover
-		, SUM(ABS(ISNULL(bet.Lay, 0) - ISNULL(bet.Back, 0))) NetTurnover
+		, SUM(ABS(ISNULL(bet.LayStake, 0) - ISNULL(bet.BackStake, 0)) + ABS(ISNULL(bet.YesStake, 0) - ISNULL(bet.NoStake, 0)))
 		, SUM(ISNULL(bet.BetCount, 0)) TotalTrans
 		, SUM(sumbet.Winlost) WinLost
 		, - SUM(sumbet.Winlost + sumbet.CustComm) LicWinLost
