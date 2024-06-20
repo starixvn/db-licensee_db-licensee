@@ -6,6 +6,7 @@ ALTER PROCEDURE [dbo].[LAP_Rpt_DetailTransaction_Mem]
 	@TransactionId	VARCHAR(50) = NULL,
 	@IsResettled	BIT = 0,
 	@IsSingleWalletLic BIT = 0,
+    @ReportViewType	TINYINT	= 1,
     @PageSize		INT = NULL,  
     @PageIndex		INT = 1,  
     @TotalRow		INT = 0 OUTPUT 
@@ -24,8 +25,12 @@ AS
 		- 20230614@Evan: Update condition show full cycle of status on ticket  [RedmineID: #189579]
 		- 20230810@Evan: Add SettlementType filter Recover Bets [RedmineID: #191844]
 		- 20230810@Evan: Show bettrans.refno for settled record of Translog products [RedmineID: #196379]
+		- 20240620@Kelvin: Integrate Saba Coins - add param @ReportViewType [RedmineID: #206840]
 	
 	Param's Explanation:     
+		- @ReportViewType : TINYINT
+  			+ 1 - Main Wallet
+  			+ 2 - Saba coins 
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -74,6 +79,17 @@ BEGIN
 		BEGIN CATCH
 			SELECT @_TransactionId = 0
 		END CATCH
+	END
+
+	IF @ReportViewType = 2
+	BEGIN
+		SELECT @_CustID = c.custid
+		FROM Customer c WITH(NOLOCK)
+		WHERE c.username2 = 'sabacoins$' + CAST(@_CustID AS VARCHAR(10))
+
+		IF @@ROWCOUNT = 0
+			SELECT @_CustID = 0
+
 	END
 	
 	INSERT INTO #transactionRpt (
