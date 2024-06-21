@@ -49,7 +49,8 @@ Revisions:
 --20230727@Ruby(DB06):Add BT1 Report Data
 --20231225@KenYang(DB06):Add JILISlot, PGSoft Report Data
 --20240104@Benson: Add Saba Reward Risk free Rebate (bettype: 17007) in the promotion
--- 20240410@Eddie: Change metadata 'Dot_Admin,Dot_Member' to 'ow_12bet' - [Redmine: #202118]
+--20240410@Eddie: Change metadata 'Dot_Admin,Dot_Member' to 'ow_12bet' - [Redmine: #202118]
+--20240620@Benson: Add Saba Coins Cash Exchange (bettype: 17008) in the promotion 
 */
 SET @agentid = [dbo].[f_StrRtrimLastSeparator] (@agentid,',')
 
@@ -235,8 +236,8 @@ BEGIN
 			SUM(CASE WHEN winlostdate = @dbtodaydate AND bettype <> 911 AND [status] NOT IN ('VOID', 'REJECT', 'Refund') THEN stake ELSE 0 END) AS 'Turnover',
 			SUM(CASE WHEN winlostdate = @dbtodaydate AND [status] = 'DRAW' THEN stake ELSE 0 END) AS 'DrawGame',
 			SUM(CASE WHEN ruben = 0 THEN actual_stake ELSE 0 END) AS 'Outstanding',
-			SUM(CASE WHEN winlostdate = @dbtodaydate AND bettype NOT IN (17000,17003,4299,4300,4298,4297,17004,3007,1699,1698,3150,1906,3899,3898,4600,4599,4598,2499,8700,17007) AND ruben = 1 THEN winlost-actual_stake+playercomm ELSE 0 END) AS 'Winloss',
-			SUM(CASE WHEN winlostdate = @dbtodaydate AND bettype IN (17000,17003,4299,4300,4298,4297,17004,3007,1699,1698,3150,1906,3899,3898,4600,4599,4598,2499,8700,17007) THEN winlost-actual_stake ELSE 0 END) AS 'Promotion' -- Promotion, Royalty Program
+			SUM(CASE WHEN winlostdate = @dbtodaydate AND bettype NOT IN (17000,17003,4299,4300,4298,4297,17004,3007,1699,1698,3150,1906,3899,3898,4600,4599,4598,2499,8700,17007,17008) AND ruben = 1 THEN winlost-actual_stake+playercomm ELSE 0 END) AS 'Winloss',
+			SUM(CASE WHEN winlostdate = @dbtodaydate AND bettype IN (17000,17003,4299,4300,4298,4297,17004,3007,1699,1698,3150,1906,3899,3898,4600,4599,4598,2499,8700,17007,17008) THEN winlost-actual_stake ELSE 0 END) AS 'Promotion' -- Promotion, Royalty Program
 		FROM bodb02.dbo.bettrans WITH(NOLOCK)
 		WHERE custid = @CustId AND recommend IN (SELECT value FROM STRING_SPLIT(@agentid,',')) 
 		GROUP BY custid, currency, recommend, mrecommend, srecommend
@@ -316,4 +317,5 @@ FROM @WinlostTmp b
 UNION
 SELECT @dbtodaydate, d.* FROM @TodayData d
 ORDER BY b.winlostdate
+
 

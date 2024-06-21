@@ -84,7 +84,8 @@ Revisions:
 --20240104@Benson: Add Saba Reward Risk free Rebate (bettype: 17007) in the promotion 
 --20240207@KenYang(DB06.bodb02): Add Virtual Football League(SportType:178), Virtual Soccer Bundesliga(SportType:195) Report Data
 --20240313@MaxCheng(DB06.bodb02): Combine Virtual Sports 2,3 to Virtual Sports ,and remove Cash Out
--- 20240410@Eddie: Change metadata 'Dot_Admin,Dot_Member' to 'ow_12bet' - [Redmine: #202118]
+--20240410@Eddie: Change metadata 'Dot_Admin,Dot_Member' to 'ow_12bet' - [Redmine: #202118]
+--20240620@Benson: Add Saba Coins Cash Exchange (bettype: 17008) in the promotion 
 */
 BEGIN
     SET NOCOUNT ON
@@ -195,9 +196,9 @@ BEGIN
                                 SUM(CASE WHEN p.sporttype = 161 THEN p.drawTO ELSE 0 END) AS NODraw, 
                                 SUM(CASE WHEN p.sporttype = 161 THEN p.turnover ELSE 0 END) AS NOTOver,
                                 SUM(CASE WHEN p.sporttype = 161 THEN p.winlost ELSE 0 END) AS NOWL,
-								SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.drawTO ELSE 0 END) AS VSDraw, 
-								SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.turnover ELSE 0 END) AS VSTOver,
-								SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.winlost ELSE 0 END) AS VSWL, 
+                                SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.drawTO ELSE 0 END) AS VSDraw, 
+                                SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.turnover ELSE 0 END) AS VSTOver,
+                                SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.winlost ELSE 0 END) AS VSWL, 
                                 SUM(CASE WHEN p.sporttype = 202 THEN p.drawTO ELSE 0 END) AS KEDraw, 
                                 SUM(CASE WHEN p.sporttype = 202 THEN p.turnover ELSE 0 END) AS KETOver,
                                 SUM(CASE WHEN p.sporttype = 202 THEN p.winlost ELSE 0 END) AS KEWL ,
@@ -248,7 +249,7 @@ BEGIN
                                 SUM(CASE WHEN p.sporttype = 175 THEN p.winlost ELSE 0 END) AS BTCWL
                         FROM bodb_Report.dbo.rptDepWinlostByProduct_BK p WITH(NOLOCK)
                         WHERE winlostdate BETWEEN @fromDate AND @toDate 
-							AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,164,194,196,245,222,243,244,168,169,165,171,231,237,175,195,178) 
+                            AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,164,194,196,245,222,243,244,168,169,165,171,231,237,175,195,178) 
                             AND p.custid = @CustId 
                         GROUP BY p.winlostdate, p.custid
                     ) p1 ON b.winlostdate = p1.winlostdate
@@ -329,9 +330,9 @@ BEGIN
                                 SUM(CASE WHEN p.sporttype = 161 THEN p.drawTO ELSE 0 END) AS NODraw, 
                                 SUM(CASE WHEN p.sporttype = 161 THEN p.turnover ELSE 0 END) AS NOTOver,
                                 SUM(CASE WHEN p.sporttype = 161 THEN p.winlost ELSE 0 END) AS NOWL,
-								SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.drawTO ELSE 0 END) AS VSDraw, 
-								SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.turnover ELSE 0 END) AS VSTOver,
-								SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.winlost ELSE 0 END) AS VSWL, 
+                                SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.drawTO ELSE 0 END) AS VSDraw, 
+                                SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.turnover ELSE 0 END) AS VSTOver,
+                                SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.winlost ELSE 0 END) AS VSWL, 
                                 SUM(CASE WHEN p.sporttype = 202 THEN p.drawTO ELSE 0 END) AS KEDraw, 
                                 SUM(CASE WHEN p.sporttype = 202 THEN p.turnover ELSE 0 END) AS KETOver,
                                 SUM(CASE WHEN p.sporttype = 202 THEN p.winlost ELSE 0 END) AS KEWL ,
@@ -383,7 +384,7 @@ BEGIN
 
                         FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)
                         WHERE winlostdate BETWEEN @fromDate AND @toDate 
-							AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,164,194,196,245,222,243,244,168,169,165,171,231,237,175,195,178)
+                            AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,164,194,196,245,222,243,244,168,169,165,171,231,237,175,195,178)
                             AND p.custid = @CustId 
                         GROUP BY p.winlostdate, p.custid
                     ) p1 ON b.winlostdate = p1.winlostdate
@@ -469,8 +470,8 @@ BEGIN
                 SUM(CASE WHEN winlostdate = @dbtodaydate AND [status] NOT IN ('VOID', 'REJECT', 'Refund') THEN stake ELSE 0 END) AS 'Turnover',
                 SUM(CASE WHEN winlostdate = @dbtodaydate AND [status] = 'DRAW' THEN stake ELSE 0 END) AS 'DrawGame',
                 SUM(CASE WHEN ruben = 0 THEN actual_stake ELSE 0 END) AS 'Outstanding',
-                SUM(CASE WHEN winlostdate = @dbtodaydate AND bettype NOT IN (17000,17003,4299,4300,4298,4297,17004,3007,1699,1698,3150,1906,3899,3898,4600,4599,4598,2499,8700,17007) AND ruben = 1 THEN winlost-actual_stake+playercomm ELSE 0 END) AS 'Winloss',
-                SUM(CASE WHEN winlostdate = @dbtodaydate AND bettype IN (17000,17003,4299,4300,4298,4297,17004,3007,1699,1698,3150,1906,3899,3898,4600,4599,4598,2499,8700,17007) THEN winlost-actual_stake ELSE 0 END) AS 'Promotion' -- Promotion, Royalty Program
+                SUM(CASE WHEN winlostdate = @dbtodaydate AND bettype NOT IN (17000,17003,4299,4300,4298,4297,17004,3007,1699,1698,3150,1906,3899,3898,4600,4599,4598,2499,8700,17007,17008) AND ruben = 1 THEN winlost-actual_stake+playercomm ELSE 0 END) AS 'Winloss',
+                SUM(CASE WHEN winlostdate = @dbtodaydate AND bettype IN (17000,17003,4299,4300,4298,4297,17004,3007,1699,1698,3150,1906,3899,3898,4600,4599,4598,2499,8700,17007,17008) THEN winlost-actual_stake ELSE 0 END) AS 'Promotion' -- Promotion, Royalty Program
             FROM bodb02.dbo.bettrans WITH(NOLOCK)
             WHERE custid = @CustId 
                 AND recommend IN (SELECT value FROM STRING_SPLIT(@agentid,',')) 
@@ -559,13 +560,13 @@ BEGIN
                                SUM(CASE WHEN p.sporttype = 161 THEN p.drawTO ELSE 0 END) AS NODraw, 
                                SUM(CASE WHEN p.sporttype = 161 THEN p.turnover ELSE 0 END) AS NOTOver,
                                SUM(CASE WHEN p.sporttype = 161 THEN p.winlost ELSE 0 END) AS NOWL,
-							   SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.drawTO ELSE 0 END) AS VSDraw, 
-							   SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.turnover ELSE 0 END) AS VSTOver,
-							   SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.winlost ELSE 0 END) AS VSWL, 
+                               SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.drawTO ELSE 0 END) AS VSDraw, 
+                               SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.turnover ELSE 0 END) AS VSTOver,
+                               SUM(CASE WHEN p.sporttype IN (180,190,191,192,193,194,195,196,178,231) THEN p.winlost ELSE 0 END) AS VSWL, 
                                SUM(CASE WHEN p.sporttype = 202 THEN p.drawTO ELSE 0 END) AS KEDraw, 
                                SUM(CASE WHEN p.sporttype = 202 THEN p.turnover ELSE 0 END) AS KETOver,
                                SUM(CASE WHEN p.sporttype = 202 THEN p.winlost ELSE 0 END) AS KEWL ,
-                              SUM(CASE WHEN p.sporttype IN (251,208,209) THEN p.drawTO ELSE 0 END) AS RNDraw ,
+                               SUM(CASE WHEN p.sporttype IN (251,208,209) THEN p.drawTO ELSE 0 END) AS RNDraw ,
                                SUM(CASE WHEN p.sporttype IN (251,208,209) THEN p.turnover ELSE 0 END) AS RNTOver ,
                                SUM(CASE WHEN p.sporttype IN (251,208,209) THEN p.winlost ELSE 0 END) AS RNWL ,
                                SUM(CASE WHEN p.sporttype = 212 THEN p.drawTO ELSE 0 END) AS VBDraw ,
@@ -612,7 +613,7 @@ BEGIN
                                SUM(CASE WHEN p.sporttype = 175 THEN p.winlost ELSE 0 END) AS BTCWL
                         FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)
                         WHERE winlostdate = @dbtodaydate
-							AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,164,194,196,245,222,243,244,168,169,165,171,231,237,175,195,178)
+                            AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,164,194,196,245,222,243,244,168,169,165,171,231,237,175,195,178)
                             AND p.custid = @CustId 
                         GROUP BY p.winlostdate, p.custid
                     ) p1 ON d.custid = p1.custid
@@ -649,3 +650,4 @@ BEGIN
     SELECT @dbtodaydate, d.* FROM @TodayData d
     ORDER BY b.winlostdate
 END
+
