@@ -25,6 +25,7 @@ RETURNS @tempDate TABLE
 		TRY FLOAT,
 		NPR FLOAT,
 		PHP FLOAT,
+		JPY FLOAT,
 		MXN FLOAT,
 		NGN FLOAT,
 		actualrate FLOAT,
@@ -85,8 +86,8 @@ BEGIN
 	
 	WHILE (@tmpDate<=@tmpToDate AND @tmpDate<=@todate)
 	BEGIN
-		INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR, INH, BDT, INR, USDT, TRY, NPR, PHP, MXN, NGN, actualrate)
-		SELECT @tmpDate,a.ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR / 1000 AS IDR, VND / 1000 AS INH, BDT, INR,CASE WHEN a.ExchangeId = 20 THEN @UUS ELSE ISNULL(b.USDT,1) END AS USDT, TRY, NPR, PHP, MXN, NGN, actualrate
+		INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR, INH, BDT, INR, USDT, TRY, NPR, PHP, JPY, MXN, NGN, actualrate)
+		SELECT @tmpDate,a.ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR / 1000 AS IDR, VND / 1000 AS INH, BDT, INR,CASE WHEN a.ExchangeId = 20 THEN @UUS ELSE ISNULL(b.USDT,1) END AS USDT, TRY, NPR, PHP, JPY, MXN, NGN, actualrate
 		FROM ExchangeDailyOanda a WITH (NOLOCK) 
 			LEFT JOIN ExchangeDaily_Crypto b WITH(NOLOCK) ON a.ExchangeId = b.ExchangeId AND b.ExchangeDate = @LastDate
 		WHERE a.ExchangeDate = @LastDate
