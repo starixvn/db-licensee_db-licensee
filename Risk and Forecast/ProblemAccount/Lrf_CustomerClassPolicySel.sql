@@ -1,6 +1,7 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE Lrf_CustomerClassPolicySel
-	@site VARCHAR(50)
+	@site VARCHAR(50),
+	@IsTest BIT = 0
 AS
 	/*
 		Created: 20200909@Johnson
@@ -14,6 +15,7 @@ AS
 			- 20201223@Winfred: Get AgentBetInterval and Currency on customer class [redmine:#146969]
 			- 20221025@Johnson: Add DisableParlay [redmine: #178994]
 			- 20231212@Luke: LAP - Switch to new structure of CTS [Redmine: #197111]
+			- 20240625@Winfred: LAP - Get data from Spread Management [redmine:#207016]
 	*/
 BEGIN
 	SET NOCOUNT ON
@@ -28,6 +30,7 @@ BEGIN
 		INNER JOIN Site s								WITH (NOLOCK) ON s.site = sm.Site
 	WHERE s.isLicensee = 1
 		AND r.Enable = 1
+		AND pm.IsTest <= @IsTest
 		AND sm.Site = @site
 	), 
 	T1 AS
@@ -41,6 +44,7 @@ BEGIN
 			INNER JOIN CustomerClassSiteManagement sm		WITH (NOLOCK) ON pr.PolicyID = sm.PolicyID
 			INNER JOIN CustomerClassPolicyManagement pm		WITH (NOLOCK) ON pm.PolicyID = pr.PolicyID
 		WHERE Enable = 1
+			AND pm.IsTest <= @IsTest
 			AND sm.Site IN ('All', 'AllDeposit')
 			AND NOT EXISTS (SELECT 1
 							FROM T
