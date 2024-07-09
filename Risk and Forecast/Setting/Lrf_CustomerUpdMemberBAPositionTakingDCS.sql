@@ -145,6 +145,7 @@ BEGIN
 
 			UPDATE m
 				SET m.SuperPT=o.SuperPT,m.MasterPT=o.MasterPT,m.AgentPT=o.AgentPT
+					,RepUpdateTime = SYSDATETIME()
 			FROM  Dep_CustPTSetting_Member m WITH(ROWLOCK,UPDLOCK)
 				INNER JOIN @Dep_CustPTGroupSetting_MemberOLD o ON m.Sporttype=o.SportType AND m.Bettype=o.BetType AND m.IsLive=o.IsLive
 				INNER JOIN #Sporttype s ON o.Sporttype=s.SporttypeID AND o.Bettype=s.BetypeID AND o.IsLive=s.IsLive
@@ -164,7 +165,8 @@ BEGIN
 				,[IsLive]
 				,[SuperPT]
 				,[MasterPT]
-				,[AgentPT])
+				,[AgentPT]
+				,RepUpdateTime)
 			SELECT 
 				[CustID]
 				,[SportType]
@@ -173,6 +175,7 @@ BEGIN
 				,[SuperPT]
 				,[MasterPT]
 				,[AgentPT]
+				,SYSDATETIME()
 			FROM @Dep_CustPTGroupSetting_MemberOLD o WHERE NOT EXISTS(SELECT 1 FROM Dep_CustPTSetting_Member m WITH(NOLOCK) 
 																				WHERE m.CustID=o.CustID AND m.SportType=o.Sporttype AND m.BetType=o.Bettype AND m.IsLive=o.IsLive)
 			IF @@ERROR<>0
@@ -188,7 +191,8 @@ BEGIN
 		IF @IsGroupPTOLD=0
 		BEGIN
 			UPDATE Dep_CustSettingMode WITH(ROWLOCK,UPDLOCK)
-				SET IsGroupedPT=1
+				SET IsGroupedPT=1,
+					RepUpdateTime = SYSDATETIME()
 			WHERE CustID=@CustID
 
 			IF @@ERROR<>0

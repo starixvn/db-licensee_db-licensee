@@ -28,6 +28,7 @@ AS
 		   - 20230722@Winfred: NAP LM - Enhance Bet Setting function for AM to use - New Case [redmine:#178105]
 		   - 20230929@Winfred: Bet Setting of players not updated in case update Player Bet Setting (all players) [redmine:#194669]
 			- 20240429@Tacy: Apply @SettingStatus [RedmineID: #201239]
+		   - 20240708@Johnson: Apply In-house Replication for Customer Setting [redmine:#207025]
     Param's Explanation:
 		- @CustID : super ID
 		- @AgentID : 0 for All Subsidiary AND <> 0 for only Specific Subsidiary 
@@ -36,8 +37,7 @@ AS
 		- @IsNewMember : Default Bet Setting 
 		- @UpdBetLimit :
 		<ROOT>
-				<BL SportType=1 Bettype=1 MinBet=100 MaxBet=1000 MaxPerMatch=1000 MaxPerNumber=1000 MaxPayoutPerMatch=1000
-				/>
+				<BL SportType=1 Bettype=1 MinBet=100 MaxBet=1000 MaxPerMatch=1000 MaxPerNumber=1000 MaxPayoutPerMatch=1000 />
 		</ROOT>
 		
 */ 
@@ -261,7 +261,7 @@ BEGIN
 				WHILE (1 = 1)
 				BEGIN
 					SELECT @ids = ''
-					UPDATE TOP (9900) #temp
+					UPDATE TOP (200) #temp
 					SET isfinished = 1
 					OUTPUT INSERTED.CustID INTO #tmpCustTemp(CustID)	
 					FROM #temp 
@@ -271,7 +271,7 @@ BEGIN
 					SET @ids = (SELECT STRING_AGG(CONVERT(VARCHAR(MAX),custid),',')  FROM #tmpCustTemp)
 					SET @ids = ISNULL(@SMAs,'') + ',' + @ids
 
-					EXEC Acc_CustSetting3rd_11
+					EXEC NAP_LM_CustSetting_BetLimitUpd
 						@ids = @ids, 
 						@srecommend = @CustID, 
 						@UpdBetLimit = @UpdBetLimit, 
@@ -283,7 +283,7 @@ BEGIN
 
 					SET @SMAs = ''
 					TRUNCATE TABLE #tmpCustTemp
-					IF @rowcnt < 9900 BREAK
+					IF @rowcnt < 200 BREAK
 				END
 				SET @row_STT +=1
 				-- Log new updated data
@@ -369,8 +369,8 @@ BEGIN
 		AND NOT EXISTS (SELECT 1 FROM Dep_ProductSetting ps WITH(NOLOCK) 
 							INNER JOIN Dep_LicenseeProductSetting d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID WHERE ProductID=@ProductID AND CustID = @CustID AND SettingType <> 9)	
 	BEGIN
-		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID)
-		SELECT @CustID, ProductSettingID
+		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID,RepUpdateTime)
+		SELECT @CustID, ProductSettingID, SYSDATETIME()
 		FROM Dep_ProductSetting WITH(NOLOCK)
 		WHERE ProductID = @ProductID AND SettingType <> 9
 	END
@@ -379,8 +379,8 @@ BEGIN
 		AND NOT EXISTS (SELECT 1 FROM Dep_ProductSetting ps WITH(NOLOCK) 
 							INNER JOIN Dep_LicenseeProductSetting d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID WHERE ProductID=@ProductID AND CustID = @CustID)	
 	BEGIN
-		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID)
-		SELECT @CustID, ProductSettingID
+		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID,RepUpdateTime)
+		SELECT @CustID, ProductSettingID, SYSDATETIME()
 		FROM Dep_ProductSetting WITH(NOLOCK)
 		WHERE ProductID = @ProductID
 	END
@@ -388,8 +388,8 @@ BEGIN
 	IF NOT EXISTS (SELECT 1 FROM Dep_ProductSetting ps WITH(NOLOCK) 
 							INNER JOIN Dep_LicenseeProductSetting d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID WHERE ProductID=@ProductID AND CustID = @CustID)
 	BEGIN
-		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID)
-		SELECT @CustID, ProductSettingID
+		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID,RepUpdateTime)
+		SELECT @CustID, ProductSettingID, SYSDATETIME()
 		FROM Dep_ProductSetting WITH(NOLOCK)
 		WHERE ProductID = @ProductID
 	END	
@@ -418,7 +418,8 @@ BEGIN
 				SET d.MinBet = s.MinBet,
 					d.MaxBet = s.MaxBet,
 					d.MaxPayoutPerMatch = s.MaxPayoutPerMatch,
-					d.MaxPerMatch = s.MaxPerMatch
+					d.MaxPerMatch = s.MaxPerMatch,
+					d.RepUpdateTime = SYSDATETIME()
 				OUTPUT	s.SportType, s.Bettype, deleted.AgentID, deleted.MinBet, deleted.MaxBet, deleted.MaxPerMatch, deleted.MaxPayoutPerMatch ,1 AS UplineUpdate  	
 				INTO #NewDefault_History(SportType, Bettype, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPayoutPerMatch,UplineUpdate)
 				FROM Dep_CustBetLimit_Special d WITH(UPDLOCK)
@@ -428,11 +429,11 @@ BEGIN
 			END
 			ELSE 
 			BEGIN
-				INSERT INTO Dep_CustBetLimit_Special([Site], CurrencyID, SportType, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPerBall, MaxPayoutPerMatch, Bettype)
-				SELECT @Site, @CurrencyID, SportType, CASE WHEN @AgentID = 0 THEN NULL ELSE @AgentID END AS AgentID, MinBet, MaxBet, MaxPerMatch, NULL AS MaxPerBall, MaxPayoutPerMatch, Bettype 
+				INSERT INTO Dep_CustBetLimit_Special([Site], CurrencyID, SportType, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPerBall, MaxPayoutPerMatch, Bettype, RepUpdateTime)
+				SELECT @Site, @CurrencyID, SportType, CASE WHEN @AgentID = 0 THEN NULL ELSE @AgentID END AS AgentID, MinBet, MaxBet, MaxPerMatch, NULL AS MaxPerBall, MaxPayoutPerMatch, Bettype, SYSDATETIME() 
 				FROM #NewDefault n
 				UNION 
-				SELECT @Site, @CurrencyID, SportType, CASE WHEN @AgentID = 0 THEN NULL ELSE @AgentID END AS AgentID, NULL AS MinBet, NULL AS  MaxBet, NULL AS  MaxPerMatch, NULL AS MaxPerBall, NULL AS  MaxPayoutPerMatch, Bettype
+				SELECT @Site, @CurrencyID, SportType, CASE WHEN @AgentID = 0 THEN NULL ELSE @AgentID END AS AgentID, NULL AS MinBet, NULL AS  MaxBet, NULL AS  MaxPerMatch, NULL AS MaxPerBall, NULL AS  MaxPayoutPerMatch, Bettype, SYSDATETIME()
 				FROM #SportBettypeFilter d
 				WHERE ProductID = 1 AND NOT EXISTS (SELECT TOP 1 1 FROM #NewDefault WHERE  SportType = d.SportType AND BetType = d.Bettype)
 				
@@ -447,14 +448,17 @@ BEGIN
 			SET d.MinBet = NULL,
 				d.MaxBet = NULL,
 				d.MaxPayoutPerMatch = NULL,
-				d.MaxPerMatch = NULL
+				d.MaxPerMatch = NULL,
+				d.RepUpdateTime = SYSDATETIME()
 			OUTPUT	s.SportType, s.Bettype, deleted.AgentID, deleted.MinBet, deleted.MaxBet, deleted.MaxPerMatch, deleted.MaxPayoutPerMatch, 14 AS ActionDefaultID   	
 			INTO #NewDefault_History(SportType, Bettype, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPayoutPerMatch,ActionDefaultID)
 			FROM Dep_CustBetLimit_Special d WITH(UPDLOCK)
 				INNER JOIN #NewDefault s ON d.SportType = s.SportType AND d.BetType = s.Bettype	
 			WHERE [Site] = @Site AND CurrencyID = @CurrencyID  AND (AgentID IS NULL OR AgentID IN (SELECT custid FROM #Agent) )
 			
-			DELETE dbs  
+			DELETE dbs
+			OUTPUT DELETED.KeyID,SYSDATETIME()
+			INTO Dep_CustBetLimit_Special_Del_InHouse(KeyID,RepUpdateTime)
 			FROM Dep_CustBetLimit_Special dbs WITH(ROWLOCK,UPDLOCK)
 			WHERE dbs.Site = @Site AND CurrencyID = @CurrencyID 
 			AND (AgentID IS NULL OR AgentID IN (SELECT custid FROM #Agent) )
@@ -483,7 +487,8 @@ BEGIN
 						SET d.MinBet = s.MinBet,
 							d.MaxBet = s.MaxBet,
 							d.MaxPayoutPerMatch = s.MaxPayoutPerMatch,
-							d.MaxPerMatch = s.MaxPerMatch
+							d.MaxPerMatch = s.MaxPerMatch,
+							d.RepUpdateTime = SYSDATETIME()
 						OUTPUT	s.SportType, s.Bettype, deleted.AgentID, deleted.MinBet, deleted.MaxBet, deleted.MaxPerMatch, deleted.MaxPayoutPerMatch,1 AS UplineUpdate   	
 						INTO #NewDefault_History(SportType, Bettype, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPayoutPerMatch,UplineUpdate)
 						FROM Dep_CustBetLimit_Special d WITH(UPDLOCK)
@@ -495,7 +500,8 @@ BEGIN
 					SET d.MinBet = s.MinBet,
 						d.MaxBet = s.MaxBet,
 						d.MaxPayoutPerMatch = s.MaxPayoutPerMatch,
-						d.MaxPerMatch = s.MaxPerMatch
+						d.MaxPerMatch = s.MaxPerMatch,
+						d.RepUpdateTime = SYSDATETIME()
 					OUTPUT	s.SportType, s.Bettype, deleted.AgentID, deleted.MinBet, deleted.MaxBet, deleted.MaxPerMatch, deleted.MaxPayoutPerMatch   	
 					INTO #NewDefault_History(SportType, Bettype, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPayoutPerMatch)
 					FROM Dep_CustBetLimit_Special d WITH(UPDLOCK)
@@ -508,7 +514,8 @@ BEGIN
 					SET d.MinBet = NULL,
 						d.MaxBet = NULL,
 						d.MaxPayoutPerMatch = NULL,
-						d.MaxPerMatch = NULL
+						d.MaxPerMatch = NULL,
+						d.RepUpdateTime = SYSDATETIME()
 					OUTPUT	s.SportType, s.Bettype, deleted.AgentID, deleted.MinBet, deleted.MaxBet, deleted.MaxPerMatch, deleted.MaxPayoutPerMatch , 14 AS ActionDefaultID  	
 					INTO #NewDefault_History(SportType, Bettype, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPayoutPerMatch,ActionDefaultID)
 					FROM Dep_CustBetLimit_Special d WITH(UPDLOCK)
@@ -516,6 +523,8 @@ BEGIN
 					WHERE [Site] = @Site AND CurrencyID = @CurrencyID  AND d.AgentID = @AgentID
 
 					DELETE dbs  
+					OUTPUT DELETED.KeyID,SYSDATETIME()
+					INTO Dep_CustBetLimit_Special_Del_InHouse(KeyID,RepUpdateTime)
 					FROM Dep_CustBetLimit_Special dbs WITH(ROWLOCK,UPDLOCK)
 					WHERE dbs.Site = @Site AND CurrencyID = @CurrencyID 
 					AND dbs.AgentID = @AgentID
@@ -539,7 +548,8 @@ BEGIN
 						SET d.MinBet = s.MinBet,
 							d.MaxBet = s.MaxBet,
 							d.MaxPayoutPerMatch = s.MaxPayoutPerMatch,
-							d.MaxPerMatch = s.MaxPerMatch
+							d.MaxPerMatch = s.MaxPerMatch,
+							d.RepUpdateTime = SYSDATETIME()
 						OUTPUT	s.SportType, s.Bettype, deleted.AgentID, deleted.MinBet, deleted.MaxBet, deleted.MaxPerMatch, deleted.MaxPayoutPerMatch,1 AS UplineUpdate   	
 						INTO #NewDefault_History(SportType, Bettype, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPayoutPerMatch,UplineUpdate)
 						FROM Dep_CustBetLimit_Special d WITH(UPDLOCK)
@@ -547,11 +557,11 @@ BEGIN
 						WHERE d.CurrencyID = @CurrencyID AND d.Site = @Site AND d.AgentID IS NULL
 					END
 
-					INSERT INTO Dep_CustBetLimit_Special([Site], CurrencyID, SportType, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPerBall, MaxPayoutPerMatch, Bettype)
-					SELECT @Site, @CurrencyID, SportType, @AgentID, MinBet, MaxBet, MaxPerMatch, NULL AS MaxPerBall, MaxPayoutPerMatch, Bettype 
+					INSERT INTO Dep_CustBetLimit_Special([Site], CurrencyID, SportType, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPerBall, MaxPayoutPerMatch, Bettype, RepUpdateTime)
+					SELECT @Site, @CurrencyID, SportType, @AgentID, MinBet, MaxBet, MaxPerMatch, NULL AS MaxPerBall, MaxPayoutPerMatch, Bettype, SYSDATETIME() 
 					FROM #SportTypeBetType
 					UNION 
-					SELECT @Site, @CurrencyID, SportType, @AgentID, NULL AS MinBet, NULL AS  MaxBet, NULL AS  MaxPerMatch, NULL AS MaxPerBall, NULL AS  MaxPayoutPerMatch, Bettype
+					SELECT @Site, @CurrencyID, SportType, @AgentID, NULL AS MinBet, NULL AS  MaxBet, NULL AS  MaxPerMatch, NULL AS MaxPerBall, NULL AS  MaxPayoutPerMatch, Bettype, SYSDATETIME()
 					FROM #SportBettypeFilter d
 					WHERE ProductID = 1 AND NOT EXISTS (SELECT TOP 1 1 FROM #SportTypeBetType WHERE  SportType = d.SportType AND BetType = d.Bettype)
 				
@@ -575,7 +585,8 @@ BEGIN
 				SET d.MinBet = NULL,
 					d.MaxBet = NULL,
 					d.MaxPayoutPerMatch = NULL,
-					d.MaxPerMatch = NULL
+					d.MaxPerMatch = NULL,
+					d.RepUpdateTime = SYSDATETIME()
 				OUTPUT	s.SportType, s.Bettype, deleted.AgentID, deleted.MinBet, deleted.MaxBet, deleted.MaxPerMatch, deleted.MaxPayoutPerMatch , 14 AS ActionDefaultID  	
 				INTO #NewDefault_History(SportType, Bettype, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPayoutPerMatch,ActionDefaultID)
 				FROM Dep_CustBetLimit_Special d WITH(UPDLOCK)
@@ -583,6 +594,8 @@ BEGIN
 				WHERE [Site] = @Site AND CurrencyID = @CurrencyID  AND d.AgentID IN (SELECT custid FROM #Agent)
 
 				DELETE dbs  
+				OUTPUT DELETED.KeyID,SYSDATETIME()
+				INTO Dep_CustBetLimit_Special_Del_InHouse(KeyID,RepUpdateTime)
 				FROM Dep_CustBetLimit_Special dbs WITH(ROWLOCK,UPDLOCK)
 				WHERE dbs.Site = @Site AND CurrencyID = @CurrencyID 
 				AND dbs.AgentID IN (SELECT custid FROM #Agent)
@@ -601,7 +614,8 @@ BEGIN
 				SET d.MinBet = s.MinBet,
 					d.MaxBet = s.MaxBet,
 					d.MaxPayoutPerMatch = s.MaxPayoutPerMatch,
-					d.MaxPerMatch = s.MaxPerMatch
+					d.MaxPerMatch = s.MaxPerMatch,
+					d.RepUpdateTime = SYSDATETIME()
 				OUTPUT	s.SportType, s.Bettype, deleted.AgentID, deleted.MinBet, deleted.MaxBet, deleted.MaxPerMatch, deleted.MaxPayoutPerMatch   	
 				INTO #NewDefault_History(SportType, Bettype, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPayoutPerMatch)
 				FROM Dep_CustBetLimit_Special d WITH(UPDLOCK)
@@ -610,11 +624,11 @@ BEGIN
 			END
 			ELSE 
 			BEGIN
-				INSERT INTO Dep_CustBetLimit_Special([Site], CurrencyID, SportType, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPerBall, MaxPayoutPerMatch, Bettype)
-				SELECT @Site, @CurrencyID, SportType, NULL AS AgentID, MinBet, MaxBet, MaxPerMatch, NULL AS MaxPerBall, MaxPayoutPerMatch, Bettype 
+				INSERT INTO Dep_CustBetLimit_Special([Site], CurrencyID, SportType, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPerBall, MaxPayoutPerMatch, Bettype, RepUpdateTime)
+				SELECT @Site, @CurrencyID, SportType, NULL AS AgentID, MinBet, MaxBet, MaxPerMatch, NULL AS MaxPerBall, MaxPayoutPerMatch, Bettype, SYSDATETIME() 
 				FROM #NewDefault n
 				UNION 
-				SELECT @Site, @CurrencyID, SportType, NULL AS AgentID, NULL AS MinBet, NULL AS  MaxBet, NULL AS  MaxPerMatch, NULL AS MaxPerBall, NULL AS  MaxPayoutPerMatch, Bettype
+				SELECT @Site, @CurrencyID, SportType, NULL AS AgentID, NULL AS MinBet, NULL AS  MaxBet, NULL AS  MaxPerMatch, NULL AS MaxPerBall, NULL AS  MaxPayoutPerMatch, Bettype, SYSDATETIME()
 				FROM #SportBettypeFilter d
 				WHERE ProductID = 1 AND NOT EXISTS (SELECT TOP 1 1 FROM #NewDefault WHERE  SportType = d.SportType AND BetType = d.Bettype)
 				
@@ -636,7 +650,8 @@ BEGIN
 					SET d.MinBet = s.MinBet,
 						d.MaxBet = s.MaxBet,
 						d.MaxPayoutPerMatch = s.MaxPayoutPerMatch,
-						d.MaxPerMatch = s.MaxPerMatch
+						d.MaxPerMatch = s.MaxPerMatch,
+						d.RepUpdateTime = SYSDATETIME()
 					OUTPUT	s.SportType, s.Bettype, deleted.AgentID, deleted.MinBet, deleted.MaxBet, deleted.MaxPerMatch, deleted.MaxPayoutPerMatch,1 AS UplineUpdate   	
 					INTO #NewDefault_History(SportType, Bettype, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPayoutPerMatch,UplineUpdate)
 					FROM Dep_CustBetLimit_Special d WITH(UPDLOCK)
@@ -654,7 +669,8 @@ BEGIN
 						SET d.MinBet = s.MinBet,
 							d.MaxBet = s.MaxBet,
 							d.MaxPayoutPerMatch = s.MaxPayoutPerMatch,
-							d.MaxPerMatch = s.MaxPerMatch
+							d.MaxPerMatch = s.MaxPerMatch,
+							d.RepUpdateTime = SYSDATETIME()
 						OUTPUT	s.SportType, s.Bettype, deleted.AgentID, deleted.MinBet, deleted.MaxBet, deleted.MaxPerMatch, deleted.MaxPayoutPerMatch   	
 						INTO #NewDefault_History(SportType, Bettype, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPayoutPerMatch)
 						FROM Dep_CustBetLimit_Special d WITH(UPDLOCK)
@@ -663,11 +679,11 @@ BEGIN
 					END
 					ELSE
 					BEGIN
-						INSERT INTO Dep_CustBetLimit_Special([Site], CurrencyID, SportType, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPerBall, MaxPayoutPerMatch, Bettype)
-						SELECT @Site, @CurrencyID, SportType, @AgentID AS AgentID, MinBet, MaxBet, MaxPerMatch, NULL AS MaxPerBall, MaxPayoutPerMatch, Bettype 
+						INSERT INTO Dep_CustBetLimit_Special([Site], CurrencyID, SportType, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPerBall, MaxPayoutPerMatch, Bettype, RepUpdateTime)
+						SELECT @Site, @CurrencyID, SportType, @AgentID AS AgentID, MinBet, MaxBet, MaxPerMatch, NULL AS MaxPerBall, MaxPayoutPerMatch, Bettype, SYSDATETIME() 
 						FROM #SportTypeBetType
 						UNION 
-						SELECT @Site, @CurrencyID, SportType, @AgentID, NULL AS MinBet, NULL AS  MaxBet, NULL AS  MaxPerMatch, NULL AS MaxPerBall, NULL AS  MaxPayoutPerMatch, Bettype
+						SELECT @Site, @CurrencyID, SportType, @AgentID, NULL AS MinBet, NULL AS  MaxBet, NULL AS  MaxPerMatch, NULL AS MaxPerBall, NULL AS  MaxPayoutPerMatch, Bettype, SYSDATETIME() 
 						FROM #SportBettypeFilter d
 						WHERE ProductID = 1 AND NOT EXISTS (SELECT TOP 1 1 FROM #SportTypeBetType WHERE  SportType = d.SportType AND BetType = d.Bettype)
 					
@@ -686,7 +702,8 @@ BEGIN
 						SET d.MinBet = s.MinBet,
 							d.MaxBet = s.MaxBet,
 							d.MaxPayoutPerMatch = s.MaxPayoutPerMatch,
-							d.MaxPerMatch = s.MaxPerMatch
+							d.MaxPerMatch = s.MaxPerMatch,
+							d.RepUpdateTime = SYSDATETIME()
 						OUTPUT	s.SportType, s.Bettype, deleted.AgentID, deleted.MinBet, deleted.MaxBet, deleted.MaxPerMatch, deleted.MaxPayoutPerMatch   	
 						INTO #NewDefault_History(SportType, Bettype, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPayoutPerMatch)
 						FROM Dep_CustBetLimit_Special d WITH(UPDLOCK)
@@ -695,11 +712,11 @@ BEGIN
 					END
 					ELSE
 					BEGIN
-						INSERT INTO Dep_CustBetLimit_Special([Site], CurrencyID, SportType, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPerBall, MaxPayoutPerMatch, Bettype)
-						SELECT @Site, @CurrencyID, SportType, @AgentID AS AgentID, MinBet, MaxBet, MaxPerMatch, NULL AS MaxPerBall, MaxPayoutPerMatch, Bettype 
+						INSERT INTO Dep_CustBetLimit_Special([Site], CurrencyID, SportType, AgentID, MinBet, MaxBet, MaxPerMatch, MaxPerBall, MaxPayoutPerMatch, Bettype, RepUpdateTime)
+						SELECT @Site, @CurrencyID, SportType, @AgentID AS AgentID, MinBet, MaxBet, MaxPerMatch, NULL AS MaxPerBall, MaxPayoutPerMatch, Bettype, SYSDATETIME() 
 						FROM #SportTypeBetType
 						UNION 
-						SELECT @Site, @CurrencyID, SportType, @AgentID, NULL AS MinBet, NULL AS  MaxBet, NULL AS  MaxPerMatch, NULL AS MaxPerBall, NULL AS  MaxPayoutPerMatch, Bettype
+						SELECT @Site, @CurrencyID, SportType, @AgentID, NULL AS MinBet, NULL AS  MaxBet, NULL AS  MaxPerMatch, NULL AS MaxPerBall, NULL AS  MaxPayoutPerMatch, Bettype, SYSDATETIME()
 						FROM #SportBettypeFilter d
 						WHERE ProductID = 1 AND NOT EXISTS (SELECT TOP 1 1 FROM #SportTypeBetType WHERE  SportType = d.SportType AND BetType = d.Bettype)
 					

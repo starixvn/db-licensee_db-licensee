@@ -37,6 +37,7 @@ AS
 	   - 202202220@Elodie: Apply DCS for SB [RedmineID: #167898] 
 	   - 202209010@Elodie: Insert Dep_LicenseeProductSetting in case no data [RedmineID: #177383] 
 	   - 20221010@Johnson: Add Saba & Saba cricket [redmine: #175659]
+	   - 20240708@Johnson: Apply In-house Replication for Customer Setting [redmine:#207025]
 	Param's Explanation:
 	Example:	DECLARE @ErrCode INT = 0, @ErrMsg NVARCHAR(4000) = ''
 				EXEC NAP_LM_LicenseeBetSettingUpd @CustID = 16947245, @Sporttype = 151, @Bettype = 31, @MinBet = 25, @MaxBet = 205, @MaxPerMatch = 2005, @ExistedMember = 1, @ErrCode = @ErrCode OUTPUT, @ErrMsg = @ErrMsg OUTPUT
@@ -120,7 +121,7 @@ BEGIN
 		BEGIN
 			SELECT @ids = ''
 	
-			UPDATE TOP (10000) #temp
+			UPDATE TOP (2000) #temp
 			SET @ids = @ids + CASE @ids WHEN '' THEN '' ELSE ',' END + CAST(custid AS VARCHAR(12))
 				,isfinished = 1
 			FROM #temp
@@ -129,7 +130,7 @@ BEGIN
 			SELECT @rowcnt = @@rowcount	
 		  
 			IF @Sporttype IN (161,202) OR @UpdateMinBet = 1 OR @UpdateMaxBet = 1 OR @UpdateMPM = 1 OR @UpdateMaxPayoutPM = 1
-				EXEC Acc_CustSetting3rd_11 
+				EXEC NAP_LM_CustSetting_BetLimitUpd 
 					@ids = @ids, 
 					@srecommend = @CustID, 
 					@Sporttype = @Sporttype, 
@@ -147,7 +148,7 @@ BEGIN
 					@Enable = @Enable, 
 					@EnableDownline = @EnableDownline
 
-			IF @rowcnt < 10000 BREAK
+			IF @rowcnt < 2000 BREAK
 
 			WAITFOR DELAY '00:00:00.28'
 		END		
@@ -165,8 +166,8 @@ BEGIN
 		AND NOT EXISTS (SELECT 1 FROM Dep_ProductSetting ps WITH(NOLOCK) 
 							INNER JOIN Dep_LicenseeProductSetting d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID WHERE ProductID=@ProductID AND CustID = @CustID AND SettingType <> 9)	
 	BEGIN
-		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID)
-		SELECT @CustID, ProductSettingID
+		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID,RepUpdateTime)
+		SELECT @CustID, ProductSettingID, SYSDATETIME()
 		FROM Dep_ProductSetting WITH(NOLOCK)
 		WHERE ProductID = @ProductID AND SettingType <> 9
 	END
@@ -175,8 +176,8 @@ BEGIN
 		AND NOT EXISTS (SELECT 1 FROM Dep_ProductSetting ps WITH(NOLOCK) 
 							INNER JOIN Dep_LicenseeProductSetting d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID WHERE ProductID=@ProductID AND CustID = @CustID)	
 	BEGIN
-		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID)
-		SELECT @CustID, ProductSettingID
+		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID,RepUpdateTime)
+		SELECT @CustID, ProductSettingID, SYSDATETIME()
 		FROM Dep_ProductSetting WITH(NOLOCK)
 		WHERE ProductID = @ProductID
 	END
@@ -184,8 +185,8 @@ BEGIN
 	IF NOT EXISTS (SELECT 1 FROM Dep_ProductSetting ps WITH(NOLOCK) 
 							INNER JOIN Dep_LicenseeProductSetting d WITH(NOLOCK) ON ps.ProductSettingID=d.ProductSettingID WHERE ProductID=@ProductID AND CustID = @CustID)
 	BEGIN
-		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID)
-		SELECT @CustID, ProductSettingID
+		INSERT INTO Dep_LicenseeProductSetting(CustID,ProductSettingID,RepUpdateTime)
+		SELECT @CustID, ProductSettingID, SYSDATETIME()
 		FROM Dep_ProductSetting WITH(NOLOCK)
 		WHERE ProductID = @ProductID
 	END	
