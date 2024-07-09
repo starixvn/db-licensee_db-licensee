@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBCUST-CUSTDB" executers="bodbLicenseeNet,bodbAdminNet" viewers="" isFunction="0"></info>*/
+﻿/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_lap,wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAComm]
 	@LicenseeID INT,
 	@CustID INT,--member
@@ -33,7 +33,7 @@ Revisions:
 	- 20211101@Winfred: Merge Sports Lottery under Sportsbook when turn on BA [redmine:#163191]
 	- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898] 
 	- 20230814@Luke: LAP - SEA Localization [Redmine: #187132]
-	
+	- 20240709@Johnson: Apply In-house Replication for Deposit Customer Setting [redmine:#207025]
 Param's Explanation:
 
 */
@@ -167,6 +167,7 @@ BEGIN
 		,AgentDiscount
 		,MasterDiscount
 		,SuperDiscount
+		,RepUpdateTime
 		)
 	SELECT @CustID
 		,grp.SportType
@@ -175,6 +176,7 @@ BEGIN
 		,grp.AgentDiscount
 		,grp.MasterDiscount
 		,grp.SuperDiscount
+		,SYSDATETIME()
 	FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
 		LEFT JOIN dbo.Dep_CustDiscountSetting_Member cs WITH(NOLOCK) 
 			ON cs.custid = @custid
@@ -197,7 +199,8 @@ BEGIN
 	UPDATE cs 
 	SET cs.AgentDiscount = @GroupComm,
 		cs.MasterDiscount = @GroupComm,
-		cs.SuperDiscount = @GroupComm
+		cs.SuperDiscount = @GroupComm,
+		RepUpdateTime = SYSDATETIME()
 	FROM Dep_CustDiscountSetting_Member cs WITH (ROWLOCK, UPDLOCK)
 	WHERE cs.custid=@custid
 		AND cs.bettype = 1 AND cs.sporttype = 1
@@ -216,7 +219,8 @@ BEGIN
 	UPDATE cs 
 	SET cs.AgentDiscount = @OtherComm,
 		cs.MasterDiscount = @OtherComm,
-		cs.SuperDiscount = @OtherComm
+		cs.SuperDiscount = @OtherComm,
+		RepUpdateTime = SYSDATETIME()
 	FROM Dep_CustDiscountSetting_Member cs WITH (ROWLOCK, UPDLOCK)
 	WHERE cs.custid=@custid
 		AND cs.bettype IN(4,9) AND cs.sporttype = 1
@@ -235,7 +239,8 @@ BEGIN
 	UPDATE cs 
 	SET cs.AgentDiscount = @1x2Comm,
 		cs.MasterDiscount = @1x2Comm,
-		cs.SuperDiscount = @1x2Comm
+		cs.SuperDiscount = @1x2Comm,
+		RepUpdateTime = SYSDATETIME()
 	FROM Dep_CustDiscountSetting_Member cs WITH (ROWLOCK, UPDLOCK)
 	WHERE cs.custid=@custid
 		AND cs.bettype = 5 AND cs.sporttype = 1	
@@ -251,7 +256,8 @@ BEGIN
 	END
 
 	UPDATE d
-	SET IsGroupedComm = 0
+	SET IsGroupedComm = 0,
+		RepUpdateTime = SYSDATETIME()
 	FROM Dep_CustSettingMode d WITH(ROWLOCK, UPDLOCK) 
 	WHERE custid = @CustID AND IsGroupedComm = 1
 

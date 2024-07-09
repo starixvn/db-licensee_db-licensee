@@ -40,6 +40,7 @@ Revisions:
 	- 20230808@Tacy: LAP - Offer Player Commission to VS3 (new) [redmine: #192203]
 	- 20240126@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 	- 20240222@Johnson: Restructure Commission [redmine:#179088]
+	- 20240715@Johnson: Apply In-house Replication for Customer Setting [redmine:#207025]	
 Param's Explanation:
 � @ErrCode:
     = 0: Transaction recorded successfully.
@@ -50,14 +51,6 @@ Param's Explanation:
 BEGIN
 	SET NOCOUNT ON;
 	
-	IF NOT(dbo.f_CheckRepTable('custinfo') = 1 
-		 AND dbo.f_CheckRepTable('Dep_CustDiscountSetting_Member') = 1 
-		 AND dbo.f_CheckRepTable('Dep_CustDiscountGroupSetting_Member') = 1 
-		 AND dbo.f_CheckRepTable('Dep_CustSettingMode') = 1 
-
-	 )
-		RETURN 
-
 	DECLARE @InputRes_updateComm AS TABLE (custid INT PRIMARY KEY)
 			
 	DECLARE @InputRes_updateComm_batch AS TABLE (custid INT PRIMARY KEY)
@@ -131,7 +124,8 @@ BEGIN
 						,PlayerDiscount
 						,AgentDiscount
 						,MasterDiscount
-						,SuperDiscount)
+						,SuperDiscount
+						,RepUpdateTime)
 					SELECT t.CustID
 						,grp.SportType
 						,grp.BetType
@@ -139,6 +133,7 @@ BEGIN
 						,grp.AgentDiscount
 						,grp.MasterDiscount
 						,grp.SuperDiscount
+						,SYSDATETIME()
 					FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
 					CROSS APPLY (SELECT csm.custid
 								FROM dbo.Dep_CustSettingMode csm WITH(NOLOCK)
@@ -151,7 +146,8 @@ BEGIN
 						AND cs.custid IS NULL
 						
 					UPDATE csm
-						SET	isGroupedComm = 0	
+						SET	isGroupedComm = 0,
+							RepUpdateTime = SYSDATETIME()
 					FROM @InputRes_updateComm r
 						INNER JOIN dbo.Dep_CustSettingMode csm WITH(UPDLOCK,ROWLOCK) ON r.custid = csm.CustID		
 					WHERE isGroupedComm = 1
@@ -159,7 +155,8 @@ BEGIN
 			END		
 			
 			UPDATE cs
-				SET playerdiscount = @Discount
+				SET playerdiscount = @Discount,
+					RepUpdateTime = SYSDATETIME()
 			FROM @InputRes_updateComm r
 				INNER JOIN dbo.Dep_CustDiscountSetting_Member cs WITH(UPDLOCK,ROWLOCK) ON r.custid = cs.CustID
 			WHERE sporttype = @sporttype

@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_lap,wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE Lrf_EnableDisableBAMember @CustId INT
 	, @Mode VARCHAR(10)
 	, @UpdatedBy INT = 0
@@ -14,6 +14,7 @@ DB: DBCUST/CustDB
 Revisions:
 	- 20150305@Patrick: First commit
 	- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898]
+	- 20240715@Johnson: Apply In-house Replication for Customer Setting [redmine:#207025]
 Param's Explanation:
 
 */
@@ -26,8 +27,8 @@ BEGIN
 	BEGIN
 		IF NOT EXISTS (SELECT 1 FROM dbo.Dep_CustBAActive WITH(NOLOCK) WHERE CustId = @CustId)
 		BEGIN
-			INSERT INTO dbo.Dep_CustBAActive(CustId)
-			VALUES(@CustId)
+			INSERT INTO dbo.Dep_CustBAActive(CustId,RepUpdateTime)
+			VALUES(@CustId,SYSDATETIME())
 			
 			IF @@ERROR <> 0
 			BEGIN
@@ -39,6 +40,8 @@ BEGIN
 	ELSE IF @Mode = 'Off'
 	BEGIN
 		DELETE dbo.Dep_CustBAActive WITH(ROWLOCK)
+		OUTPUT DELETED.custid, SYSDATETIME()
+		INTO Dep_CustBAActive_Del_InHouse(custid,RepUpdateTime)
 		WHERE CustId = @CustId
 
 		IF @@ERROR <> 0

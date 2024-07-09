@@ -39,6 +39,7 @@ AS
 		- 20230808@Tacy: LAP - Offer Player Commission to VS3 (new) [redmine: #192203]
 		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 		- 20240221@Johnson: Restructure Commission [redmine:#179088]
+		- 20240709@Johnson: Apply In-house Replication for Deposit Customer Setting [redmine:#207025]
 	Param's Explanation:	
 
 */
@@ -112,7 +113,8 @@ BEGIN
 			IF @IsGroupedComm = 0
 			BEGIN
 				UPDATE dbo.Dep_CustDiscountSetting_Member WITH(UPDLOCK,ROWLOCK)
-					SET PlayerDiscount = @Discount
+					SET PlayerDiscount = @Discount,
+						RepUpdateTime = SYSDATETIME()
 				WHERE CustID = @CustID
 					AND sporttype = @sporttype
 					AND bettype = @bettype
@@ -136,7 +138,8 @@ BEGIN
 						,PlayerDiscount
 						,AgentDiscount
 						,MasterDiscount
-						,SuperDiscount)
+						,SuperDiscount
+						,RepUpdateTime)
 					SELECT @CustID
 						,grp.SportType
 						,grp.BetType
@@ -144,6 +147,7 @@ BEGIN
 						,grp.AgentDiscount
 						,grp.MasterDiscount
 						,grp.SuperDiscount
+						,SYSDATETIME()
 					FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
 						LEFT JOIN dbo.Dep_CustDiscountSetting_Member cs WITH(NOLOCK) ON cs.custid = @custid
 																					AND cs.sporttype = grp.sporttype
@@ -152,13 +156,15 @@ BEGIN
 						AND cs.custid IS NULL
 					
 					UPDATE dbo.Dep_CustDiscountSetting_Member WITH(UPDLOCK,ROWLOCK)
-						SET playerdiscount = @Discount
+						SET playerdiscount = @Discount,
+							RepUpdateTime = SYSDATETIME()
 					WHERE CustID = @CustID	
 						AND sporttype = @sporttype
 						AND bettype = @bettype
 					
 					UPDATE dbo.Dep_CustSettingMode WITH(UPDLOCK,ROWLOCK)
-						SET IsGroupedComm = 0
+						SET IsGroupedComm = 0,
+							RepUpdateTime = SYSDATETIME()
 					WHERE CustID = @CustID	
 				END	
 			END

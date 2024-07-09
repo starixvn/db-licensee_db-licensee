@@ -1,10 +1,4 @@
-USE [CustDB]
-GO
-/****** Object:  StoredProcedure [dbo].[Lrf_AGC_UpdCustSetting]    Script Date: 06/06/2015 14:25:29 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+/*<info serverAlias="DBCUST-CustDB" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE	[dbo].[Lrf_AGC_UpdCustSetting]
 	@CustID		INT,
 	@AGGroup	VARCHAR(20),
@@ -83,6 +77,4 @@ BEGIN
     END CATCH
 END
 
-
 GO
-GRANT EXECUTE ON [dbo].[Lrf_AGC_UpdCustSetting] TO [bodbLicenseeNet] AS [dbo]

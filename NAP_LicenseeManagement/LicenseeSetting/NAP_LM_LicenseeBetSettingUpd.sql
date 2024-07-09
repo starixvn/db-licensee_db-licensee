@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_alp,wsv_nap" viewers="" isFunction="0"></info>*/
 CREATE PROCEDURE [dbo].[NAP_LM_LicenseeBetSettingUpd] 
 	@CustID INT	
 	,@Sporttype INT
@@ -130,7 +130,7 @@ BEGIN
 			SELECT @rowcnt = @@rowcount	
 		  
 			IF @Sporttype IN (161,202) OR @UpdateMinBet = 1 OR @UpdateMaxBet = 1 OR @UpdateMPM = 1 OR @UpdateMaxPayoutPM = 1
-				EXEC NAP_LM_CustSetting_BetLimitUpd 
+				EXEC Acc_CustSetting3rd_11 
 					@ids = @ids, 
 					@srecommend = @CustID, 
 					@Sporttype = @Sporttype, 

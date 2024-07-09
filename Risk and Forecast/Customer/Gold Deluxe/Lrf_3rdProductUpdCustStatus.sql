@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE	[dbo].[Lrf_3rdProductUpdCustStatus]  
 	@CustID		INT,
 	@ProductId	INT,
@@ -23,6 +23,7 @@ AS
 		-20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 		- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898]
 		- 20230615@Tacy: Remove columns and code used by Colossus Bets, GD product [RedmineID: #188096]
+		- 20240715@Johnson: Apply In-house Replication for Customer Setting [redmine:#207025]
 	Param's Explanation:
 */
 BEGIN
@@ -66,7 +67,8 @@ BEGIN
 	END
 
 	UPDATE dbo.Dep_CustProductSetting WITH (ROWLOCK, UPDLOCK)
-	SET IsEnabled = @IsEnabled
+	SET IsEnabled = @IsEnabled,
+		RepUpdateTime = SYSDATETIME()
 	WHERE ProductId=@ProductId AND CustID IN (SELECT CustID FROM #CustList)
 		AND @ProductId NOT IN (14,17)
 	IF(@@ERROR<>0)
@@ -75,8 +77,8 @@ BEGIN
 	RETURN
 	END
 
-	INSERT INTO dbo.Dep_CustProductSetting (CustID, ProductId, IsEnabled)
-	SELECT CustID, @ProductId, @IsEnabled	
+	INSERT INTO dbo.Dep_CustProductSetting (CustID, ProductId, IsEnabled,RepUpdateTime)
+	SELECT CustID, @ProductId, @IsEnabled, SYSDATETIME()	
 	FROM #CustList c
 	WHERE NOT EXISTS(SELECT 1 FROM dbo.Dep_CustProductSetting cs WITH (NOLOCK) WHERE cs.CustID = c.CustID AND cs.ProductId=@ProductId)
 	IF(@@ERROR<>0)

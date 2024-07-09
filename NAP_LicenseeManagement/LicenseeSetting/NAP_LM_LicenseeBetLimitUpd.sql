@@ -271,7 +271,7 @@ BEGIN
 					SET @ids = (SELECT STRING_AGG(CONVERT(VARCHAR(MAX),custid),',')  FROM #tmpCustTemp)
 					SET @ids = ISNULL(@SMAs,'') + ',' + @ids
 
-					EXEC NAP_LM_CustSetting_BetLimitUpd
+					EXEC Acc_CustSetting3rd_11
 						@ids = @ids, 
 						@srecommend = @CustID, 
 						@UpdBetLimit = @UpdBetLimit, 

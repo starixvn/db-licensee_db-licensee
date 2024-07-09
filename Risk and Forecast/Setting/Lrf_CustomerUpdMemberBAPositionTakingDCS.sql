@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbDownlineNet,bodbExtAccNet,Dot_Member,bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_lap,wsv_nap,Dot_Member" viewers="" isFunction="0"></info>*/
  ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAPositionTakingDCS]		
 	@CustID		INT,
 	@ModifyBy	INT,
@@ -14,6 +14,7 @@ Task : PT DCS for BA member
 DB: DBCUST/CustDB
 Revisions:
 	- 20181024@Winnie: PT DCS for BA member [RedmineID: #1000721]
+	- 20240709@Johnson: Apply In-house Replication for Deposit Customer Setting [redmine:#207025]
 */
 
 BEGIN
@@ -117,7 +118,8 @@ BEGIN
 		IF @IsGroupPTOLD=0
 		BEGIN
 			UPDATE m
-				SET m.SuperPT=o.SuperPT,m.MasterPT=o.MasterPT,m.AgentPT=o.AgentPT
+				SET m.SuperPT=o.SuperPT,m.MasterPT=o.MasterPT,m.AgentPT=o.AgentPT,
+					RepUpdateTime = SYSDATETIME()
 			FROM  Dep_CustPTSetting_Member m WITH(ROWLOCK,UPDLOCK)
 				INNER JOIN @Dep_CustPTGroupSetting_MemberOLD o ON m.Sporttype=o.SportType AND m.Bettype=o.BetType AND m.IsLive=o.IsLive
 				INNER JOIN #Sporttype s ON o.Sporttype=s.SporttypeID AND o.Bettype=s.BetypeID AND o.IsLive=s.IsLive
@@ -133,7 +135,8 @@ BEGIN
 		ELSE
 		BEGIN
 			UPDATE Dep_CustSettingMode  WITH(ROWLOCK,UPDLOCK)
-				SET IsGroupedPT=0
+				SET IsGroupedPT=0,
+					RepUpdateTime = SYSDATETIME()
 			WHERE CustID=@CustID
 				
 			IF @@ERROR<>0
@@ -202,7 +205,10 @@ BEGIN
 				RETURN
 			END
 				
-			DELETE FROM Dep_CustPTSetting_Member WITH(ROWLOCK) WHERE CustID=@CustID
+			DELETE FROM Dep_CustPTSetting_Member WITH(ROWLOCK)
+			OUTPUT DELETED.custid, DELETED.SportType, DELETED.BetType, DELETED.IsLive, SYSDATETIME()
+			INTO Dep_CustPTSetting_Member_Del_InHouse(custid,SportType,BetType,IsLive,RepUpdateTime)
+			WHERE CustID=@CustID
 		END
 	END					
 

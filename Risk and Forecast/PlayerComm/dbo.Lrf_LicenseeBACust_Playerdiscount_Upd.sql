@@ -11,6 +11,7 @@ DB: DBCUST/CustDB
 Revision :
 	- 20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]
 	- 20220301@Eden: Deposit - Sportsbook - Revise customer settings [Redmine: #167898] 
+	- 20240709@Johnson: Apply In-house Replication for Deposit Customer Setting [redmine:#207025]
 */
  
 
@@ -37,6 +38,7 @@ BEGIN
 		,AgentDiscount
 		,MasterDiscount
 		,SuperDiscount
+		,RepUpdateTime
 		)
 	SELECT @CustID
 		,grp.SportType
@@ -45,6 +47,7 @@ BEGIN
 		,grp.AgentDiscount
 		,grp.MasterDiscount
 		,grp.SuperDiscount
+		,SYSDATETIME()
 	FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
 		LEFT JOIN dbo.Dep_CustDiscountSetting_Member cs WITH(NOLOCK) 
 			ON cs.custid = @custid
@@ -54,7 +57,8 @@ BEGIN
 		AND cs.custid IS NULL
 
 	UPDATE cs 
-	SET cs.PlayerDiscount = @ParlayComm
+	SET cs.PlayerDiscount = @ParlayComm,
+		RepUpdateTime = SYSDATETIME()
 	FROM Dep_CustDiscountSetting_Member cs WITH (ROWLOCK, UPDLOCK)
 		INNER JOIN @SportBetype t 
 			ON cs.SportType = t.sporttype 
@@ -63,7 +67,8 @@ BEGIN
 		AND cs.bettype = 9
 
 	UPDATE cs 
-	SET cs.PlayerDiscount = @SBComm
+	SET cs.PlayerDiscount = @SBComm,
+		RepUpdateTime = SYSDATETIME()
 	FROM Dep_CustDiscountSetting_Member cs WITH (ROWLOCK, UPDLOCK)
 		INNER JOIN @SportBetype t 
 			ON cs.SportType = t.sporttype 
@@ -72,7 +77,8 @@ BEGIN
 		AND cs.bettype <> 9
 
 	UPDATE d
-	SET IsGroupedComm = 0
+	SET IsGroupedComm = 0,
+		RepUpdateTime = SYSDATETIME()
 	FROM Dep_CustSettingMode d WITH(ROWLOCK, UPDLOCK) 
 	WHERE custid = @CustID AND IsGroupedComm = 1
 END	

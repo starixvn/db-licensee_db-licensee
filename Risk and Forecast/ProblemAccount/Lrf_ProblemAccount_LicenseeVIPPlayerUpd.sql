@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE Lrf_ProblemAccount_LicenseeVipPlayerUpd
 	@AgentList VARCHAR(MAX),
 	@Username VARCHAR(MAX)= '',
@@ -23,6 +23,7 @@ AS
 			- 20220624@Eden: LAP - Segmentation - Rework on Upload File [Redmine: #174132] 
 			- 20220706@Johnson: output list custids to support sync customerclass [redmine:#174648]
 			- 20231219@Winfred: LAP - Allow mark VIP for BA players [Redmine: #198627]
+			- 20240716@Johnson: Apply In-house Replication for Deposit Customer Setting [redmine:#207025]
 		Paramter's Explanations:	
 			- @result:
 				ErrCode =
@@ -64,7 +65,7 @@ BEGIN
 							isLog BIT DEFAULT 0, 
 							isUpdate BIT DEFAULT 0,						
 							)
-
+		
 	CREATE TABLE #TempAg (custid INT)
 
 	DECLARE @Result TABLE(ErrCode INT,cnt INT, ErrMsg VARCHAR(MAX))
@@ -273,34 +274,13 @@ BEGIN
 	--	RETURN;
 	--END
 	
+	DECLARE @tmpCust TABLE(custid INT PRIMARY KEY)
 	
 	WHILE(1=1)
 	BEGIN
-		SELECT @custList = ''
-		--IF @isVip = 1
-		--BEGIN
-		--	UPDATE TOP (5000) t
-		--	SET @custList = @custList + CAST(custid AS VARCHAR(10)) + ',',
-		--		isUpdate = 1
-		--	FROM #tblCust2 t
-		--	WHERE isVip <> @isVip
-		--		--AND isBA = 0
-		--		AND isUpdate = 0
-		--		AND custid IS NOT NULL
-		--END
-		--ELSE
-		--BEGIN
-		--	UPDATE TOP (5000) t
-		--	SET @custList = @custList + CAST(custid AS VARCHAR(10)) + ',',
-		--		isUpdate = 1
-		--	FROM #tblCust2 t
-		--	WHERE isVip <> @isVip
-		--		AND isUpdate = 0
-		--		AND custid IS NOT NULL
-		--END 
-		UPDATE TOP (5000) t
-		SET @custList = @custList + CAST(custid AS VARCHAR(10)) + ',',
-			isUpdate = 1
+		UPDATE TOP (2000) t
+		SET isUpdate = 1
+		OUTPUT DELETED.custid INTO @tmpCust(custid)
 		FROM #tblCust2 t
 		WHERE isVip <> @isVip
 			AND isUpdate = 0
@@ -308,14 +288,26 @@ BEGIN
 		
 		SELECT @cnt = @@ROWCOUNT
 				
-		EXEC Acc_CustomerInfo_Execrep_03 
-			@CustList = @custList,
-			@UserID = @UserID,
-			@isVip = @isVip,
-			@mode = 'VIPStatus'
+		--Update VIP status
+		IF @isVip = 0
+		BEGIN
+			DELETE Dep_CustVIP WITH(UPDLOCK,ROWLOCK)
+			OUTPUT DELETED.custid, SYSDATETIME()
+			INTO Dep_CustVIP_Del_InHouse(custid,RepUpdateTime)
+			WHERE custid IN (SELECT custid FROM @tmpCust)
+		END
+		ELSE 
+		BEGIN
+			INSERT INTO Dep_CustVIP(custid,userID,ModifiedDate,RepUpdateTime)
+			SELECT custid, @userid, getdate(),SYSDATETIME()
+			FROM @tmpCust t
+			WHERE NOT EXISTS (SELECT 1 FROM Dep_CustVIP d WITH(NOLOCK) WHERE t.custid = d.custid)
+		END
 
-		IF @cnt < 5000
+		IF @cnt < 2000
 			BREAK;
+			
+		DELETE @tmpCust	
 	END
 	
 	--total customer update successfully
