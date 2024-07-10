@@ -14,6 +14,7 @@ Revisions:
 --20220428@Boren(Licensee DB) : add settledDate & resettledDate from Sum_winloss_Exchange table. (key:eventid/userid/marketid)
 --20230915@Boren(Licensee DB) : remove select eventtype, extension1, unMatchAmount, reduction, add fancyBetRuns.
 --20230920@Boren(Licensee DB) : add @betPlaced.
+--20240710@Alex.Kan(Licensee DB) : improve performance
 */
 BEGIN
 	SET NOCOUNT ON
@@ -22,14 +23,13 @@ BEGIN
 		  , @tstamp TIMESTAMP
 		  , @extension1 CHAR(7);
 
-	SELECT TOP 1 @version_key_min = CONVERT(BIGINT, b.tstamp)
-	FROM [dbo].[Bettrans_Exchange] b WITH (NOLOCK)
-	WHERE betPlaced >= @betPlaced
-	ORDER BY CONVERT(BIGINT, b.tstamp) 
-	
-	IF @version_key < @version_key_min
+	IF @version_key = 0
 	BEGIN
-	  SELECT @version_key = @version_key_min - 1
+		SELECT @version_key_min = CONVERT(BIGINT, MIN(b.tstamp))
+		FROM [dbo].[Bettrans_Exchange] b WITH (NOLOCK)
+		WHERE b.betPlaced >= @betPlaced
+			
+		SELECT @version_key = ISNULL(@version_key_min, 1) - 1
 	END
 	
 	SELECT @tstamp = CONVERT(TIMESTAMP, @version_key)
