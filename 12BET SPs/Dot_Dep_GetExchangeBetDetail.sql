@@ -1,4 +1,4 @@
-/*<info serverAlias="DBLIC-bodb_3rdProduct" executers="Dot_Member" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBLIC-bodb_3rdProduct" executers="svc_tig" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Dot_Dep_GetExchangeBetDetail]
 	  @siteID INT
 	, @version_key BIGINT = 0
