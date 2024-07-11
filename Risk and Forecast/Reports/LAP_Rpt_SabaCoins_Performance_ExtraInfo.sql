@@ -15,10 +15,10 @@ AS
 
 	Revisions:
 		- 20240417@Bobby: Init [RedmineID: #202281]
+		- 20240710@Bobby: Enhance perf [RedmineID: #207858]
 
 	Param's Explanation:
 */
-
 BEGIN
 	SET NOCOUNT ON
 
@@ -51,36 +51,37 @@ BEGIN
 		RETURN
 	END CATCH;
 
-	--TODO: shadow agent
-	CREATE TABLE #shadowRealCust (recommend INT, realCustId INT, shadowAgentId INT, shadowCustId INT);
-	WITH CTE_shadowRealCust AS (
-		SELECT c.recommend AS shadowAgentId, custid AS shadowCustId, SUBSTRING(c.username2, 11, LEN(username2)) AS realCustId
-		FROM dbo.Customer c WITH(NOLOCK)
-		WHERE c.username2 LIKE 'sabacoins$%'
-			AND c.roleid = 1
-			--AND ISNUMERIC(SUBSTRING(c.username2, 11, LEN(username2))) = 1 --exclude dummy cust
-	)
-	INSERT INTO #shadowRealCust (recommend, realCustId, shadowAgentId, shadowCustId)
-	SELECT c.recommend, cte.realCustId, cte.shadowAgentId, cte.shadowCustId
-	FROM CTE_shadowRealCust cte
-		INNER JOIN dbo.Customer c WITH(NOLOCK) ON c.custid = cte.realCustId
-		INNER JOIN #tmpAg a ON a.CustId = c.recommend
+	--TODO: shadow vs real member
+	DROP TABLE IF EXISTS #tmpShadowCust;
+	CREATE TABLE #shadowRealCust (realCustId INT, shadowCustId INT PRIMARY KEY, username VARCHAR(30), username2 VARCHAR(50));
+
+	SELECT custid AS shadowCustId, CONVERT(INT, SUBSTRING(c.username2, 11, LEN(username2))) AS realCustId
+	INTO #tmpShadowCust
+	FROM dbo.Customer c WITH(NOLOCK)
+	WHERE c.username2 LIKE 'sabacoins$%';
+
+	--TODO: filter owner Licensee -- target index=IX_agent nonclustered
+	INSERT INTO #shadowRealCust (realCustId, shadowCustId, username, username2)
+	SELECT c.custid, tmp.shadowCustId, c.username, c.username2
+	FROM dbo.Customer c WITH(NOLOCK)
+		INNER JOIN #tmpShadowCust tmp ON c.custid = tmp.realCustId
+		INNER JOIN #tmpAg a ON a.CustId = c.recommend 
+	WHERE c.roleid = 1
 	;
 
 	--TODO: filter username if any
 	IF LEN(@UserName) > 0
 	BEGIN
 		WITH CTE_CustSearch AS (
-			SELECT c.custid
-			FROM dbo.Customer c WITH(NOLOCK) 
-			INNER JOIN #shadowRealCust t ON t.realCustId = c.custid
-			WHERE c. username = @UserName --- system Id
-				OR c. username2 LIKE '%$' + @UserName -- external Id
+			SELECT t.realCustId
+			FROM #shadowRealCust t 
+			WHERE t.username = @UserName --- system Id
+				OR t.username2 LIKE '%$' + @UserName -- external Id
 		)
 		DELETE d
 		FROM #shadowRealCust d
-		LEFT JOIN CTE_CustSearch cs ON cs.custid = d.realCustId
-		WHERE cs.custid IS NULL
+		LEFT JOIN CTE_CustSearch cs ON cs.realCustId = d.realCustId
+		WHERE cs.realCustId IS NULL
 	END
 
 	--TODO: Get sport type
@@ -115,7 +116,7 @@ BEGIN
 			, SUM(IIF(b.bettype BETWEEN 11001 AND 11005, b.winlost-b.actual_stake, 0)) AS RewardPromotionAmt
 			, SUM(IIF(b.bettype BETWEEN 11006 AND 11008, b.winlost-b.actual_stake, 0)) AS ExchangeAmt
 		FROM dbo.bettrans AS b WITH (NOLOCK)
-			INNER JOIN #shadowRealCust AS a ON b.recommend = a.shadowAgentId AND b.custid = a.shadowCustId
+			INNER JOIN #shadowRealCust AS a ON b.custid = a.shadowCustId
 			INNER JOIN #sabaBetType bt ON bt.bettype = b.bettype
 		WHERE b.winlostdate BETWEEN @fdate AND @tdate
 		GROUP BY b.custid;
@@ -131,13 +132,13 @@ BEGIN
 			, SUM(IIF(b.bettype BETWEEN 11001 AND 11005, b.winlost, 0)) AS RewardPromotionAmt
 			, SUM(IIF(b.bettype BETWEEN 11006 AND 11008, b.winlost, 0)) AS ExchangeAmt
 		FROM bodb_LicenseeReport.dbo.rptLicenseeWinloss AS b WITH (NOLOCK)
-			INNER JOIN #shadowRealCust AS a ON b.recommend = a.shadowAgentId AND b.custid = a.shadowCustId
+			INNER JOIN #shadowRealCust AS a ON b.custid = a.shadowCustId
 			INNER JOIN #sabaBetType bt ON bt.bettype = b.bettype
 		WHERE b.winlostdate BETWEEN @fdate AND @tdate
 		GROUP BY b.CustId;
 	END
 
-
+	--TODO: output
 	SELECT t.realCustId AS custid
 		, SUM(rpt.RewardPromotionAmt) AS	RewardPromotionAmt
 		, SUM(rpt.ExchangeAmt) AS			ExchangeAmt
