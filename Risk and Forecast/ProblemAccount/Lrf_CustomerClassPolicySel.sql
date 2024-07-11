@@ -16,6 +16,7 @@ AS
 			- 20221025@Johnson: Add DisableParlay [redmine: #178994]
 			- 20231212@Luke: LAP - Switch to new structure of CTS [Redmine: #197111]
 			- 20240625@Winfred: LAP - Get data from Spread Management [redmine:#207016]
+			- 20240627@Winfred: LAP - Risk Level Information - Get data from Spread Management [redmine:#207016]
 	*/
 BEGIN
 	SET NOCOUNT ON
@@ -32,6 +33,7 @@ BEGIN
 		AND r.Enable = 1
 		AND pm.IsTest <= @IsTest
 		AND sm.Site = @site
+		AND r.SportType NOT IN (9901, 9902)
 	), 
 	T1 AS
 	(
@@ -45,6 +47,7 @@ BEGIN
 			INNER JOIN CustomerClassPolicyManagement pm		WITH (NOLOCK) ON pm.PolicyID = pr.PolicyID
 		WHERE Enable = 1
 			AND pm.IsTest <= @IsTest
+			AND r.SportType NOT IN (9901, 9902)
 			AND sm.Site IN ('All', 'AllDeposit')
 			AND NOT EXISTS (SELECT 1
 							FROM T
