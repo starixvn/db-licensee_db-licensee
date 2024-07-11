@@ -14,6 +14,7 @@ AS
 		Revisions:
 			- 20230530@Winfred: LAP - Hide Customer Class [redmine:#185367]
 			- 20240625@Winfred: LAP - Get data from Spread Management [redmine:#207016]
+			- 20240627@Winfred: LAP - Risk Level Information - Get data from Spread Management [redmine:#207016]
 	*/
 BEGIN
 	SET NOCOUNT ON
@@ -26,7 +27,9 @@ BEGIN
 		SELECT
 			cp.SportType,
 			cp.Platform,
-			MAX(cc.Spread) AS Spread
+			MAX(cc.Spread) AS Spread,
+			ROW_NUMBER() OVER(PARTITION BY cp.SportType, cp.Platform 
+							   ORDER BY CASE WHEN cp.SiteID = 0 THEN - 3 ELSE cp.SiteID END DESC, cp.Currency DESC, MAX(cc.Spread) DESC) AS RowNumber
 		FROM CustomerClassSpreadDetail cp WITH(NOLOCK)
 			CROSS APPLY (SELECT TOP 1 
 							cs.Spread
@@ -37,7 +40,8 @@ BEGIN
 		WHERE	cp.SiteID IN (0, -2, @SiteID) -- -2 : AllDeposit
 			AND cp.Currency IN (0, @CurrencyID)
 			AND cp.SportType NOT IN (9901, 9902)
-		GROUP BY cp.SportType, cp.Platform ) KQ
+		GROUP BY cp.SportType, cp.Currency,cp.SiteID, cp.Platform ) KQ
+	WHERE RowNumber = 1
 	ORDER BY SportType, Platform
 END
 		

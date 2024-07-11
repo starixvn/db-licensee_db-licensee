@@ -1,6 +1,7 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE Lrf_CustomerClassSitePolicySel
-	@site VARCHAR(50)
+	@site VARCHAR(50),
+	@IsTest BIT = 0 
 AS
 	/*
 		Created: 20201103@Winfred
@@ -10,36 +11,39 @@ AS
 		Revisions:
 			- 20201103@Winfred: Get SpreadGroup on customer class [redmine:#144706]
 			- 20210329@Winfred: Get Platform on customer class site policy [redmine:#144706]
+			- 20240627@Winfred: LAP - Risk Level Information - Get data from Spread Management [redmine:#207016]
 	*/
 BEGIN
 	SET NOCOUNT ON
-	
-	DECLARE @siteID VARCHAR(7) 
-	
-	SELECT @siteID = siteID 
-	FROM SiteConfig.dbo.LicVendorProfile WITH(NOLOCK)
-	WHERE SiteName = @site
+	DECLARE @SiteID INT
+
+	SELECT @siteID = siteID FROM Site WITH(NOLOCK)	WHERE site = @site
 	-- Get Class for Site
-	;WITH T as (
-	SELECT CustomerClass,c1.Enabled ,c1.SiteID	, c1.SpreadGroup , c1.Platform , c1.CurrencyID
-	FROM CustomerClassSitePolicy c1 WITH(NOLOCK)
-	WHERE c1.isLicensee = 1
-		AND c1.Enabled = 1
-		AND c1.SiteID = @siteID
-	)
-	SELECT CustomerClass,Enabled,siteid ,SpreadGroup , Platform , CurrencyID
-	FROM T 
-	UNION ALL
-	SELECT c2.CustomerClass,c2.Enabled	,c2.siteid	,c2.SpreadGroup ,c2.Platform  , c2.CurrencyID
-	FROM CustomerClassSitePolicy c2 WITH(NOLOCK)
-	WHERE c2.isLicensee = 1
-		AND c2.Enabled = 1
-		AND c2.SiteID IS NULL
-		AND NOT EXISTS (SELECT 1
-						FROM T
-						WHERE t.customerClass = c2.customerClass AND t.SpreadGroup = c2.SpreadGroup
-						)
-	ORDER BY CustomerClass , SpreadGroup	
+	SELECT SportType, Platform,Currency, CustomerClass, Spread
+	FROM (
+		SELECT
+			cp.SiteID ,
+			cp.SportType,
+			cp.Platform,
+			cp.Currency,
+			cc.CustomerClass,
+			MAX(cs.Spread) AS Spread,
+			ROW_NUMBER() OVER(PARTITION BY cp.SportType, cc.CustomerClass, cp.Currency, cp.Platform 
+							 ORDER BY CASE WHEN cp.SiteID = 0 THEN -3 ELSE  cp.SiteID END DESC, MAX(cs.Spread) DESC) AS RowNumber
+		FROM CustomerClassSpreadDetail cp WITH(NOLOCK)
+			CROSS APPLY (SELECT TOP 1 PolicyID, Spread
+						 FROM CustomerClassSpread cm WITH(NOLOCK)
+						 WHERE cm.PolicyID = cp.PolicyID AND IsTest <= @IsTest AND Enable = 1 
+						) cs
+			CROSS APPLY (SELECT CustomerClass
+							FROM CustomerClassSpreadClass cm WITH(NOLOCK)
+							WHERE cm.PolicyID = cp.PolicyID 
+						) cc
+		WHERE	cp.SiteID IN (0, -2, @SiteID) -- -2 : AllDeposit
+			AND cp.SportType NOT IN (9901, 9902)
+		GROUP BY cp.SiteID, cp.SportType, cc.CustomerClass, cp.Currency, cp.Platform ) KQ
+	WHERE RowNumber = 1
+	ORDER BY CustomerClass, SportType, Currency, Platform
 	
 END
 		
