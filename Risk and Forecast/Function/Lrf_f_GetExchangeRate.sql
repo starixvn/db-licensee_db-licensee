@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBBOF-bodb02" selecters="bodbLicenseeNet" viewers="" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBBOF-bodb02" selecters="wsv_lap" viewers="" isFunction="1" isNested="1"></info>*/
 
 ALTER FUNCTION [dbo].[Lrf_f_GetExchangeRate]
 (
@@ -33,6 +33,7 @@ AS
 		- 20231005@Evan: Add PHP as Base Currencies, list currencies currently supported [Redmine #194863]
 		- 20231215@Evan: Support Base Currency MP [Redmine #198400]
 		- 20240112@Evan: Support based currency TRY & NPR [Redmine #197693]
+		- 20240507@Kelvin: LAP - Support based currency JPY, MXN, NGN [RedmineID: #200904]
 
 */
 
@@ -124,6 +125,8 @@ BEGIN
 				WHEN @BaseCurrency = 'TWD' THEN ex.TWD
 				WHEN @BaseCurrency = 'TRY' THEN ex.TRY
 				WHEN @BaseCurrency = 'NPR' THEN ex.NPR
+				WHEN @BaseCurrency = 'MXN' THEN ex.MXN
+				WHEN @BaseCurrency = 'NGN' THEN ex.NGN
 				ELSE 1
 			END AS Rate,
 			CASE
@@ -148,6 +151,8 @@ BEGIN
 				WHEN @DefaultBaseCurrency = 'TWD' THEN ex.TWD
 				WHEN @DefaultBaseCurrency = 'TRY' THEN ex.TRY
 				WHEN @DefaultBaseCurrency = 'NPR' THEN ex.NPR
+				WHEN @DefaultBaseCurrency = 'MXN' THEN ex.MXN
+				WHEN @DefaultBaseCurrency = 'NGN' THEN ex.NGN
 				ELSE 1
 			END AS DefaultRate
 		FROM dbo.ExchangeDailyOanda ex WITH(NOLOCK)
