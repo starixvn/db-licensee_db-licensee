@@ -29,6 +29,7 @@ AS
 		- 20231018@Evan: Integrate Saba Reward Risk-free Rebate [redmine: #196881]
 		- 20231213@Evan: Integrate Live22 Promotion [RedmineID: #197702]
 		- 20240416@Evan: Integrate Saba Coins [RedmineID: #202281]
+		- 20240701@Kelvin: Integrate Integrate FastSpin [RedmineID: #207099]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -62,6 +63,7 @@ AS
 			- 3603: SG - Promotion Prize (BetType: 4598)
 			- 7301: MGRNG - Promotion Prize (BetType: 8695)
 			- 7901: Live22 - Promotion Prize (BetType: 7698)
+			- 8701: FastSpin - Promotion Prize (BetType: 11295)
 		+ @ReportType: 1: Daily, 2: Monthly
 */
 
@@ -156,6 +158,7 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7401,%' AND BetType = 8700 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7301,%' AND BetType = 8695 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7901,%' AND BetType = 7698 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,8701,%' AND BetType = 11295 THEN 1
 				ELSE 0
 			END
 

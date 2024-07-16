@@ -23,6 +23,7 @@ RETURNS TABLE
 		- 20231018@Evan: Integrate Saba Reward Risk-free Rebate [redmine: #196881]
 		- 20231213@Evan: Integrate Live22 Promotion [RedmineID: #197702]
 		- 20240416@Evan: Integrate Saba Coins [RedmineID: #202281]
+		- 20240701@Kelvin: Integrate Integrate FastSpin [RedmineID: #207099]
 */
 
 RETURN
@@ -77,5 +78,7 @@ RETURN
 	SELECT 'MGRNG', 8695								-- MG-RNG promotion prize
 	UNION ALL
 	SELECT 'L22', 7698									-- L22 promotion prize
+	UNION ALL
+	SELECT 'FS', 11295									-- FastSpin promotion prize
 
 GO
