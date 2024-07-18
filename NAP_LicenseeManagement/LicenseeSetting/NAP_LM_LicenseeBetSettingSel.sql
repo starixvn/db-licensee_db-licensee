@@ -1,9 +1,10 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap,wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_LM_LicenseeBetSettingSel] 
 	@CustID INT
 	,@Product INT
 	,@AgentID INT = 0 
 	,@Option BIT = 0
+	,@SettingStatus TINYINT = 0
 AS
 /*
 	Created: Elodie
@@ -21,6 +22,7 @@ AS
 		- 202202220@Elodie: Apply DCS for SB [RedmineID: #167898] 
 		- 20220921@Winfred: Licensee DCS setting - HF Get multiple bet limit . [Feature #178013]
 		- 20231022@Winfred: NAP LM - Enhance Licensee Bet Setting function [Feature #194623]
+		- 20240429@Tacy: Apply @SettingStatus [RedmineID: #201239]
 
 	Param's Explanation:
 		@Product:	1: Sportbook
@@ -41,7 +43,7 @@ BEGIN
 	
 	INSERT INTO #SportBettypeFilter (ProductID,SportType,Bettype,IsLive,SettingType)
 	SELECT @ProductID AS ProductID,SportType,Bettype,IsLive, SettingType 
-	FROM dbo.f_Dep_CustSetting_SportBetTypeSettingSelect(@ProductID,NULL)
+	FROM dbo.f_Dep_CustSetting_SportBetTypeSettingSelect(@ProductID,NULL,@SettingStatus)
 	
 	IF @ProductID = 1 --Sportbook
 	BEGIN
