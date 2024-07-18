@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap,wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_LM_LicenseeBetLimitUpd] 
 	@CustID INT	
 	,@AgentID INT = 0
@@ -12,6 +12,7 @@ ALTER PROCEDURE [dbo].[NAP_LM_LicenseeBetLimitUpd]
 	,@IP VARCHAR(15)=''
 	,@ErrCode INT = 0 OUTPUT
 	,@ErrMsg VARCHAR(1000) = '' OUTPUT
+	,@SettingStatus TINYINT = 0
 AS
 /*
 	Created: 20230224@Winfred
@@ -26,6 +27,7 @@ AS
 		   - 20230717@Winfred: Enhance performace  [redmine:#191470]
 		   - 20230722@Winfred: NAP LM - Enhance Bet Setting function for AM to use - New Case [redmine:#178105]
 		   - 20230929@Winfred: Bet Setting of players not updated in case update Player Bet Setting (all players) [redmine:#194669]
+			- 20240429@Tacy: Apply @SettingStatus [RedmineID: #201239]
     Param's Explanation:
 		- @CustID : super ID
 		- @AgentID : 0 for All Subsidiary AND <> 0 for only Specific Subsidiary 
@@ -180,7 +182,7 @@ BEGIN
 	
 	INSERT INTO #SportBettypeFilter (ProductID,SportType,Bettype,IsLive,SettingType)
 	SELECT @ProductID AS ProductID,SportType,Bettype,IsLive, SettingType 
-	FROM dbo.f_Dep_CustSetting_SportBetTypeSettingSelect(@ProductID,10)
+	FROM dbo.f_Dep_CustSetting_SportBetTypeSettingSelect(@ProductID,10,@SettingStatus)
 
 	CREATE TABLE #tmpCustTemp (CustID INT PRIMARY KEY)
 	CREATE TABLE #Agent(custid INT,STT INT IDENTITY(1,1) PRIMARY KEY, Subsidiary NVARCHAR(100))
@@ -276,7 +278,8 @@ BEGIN
 						@ExistedMember = @ExistedMember, 
 						@UpdCurency = @UpdCurency,
 						@Option = @Option,
-						@Mode = 'Sportbook' 
+						@Mode = 'Sportbook',
+						@SettingStatus=@SettingStatus
 
 					SET @SMAs = ''
 					TRUNCATE TABLE #tmpCustTemp
