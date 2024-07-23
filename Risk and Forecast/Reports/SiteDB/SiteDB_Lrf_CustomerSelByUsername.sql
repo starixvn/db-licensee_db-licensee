@@ -26,6 +26,7 @@ AS
 		- 20230227@Evan: Ensure correct balance calculation when allow to transfer 247 (BU) [Redmine: #173554]
 		- 20240304@Johnson: HF filter Risk Level "Uncategorized" not show [redmine: #200913]
 		- 20240318@Bobby: LAP EC enhancement - [RedmineID: #191592]
+		- 20240318@Bobby: HF - Filter SpecialLevel - [RedmineID: #208328]
 
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
@@ -97,13 +98,15 @@ BEGIN
 	INSERT INTO #LicenseeCustComm(LicenseeID, GroupCommID, CustID, GroupName)
 	EXEC( @SQL)
 
-	SELECT @SQL = ' SELECT CustID, SpecialLevel
-					FROM OPENQUERY (DBCUST, ''	SELECT CustID, SpecialLevel 
-												FROM CustDb.dbo.Dep_CustSpecialLevel WITH(NOLOCK)
-												WHERE SpecialLevel IN (SELECT value FROM STRING_SPLIT('''''+@SpecialLevel+''''','''',''''))
-											''
-					)
-					'
+	SELECT @SQL = 'SELECT CustID, SpecialLevel
+					FROM OPENQUERY (DBCUST, ''	SELECT sl.CustID, sl.SpecialLevel 
+							FROM CustDb.dbo.Dep_CustSpecialLevel sl WITH(NOLOCK)
+							INNER JOIN CustDb.dbo.Customer c (NOLOCK) on c.custid = sl.custid
+							INNER JOIN CustDb.dbo.Dep_CustSuper cs (NOLOCK) on cs.custid = c.srecommend
+							WHERE cs.site = '''''+@LicenseeName+'''''
+						''
+					)'
+
 	INSERT INTO  #Dep_CustSpecialLevel(CustID, SpecialLevel)
 	EXEC( @SQL)
 
