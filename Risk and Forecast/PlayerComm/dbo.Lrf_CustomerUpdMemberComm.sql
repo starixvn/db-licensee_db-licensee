@@ -351,8 +351,6 @@ BEGIN
 							
 							TrackingValue2 + 		
 						    '</Lrf_CustomerUpdMemberComm>' AS '@TrackingValue2'							
-							TrackingValue2 + 		
-						    '</Lrf_CustomerUpdMemberComm>' AS '@TrackingValue2'							
 							,@currentdate AS '@LogDate'
 						    ,@duration AS '@Duration'							
 					FROM T 		

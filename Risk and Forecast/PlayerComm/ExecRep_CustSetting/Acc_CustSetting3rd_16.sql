@@ -133,7 +133,7 @@ BEGIN
 						,grp.AgentDiscount
 						,grp.MasterDiscount
 						,grp.SuperDiscount
-						,SYSDATETIME()
+						,dbo.f_GetDateTime2()
 					FROM dbo.Dep_CustDiscountGroupSetting_Member grp WITH(NOLOCK)
 					CROSS APPLY (SELECT csm.custid
 								FROM dbo.Dep_CustSettingMode csm WITH(NOLOCK)
@@ -147,7 +147,7 @@ BEGIN
 						
 					UPDATE csm
 						SET	isGroupedComm = 0,
-							RepUpdateTime = SYSDATETIME()
+							RepUpdateTime = dbo.f_GetDateTime2()
 					FROM @InputRes_updateComm r
 						INNER JOIN dbo.Dep_CustSettingMode csm WITH(UPDLOCK,ROWLOCK) ON r.custid = csm.CustID		
 					WHERE isGroupedComm = 1
@@ -156,7 +156,7 @@ BEGIN
 			
 			UPDATE cs
 				SET playerdiscount = @Discount,
-					RepUpdateTime = SYSDATETIME()
+					RepUpdateTime = dbo.f_GetDateTime2()
 			FROM @InputRes_updateComm r
 				INNER JOIN dbo.Dep_CustDiscountSetting_Member cs WITH(UPDLOCK,ROWLOCK) ON r.custid = cs.CustID
 			WHERE sporttype = @sporttype

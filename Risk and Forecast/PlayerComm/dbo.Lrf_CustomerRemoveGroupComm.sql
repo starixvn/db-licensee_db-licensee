@@ -75,7 +75,7 @@ BEGIN
 		RETURN	
 	END
 	
-		
+	BEGIN
 	DECLARE @DiscountSettings VARCHAR(MAX) = ''
 	DECLARE @tblSettingDCS AS TABLE (sporttype SMALLINT,Bettype SMALLINT)
 	
@@ -142,6 +142,7 @@ BEGIN
 			@LicenseeID=@LicenseeID,
 			@strCustID=@strCustIDOriginal,
 			@UserID=@UserID,
+						
 			@GroupDiscountID=0,
 			@DiscountSettings = @DiscountSettings,
 			
