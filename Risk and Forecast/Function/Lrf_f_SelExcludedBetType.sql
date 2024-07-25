@@ -24,6 +24,8 @@ RETURNS TABLE
 		- 20231213@Evan: Integrate Live22 Promotion [RedmineID: #197702]
 		- 20240416@Evan: Integrate Saba Coins [RedmineID: #202281]
 		- 20240701@Kelvin: Integrate Integrate FastSpin [RedmineID: #207099]
+		- 20240725@Kelvin: Vgaming - Integrate Promotion Prize [RedmineID: #208144]
+
 */
 
 RETURN
@@ -62,6 +64,8 @@ RETURN
 	SELECT 'SBC', 1699									-- Saba club Jackpot Prize
 	UNION ALL
 	SELECT 'SXG', 3150									-- AE Casino Lucky Draw
+	UNION ALL
+	SELECT 'VGA', 3897									-- Vgaming Promotion Prize
 	UNION ALL
 	SELECT 'VGA', 3898									-- Vgaming Jackpot Contribution
 	UNION ALL
