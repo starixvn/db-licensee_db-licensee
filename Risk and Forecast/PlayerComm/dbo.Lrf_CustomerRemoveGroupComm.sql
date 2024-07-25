@@ -75,7 +75,6 @@ BEGIN
 		RETURN	
 	END
 	
-	BEGIN
 	DECLARE @DiscountSettings VARCHAR(MAX) = ''
 	DECLARE @tblSettingDCS AS TABLE (sporttype SMALLINT,Bettype SMALLINT)
 	
@@ -107,6 +106,7 @@ BEGIN
 			WHERE custid = @custid
 			FOR XML PATH('r'), ROOT('Root')
 			)	
+			
 			--Update List of affected Customers               
 			EXEC [Lrf_CustomerUpdMemberComm] 
 				@LicenseeID=@LicenseeID,

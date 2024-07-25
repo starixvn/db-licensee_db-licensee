@@ -49,6 +49,9 @@ Param's Explanation:
 � @ErrMsg: Error description.
 */
 BEGIN
+	IF @@SERVERNAME NOT IN ('DBCUST','DBSPARE','SITDBCUST','TESTDBCUST','DB-60\DEVDBCUST')
+		RETURN;
+		
 	SET NOCOUNT ON;
 	
 	DECLARE @InputRes_updateComm AS TABLE (custid INT PRIMARY KEY)

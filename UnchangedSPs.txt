@@ -2,7 +2,7 @@ Risk and Forecast\Setting\dbo.Lrf_CustomerUpdMemberBAStatus.sql
 Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeBACustUpdComm.sql
 Risk and Forecast\PlayerComm\dbo.Lrf_CustomerUpdMemberComm.sql
 Risk and Forecast\PlayerComm\dbo.Lrf_CustomerMoveGroupComm.sql
-Risk and Forecast\PlayerComm\dbo.Lrf_CustomerRemoveGroupComm
+Risk and Forecast\PlayerComm\dbo.Lrf_CustomerRemoveGroupComm.sql
 Risk and Forecast\PlayerComm\dbo.Lrf_CustomerSetDefaultComm.sql
 Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeCustCommUpd.sql
 Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeGroupCommDel.sql
