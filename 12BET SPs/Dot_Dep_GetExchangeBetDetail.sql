@@ -77,7 +77,7 @@ BEGIN
 			CREATE TABLE #TmpCust (CustID INT PRIMARY KEY)
 
 			INSERT INTO #TmpCust (CustID)
-			SELECT c.custid
+			SELECT distinct c.custid
 			FROM bodb02.dbo.Customer AS c WITH (NOLOCK)
 			INNER JOIN @TVP_AgentList AS ag ON ag.AgentId = c.recommend
 
