@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbDownlineNet,bodbExtAccNet,Dot_Member,bodbLicenseeNet" viewers="" isFunction="0" isNested="1"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap,wsv_alp,wsv_xnap,svc_tig,wsv_lap" viewers="" isFunction="0" isNested="1"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_CustomerUpdMemberBAStatus]
 	@LicenseeID INT = 0,
