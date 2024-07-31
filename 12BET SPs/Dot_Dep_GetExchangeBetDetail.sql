@@ -78,8 +78,8 @@ BEGIN
 
 			INSERT INTO #TmpCust (CustID)
 			SELECT distinct c.custid
-			FROM bodb02.dbo.Customer AS c WITH (NOLOCK)
-			INNER JOIN @TVP_AgentList AS ag ON ag.AgentId = c.recommend
+			FROM bodb02.dbo.custinfo AS c WITH (NOLOCK)
+				INNER JOIN @TVP_AgentList AS ag ON ag.AgentId = c.recommend AND c.roleid = 1			 
 
 			SELECT TOP 500 s.settledDate
 						, s.resettledDate
