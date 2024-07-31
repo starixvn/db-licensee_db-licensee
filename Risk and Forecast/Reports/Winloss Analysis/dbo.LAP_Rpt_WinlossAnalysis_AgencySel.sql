@@ -45,6 +45,7 @@ AS
 		- 20240410@Eddie: change metadata 'bodbLicenseeNet,wsv_lap,wsv_alp' to 'wsv_lap,wsv_alp' [RedmineID: #202935]
 		- 20240506@Bobby: Cashout separation [RedmineID: #200269]
 		- 20242901@Evan: Integrate VS4 (Parlay Sport) [RedmineID: #199347]
+		- 20240731@Kelvin: Sorting by Bet Count is not properly when Grouping by Bettype [RedmineID: #208657]
 		
 
 	Param's Explanation:
@@ -769,10 +770,10 @@ BEGIN
 	-- TODO: Sorting all columns
 	--BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective, Margin
 	DROP TABLE IF EXISTS #tmpSortValue;
-	CREATE TABLE #tmpSortValue (GroupKey INT PRIMARY KEY, GroupValue VARCHAR(100), SortValue MONEY);
+	CREATE TABLE #tmpSortValue (ParentKey INT, GroupKey INT, GroupValue VARCHAR(100), SortValue MONEY, PRIMARY KEY(ParentKey, GroupKey)) ;
 
 	INSERT INTO #tmpSortValue
-	SELECT GroupBy, 
+	SELECT ParentKey, GroupBy, 
 		CASE 
 			WHEN @GroupBy = 8 THEN SUBSTRING(c.Username2,CHARINDEX('$',c.Username2)+1,100)	--> Player ExternalId
 			WHEN @GroupBy = 9 THEN c.Username	--> Agent SystemId
@@ -793,7 +794,7 @@ BEGIN
 		
 	FROM #rptData rpt
 		LEFT JOIN dbo.vw_Customer c WITH(NOLOCK) ON c.custid = rpt.GroupBy AND @GroupBy IN (8,9)
-	GROUP BY GroupBy,
+	GROUP BY ParentKey, GroupBy,
 		CASE 
 			WHEN @GroupBy = 8 THEN SUBSTRING(c.Username2,CHARINDEX('$',c.Username2)+1,100) 
 			WHEN @GroupBy = 9 THEN c.Username
@@ -870,7 +871,7 @@ BEGIN
 				WHERE @GroupBy = 9
 				
 			) AS t
-			INNER JOIN #tmpSortValue sr ON sr.GroupKey =  t.GroupKey
+			INNER JOIN #tmpSortValue sr ON sr.GroupKey = t.GroupKey AND 1 = CASE WHEN @GroupMode IN (4,5) AND sr.ParentKey <> t.ParentKey THEN 0 ELSE 1 END
 		) AS p
 		ORDER BY p.rIdx ASC
 		OFFSET @pageOffset ROWS FETCH NEXT @PageSize ROWS ONLY
