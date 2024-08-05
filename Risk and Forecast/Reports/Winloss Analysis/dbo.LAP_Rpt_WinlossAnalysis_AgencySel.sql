@@ -46,6 +46,7 @@ AS
 		- 20240506@Bobby: Cashout separation [RedmineID: #200269]
 		- 20242901@Evan: Integrate VS4 (Parlay Sport) [RedmineID: #199347]
 		- 20240731@Kelvin: Sorting by Bet Count is not properly when Grouping by Bettype [RedmineID: #208657]
+		- 20240725@Kelvin: Comment out redundant code  [RedmineID: #208144]
 		
 
 	Param's Explanation:
@@ -602,12 +603,12 @@ BEGIN
 			WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
 				AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 				AND (',' + @LiveIds + ',' LIKE '%,0,%')
-				AND 1 = CASE 
-						WHEN s.Product3rdId IN (42) AND s.Bettype IN (1698,1699) AND b.ProductID <> 150 THEN 1 
-						WHEN s.Product3rdId IN (66) AND s.Bettype IN (3898,3899) AND b.ProductID <> 173 THEN 1
-						WHEN s.IsPriceBettype > 0 THEN 0
-						ELSE 1
-					END
+				--AND 1 = CASE 
+				--		WHEN s.Product3rdId IN (42) AND s.Bettype IN (1698,1699) AND b.ProductID <> 150 THEN 1 
+				--		WHEN s.Product3rdId IN (66) AND s.Bettype IN (3898,3899) AND b.ProductID <> 173 THEN 1
+				--		WHEN s.IsPriceBettype > 0 THEN 0
+				--		ELSE 1
+				--	END
 			GROUP BY
 				b.CustId, b.recommend, a.currency, b.winlostdate, s.Product3rdId, b.productID
 				,ISNULL(s.GroupTypeId, s.bettype), b.betfrom, b.StatusId
@@ -731,12 +732,12 @@ BEGIN
 			AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 			AND (',' + @LiveIds + ',' LIKE '%,' + CAST(b.liveindicator AS VARCHAR(3)) + ',%')
 			AND (b.sporttype <> 0 AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ISNULL(saba.SabaSportType, b.Sporttype) AS VARCHAR(10)) + ',%'))
-			AND 1 = CASE 
-						WHEN b.Product3rdId IN (42) AND b.Bettype IN (1698,1699) AND b.Sporttype <> 150 THEN 1 
-						WHEN b.Product3rdId IN (66) AND b.Bettype IN (3898,3899) AND b.Sporttype <> 173 THEN 1
-						WHEN bt.IsPriceBettype > 0 THEN 0
-						ELSE 1
-					END
+			--AND 1 = CASE 
+			--			WHEN b.Product3rdId IN (42) AND b.Bettype IN (1698,1699) AND b.Sporttype <> 150 THEN 1 
+			--			WHEN b.Product3rdId IN (66) AND b.Bettype IN (3898,3899) AND b.Sporttype <> 173 THEN 1
+			--			WHEN bt.IsPriceBettype > 0 THEN 0
+			--			ELSE 1
+			--		END
 			AND NOT (b.Product3rdId IN (0, 3) AND b.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB & BA
 
 		GROUP BY 
