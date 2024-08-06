@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="wsv_nap" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 USE bodb_Licensee
 GO
 
@@ -9,7 +9,6 @@ ALTER PROCEDURE [dbo].[Acc_BA_LicConfigUpd]
 	@groupb DECIMAL(9,8) = 0,
 	@groupc DECIMAL(9,8) = 0,
 	@groupd DECIMAL(9,8) = 0,
-	--@ugroup VARCHAR(3),
 	@1x2Comm DECIMAL(9,8) = 0,
 	@OtherComm DECIMAL(9,8) = 0,	
 	@EnableBA BIT = 0,
@@ -42,6 +41,7 @@ AS
 		- 20180808@Helen: DB05.DBPOLICY migration - Move to DBCUST [Redmine:99462]
 		- 20180914@Helen: Hotfix - CHANGE link server to update BA Member - DBCUST/CUSTDB - [Redmine:101501]
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
+		- 20240731@Tacy: Remove linked-server/cross-db on NAP_UserControl [redmineID: #208402]
 
 	Param's Explanation:
 	
@@ -49,10 +49,6 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	
-	--Check permission 	
-	EXEC NAP_UserControl.dbo.Acc_Con_CheckPermission @custid=@UserID,@funcname='[BACommSetting]',@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
-	IF @ErrCode <> 0
-		RETURN
 	--Check exist in Licensees
 	IF NOT EXISTS (SELECT 1 FROM Licensees WITH (nolock) WHERE LicenseeID = @LicenseeID)
 	BEGIN
