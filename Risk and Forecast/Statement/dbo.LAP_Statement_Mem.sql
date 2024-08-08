@@ -34,6 +34,7 @@ Revisions:
 	- 20231018@Evan: Integrate Saba Reward Risk-free Rebate + add missing bettype 17006 [redmine: #196881]
 	- 20240503@Kelvin: Change excuters login [RedmineID: #204744]
 	- 20240416@Evan: Integrate Saba Coins [RedmineID: #202281]
+	- 20240808@Kelvin: Add new bettype 11009 for "Saba Nickname Edited" - change bettype range [11001 -> 11049] [RedmineID: #209038]
 
 Param's Explanation:     
 	- @ReportViewType : TINYINT
@@ -90,7 +91,7 @@ BEGIN
 	INSERT INTO @PROMO_BETTPE (betTypeId)
 	SELECT b.typeid FROM bettype b WITH(NOLOCK) 
 	WHERE b.typeid BETWEEN 17000 AND 17010
-		OR b.typeid BETWEEN 11001 AND 11008
+		OR b.typeid BETWEEN 11001 AND 11049
 
 	SELECT @PromoBettypes = STRING_AGG(betTypeId, ',')
 	FROM @PROMO_BETTPE

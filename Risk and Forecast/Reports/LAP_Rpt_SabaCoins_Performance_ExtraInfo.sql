@@ -16,6 +16,7 @@ AS
 	Revisions:
 		- 20240417@Bobby: Init [RedmineID: #202281]
 		- 20240710@Bobby: Enhance perf [RedmineID: #207858]
+		- 20240808@Kelvin: Add new bettype 11009 for "Saba Nickname Edited" - change bettype range [11001 -> 11049] [RedmineID: #209038]
 
 	Param's Explanation:
 */
@@ -84,17 +85,18 @@ BEGIN
 		WHERE cs.realCustId IS NULL
 	END
 
-	--TODO: Get sport type
-	CREATE TABLE #sabaBetType (Bettype INT PRIMARY KEY);
+	--TODO: Get sport type	
+	CREATE TABLE #sabaBetType (Bettype INT PRIMARY KEY, AmountType SMALLINT);
 	WITH CTE_SabaBettype AS (
-		SELECT 11001 AS bettype
+		SELECT 11001 AS bettype 
 		UNION ALL
 		SELECT bettype = bettype + 1
 		FROM CTE_SabaBettype
-		WHERE bettype < 11008
+		WHERE bettype < 11049
 	)
-	INSERT INTO #sabaBetType(bettype)
+	INSERT INTO #sabaBetType(bettype, AmountType)
 	SELECT bettype
+		  ,CASE WHEN bettype IN (11006,11007,11008) THEN 1 ELSE 0 END AS AmountType -- 0: Reward/Promotion,  1: Exchange To Cash
 	FROM CTE_SabaBettype;
 
 	CREATE TABLE #SumWinlostExtra (
@@ -113,8 +115,8 @@ BEGIN
 
 		INSERT INTO #sumWinlostExtra (shadowCustId, RewardPromotionAmt, ExchangeAmt)
 		SELECT b.custid
-			, SUM(IIF(b.bettype BETWEEN 11001 AND 11005, b.winlost-b.actual_stake, 0)) AS RewardPromotionAmt
-			, SUM(IIF(b.bettype BETWEEN 11006 AND 11008, b.winlost-b.actual_stake, 0)) AS ExchangeAmt
+			, SUM(IIF(bt.AmountType = 0, b.winlost-b.actual_stake, 0)) AS RewardPromotionAmt
+			, SUM(IIF(bt.AmountType = 1, b.winlost-b.actual_stake, 0)) AS ExchangeAmt
 		FROM dbo.bettrans AS b WITH (NOLOCK)
 			INNER JOIN #shadowRealCust AS a ON b.custid = a.shadowCustId
 			INNER JOIN #sabaBetType bt ON bt.bettype = b.bettype
@@ -129,8 +131,8 @@ BEGIN
 
 		INSERT INTO #sumWinlostExtra (shadowCustId, RewardPromotionAmt, ExchangeAmt)
 		SELECT b.custid
-			, SUM(IIF(b.bettype BETWEEN 11001 AND 11005, b.winlost, 0)) AS RewardPromotionAmt
-			, SUM(IIF(b.bettype BETWEEN 11006 AND 11008, b.winlost, 0)) AS ExchangeAmt
+			, SUM(IIF(bt.AmountType = 0, b.winlost, 0)) AS RewardPromotionAmt
+			, SUM(IIF(bt.AmountType = 1, b.winlost, 0)) AS ExchangeAmt
 		FROM bodb_LicenseeReport.dbo.rptLicenseeWinloss AS b WITH (NOLOCK)
 			INNER JOIN #shadowRealCust AS a ON b.custid = a.shadowCustId
 			INNER JOIN #sabaBetType bt ON bt.bettype = b.bettype
