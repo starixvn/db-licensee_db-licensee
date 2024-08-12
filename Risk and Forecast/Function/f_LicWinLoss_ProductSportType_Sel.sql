@@ -119,7 +119,7 @@ RETURN
 					(78, 'UUSL', 216, 0),	-- UU Slots
 					(83, 'VS4', 188, 0),	-- Virtual Sports 4
 					(87, 'FS', 230, 0),		-- FastSpin
-					(89, 'FAC', 146, 0)		-- FA CHAI
+					(89, 'FAC', 146, 0),	-- FA CHAI
 					(85, 'NS', 229, 0)		-- Nextspin
 			) d(ProductID, ProductCode, SportType, BetType)
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'
