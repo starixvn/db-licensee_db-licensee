@@ -22,3 +22,4 @@ Risk and Forecast\Reports\LiveReport\Lrf_Rpt_LiveReportDetail.sql
 Risk and Forecast\Reports\SiteDB\SiteDB_Lrf_Rpt_Outstanding.sql
 Risk and Forecast\Reports\Winloss Analysis\dbo.LAP_f_WinlossAnalysis_BettypeMatrix.sql
 Risk and Forecast\Reports\Winloss Analysis\dbo.LAP_Rpt_WInlossAnalysis_BettypeSel.sql
+Risk and Forecast\Reports\Common\Lrf_SelBetTypesByProduct.sql
