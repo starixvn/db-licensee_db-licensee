@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-SiteConfig" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-SiteConfig" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE Lrf_MessageListSel
 	@UserName		VARCHAR(20)
 	,@LicenseeName	VARCHAR(50)
@@ -12,6 +12,7 @@ AS
 	DB: DBCUST/SiteConfig
 	Revisions:
 		- 20221207@Kai: Initial sp [RedmineID: #174308]
+		- 20240715@Kai: Check Source column due to mark as read from CRM [RedmineID: #199443]
 
 	Param's Explanation:
 		@MessageTypes: "1,2,3,..." - 1: Abnormal Bet 
@@ -33,6 +34,7 @@ BEGIN
 			ON m.MessageID = mu.MessageID
 				AND mu.UserName = @UserName
 				AND mu.LicenseeName = @LicenseeName
+				AND mu.[Source] = 0 -- 0: Internal, 1: CRM
 	WHERE ml.LicenseeName = @LicenseeName
 		AND m.MessageType IN (SELECT value FROM STRING_SPLIT(@MessageTypes, ','))
 		AND (m.EventDate BETWEEN @FromDate AND @ToDate)
