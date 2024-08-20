@@ -30,6 +30,7 @@ AS
 		- 20231213@Evan: Integrate Live22 Promotion [RedmineID: #197702]
 		- 20240416@Evan: Integrate Saba Coins [RedmineID: #202281]
 		- 20240701@Kelvin: Integrate Integrate FastSpin [RedmineID: #207099]
+		- 20240725@Kelvin: Vgaming - Integrate Promotion Prize [RedmineID: #208144]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -59,6 +60,7 @@ AS
 			- 6601: Vgaming - Free Bets (SportType: 173)
 			- 6602: Vgaming - Jackpot Prize (BetType: 3899)
 			- 6603: Vgaming - Jackpot Contribution (BetType: 3898)
+			- 6604: Vgaming - Promotion Prize (BetType: 3897)
 			- 7401: Player Tips (BetType: 8700)
 			- 3603: SG - Promotion Prize (BetType: 4598)
 			- 7301: MGRNG - Promotion Prize (BetType: 8695)
@@ -152,9 +154,10 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4202,%' AND BetType = 1699 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4203,%' AND BetType = 1698 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4501,%' AND BetType = 3150 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6601,%' AND ProductPrefix = 'VGA' AND BetType NOT IN (3899, 3898) THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6601,%' AND ProductPrefix = 'VGA' AND BetType NOT IN (3899, 3898, 3897) THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6602,%' AND BetType = 3899 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6603,%' AND BetType = 3898 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6604,%' AND BetType = 3897 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7401,%' AND BetType = 8700 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7301,%' AND BetType = 8695 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7901,%' AND BetType = 7698 THEN 1
@@ -212,7 +215,7 @@ BEGIN
 			AND b.statusID IN (111, 112, 113)
 			AND 1 = CASE
 						WHEN sbt.ProductCode = 'SBC' AND b.bettype NOT IN (1698, 1699) AND b.matchid <> 150 THEN 0
-						WHEN sbt.ProductCode = 'VGA' AND b.bettype NOT IN (3898, 3899) AND b.matchid <> 173 THEN 0
+						WHEN sbt.ProductCode = 'VGA' AND b.bettype NOT IN (3898, 3899, 3897) AND b.matchid <> 173 THEN 0
 						ELSE 1
 					END
 			AND (@Username = '' OR c.CustId IS NOT NULL)
@@ -233,7 +236,7 @@ BEGIN
 		DELETE #SportBetType
 		WHERE 1 = CASE
 					WHEN ProductCode = 'SBC' AND BetType NOT IN (1698, 1699) THEN 1
-					WHEN ProductCode = 'VGA' AND BetType NOT IN (3899, 3898) THEN 1
+					WHEN ProductCode = 'VGA' AND BetType NOT IN (3899, 3898, 3897) THEN 1
 					ELSE 0
 				END
 
