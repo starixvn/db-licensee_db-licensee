@@ -22,28 +22,6 @@ BEGIN
 	DROP TABLE IF EXISTS #TempAg;
 	CREATE TABLE #TempAg(CustId INT PRIMARY KEY, Currency INT);
 
-	DECLARE @DocHandler INT
-	BEGIN TRY
-		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
-	
-		INSERT INTO #TempAg(CustId, Currency)
-		SELECT AgentId, Currency
-		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
-
-		EXEC sp_xml_removedocument @DocHandler
-	END TRY
-	BEGIN CATCH
-		SELECT ErrCode = 100
-			,ErrMsg = N'Paramter invalid.'
-
-		RETURN
-	END CATCH;
-
-	DECLARE @apiDate SMALLDATETIME, @PlatformCheck VARCHAR(MAX)
-	SELECT @apiDate = CAST(@Winlostdate AS DATE),
-		@TotalRows	= 0,
-		@PlatformCheck = IIF(ISNULL(@PlatformTypeIds, '0') = '0', 'ALL', @PlatformTypeIds);
-
 	DROP TABLE IF EXISTS #rptPlayerWinloss;
 	CREATE TABLE #rptPlayerWinloss (
 		rIdx INT IDENTITY(1, 1) PRIMARY KEY, 
@@ -55,7 +33,42 @@ BEGIN
 		TotalRows INT
 	);
 
-	-- Get exchange rate
+	DECLARE @DocHandler INT
+	BEGIN TRY
+		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
+	
+		INSERT INTO #TempAg(CustId, Currency)
+		SELECT AgentId, Currency
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
+
+		EXEC sp_xml_removedocument @DocHandler
+	END TRY
+	BEGIN CATCH
+
+		GOTO RS_OUTPUT;
+	END CATCH;
+
+	DECLARE @apiDate SMALLDATETIME, @PlatformCheck VARCHAR(MAX)
+	SELECT @apiDate = CAST(@Winlostdate AS DATE),
+		@TotalRows	= 0,
+		@PlatformCheck = IIF(ISNULL(@PlatformTypeIds, '0') = '0', 'ALL', @PlatformTypeIds);
+
+	--TODO: product filtering
+	DROP TABLE IF EXISTS #rptBettype;
+	CREATE TABLE #rptBettype (BetType INT, RefTable TINYINT);
+	INSERT INTO #rptBettype
+	SELECT DISTINCT BetType, RefTable
+	FROM bodb02.dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', '', 0)
+	WHERE ProductID NOT IN (11, 31, 37) -- NOT Support Saba Promotion, AG-Casino & Exchange
+
+	--TODO: platform filtering
+	DROP TABLE IF EXISTS #rptPlatform;
+	CREATE TABLE #rptPlatform (PlatformType INT, betfrom VARCHAR(5));
+	INSERT INTO #rptPlatform
+	SELECT DISTINCT f.PlatformType, f.betfrom
+	FROM bodb02.[dbo].[Lrf_f_BetFromType_Sel](@PlatformCheck) AS f
+
+	--TODO: Get exchange rate
 	DECLARE @Exchange TABLE (ExchangeId	INT, Rate FLOAT);
 	INSERT INTO @Exchange(ExchangeId, Rate)
 	SELECT ExchangeID, Rate
@@ -64,16 +77,8 @@ BEGIN
 
 	--TODO: Get players winloss
 	IF @PageIndex > 0
-	BEGIN
-		;WITH CTE_Bettype AS (
-			SELECT DISTINCT BetType, RefTable
-			FROM bodb02.dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', '', 0)
-			WHERE ProductID NOT IN (11, 31, 37) -- NOT Support Saba Promotion, AG-Casino & Exchange
-		),
-		CTE_Platform AS (
-			SELECT DISTINCT f.PlatformType, f.betfrom
-			FROM bodb02.[dbo].[Lrf_f_BetFromType_Sel](@PlatformCheck) AS f
-		)
+	BEGIN	
+		
 		INSERT INTO #rptPlayerWinloss (PlatformType, Nickname, BetCount, Turnover, Winloss, TotalRows)
 		SELECT rpt.PlatformType
 			,SUBSTRING(c.username2, CHARINDEX('$', c.username2)+1, 50) AS Nickname
@@ -90,8 +95,8 @@ BEGIN
 			FROM bodb02.dbo.bettrans AS rpt WITH (NOLOCK)
 				INNER JOIN #TempAg AS a ON a.custid = rpt.recommend
 				INNER JOIN @Exchange ex ON ex.ExchangeId = a.Currency
-				INNER JOIN CTE_Bettype bt ON bt.bettype = rpt.bettype AND bt.RefTable NOT IN (1,2)
-				INNER JOIN CTE_Platform AS pl ON pl.betfrom = rpt.betfrom 
+				INNER JOIN #rptBettype bt ON bt.bettype = rpt.bettype AND bt.RefTable NOT IN (1,2)
+				INNER JOIN #rptPlatform AS pl ON pl.betfrom = rpt.betfrom 
 			WHERE rpt.winlostdate = @apiDate
 				AND rpt.statusid IN (111, 112, 113)
 			GROUP BY pl.PlatformType, rpt.custid
@@ -105,8 +110,8 @@ BEGIN
 			FROM bodb02.dbo.bettransRNG AS rpt WITH (NOLOCK)
 				INNER JOIN #TempAg AS a ON a.custid = rpt.recommend
 				INNER JOIN @Exchange ex ON ex.ExchangeId = a.Currency
-				INNER JOIN CTE_Bettype bt ON bt.bettype = rpt.GameID AND bt.RefTable IN (1)
-				INNER JOIN CTE_Platform AS pl ON pl.betfrom = rpt.betfrom
+				INNER JOIN #rptBettype bt ON bt.bettype = rpt.GameID AND bt.RefTable IN (1)
+				INNER JOIN #rptPlatform AS pl ON pl.betfrom = rpt.betfrom
 			WHERE rpt.winlostdate = @apiDate
 				AND rpt.statusid IN (111, 112, 113)
 			GROUP BY pl.PlatformType, rpt.custid
@@ -120,8 +125,8 @@ BEGIN
 			FROM bodb02.dbo.bettransLC AS rpt WITH (NOLOCK)
 				INNER JOIN #TempAg AS a ON a.custid = rpt.recommend
 				INNER JOIN @Exchange ex ON ex.ExchangeId = a.Currency
-				INNER JOIN CTE_Bettype bt ON bt.bettype = rpt.GameID AND bt.RefTable IN (2)
-				INNER JOIN CTE_Platform AS pl ON pl.betfrom = rpt.betfrom
+				INNER JOIN #rptBettype bt ON bt.bettype = rpt.GameID AND bt.RefTable IN (2)
+				INNER JOIN #rptPlatform AS pl ON pl.betfrom = rpt.betfrom
 			WHERE rpt.winlostdate = @apiDate
 				AND rpt.statusid IN (111, 112, 113)
 			GROUP BY pl.PlatformType, rpt.custid
@@ -135,6 +140,7 @@ BEGIN
 		; 
 	END
 
+	RS_OUTPUT:
 	--TODO: @TotalRows
 	SELECT TOP(1) @TotalRows = TotalRows 
 	FROM #rptPlayerWinloss

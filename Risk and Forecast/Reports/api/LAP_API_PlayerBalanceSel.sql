@@ -20,6 +20,9 @@ BEGIN
 	DROP TABLE IF EXISTS #TempAg;
 	CREATE TABLE #TempAg(CustId INT PRIMARY KEY, Currency INT);
 
+	DROP TABLE IF EXISTS #rptPlayerBalance;
+	CREATE TABLE #rptPlayerBalance (rIdx INT IDENTITY(1, 1) PRIMARY KEY, Nickname VARCHAR(50), Currency VARCHAR(5), ClosingBalance MONEY, TotalRows INT)
+
 	DECLARE @DocHandler INT
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT, @AgentList
@@ -31,19 +34,14 @@ BEGIN
 		EXEC sp_xml_removedocument @DocHandler
 	END TRY
 	BEGIN CATCH
-		SELECT ErrCode = 100
-			,ErrMsg = N'Paramter invalid.'
 
-		RETURN
+		GOTO RS_OUTPUT;
 	END CATCH;
 
 	DECLARE @apiDate SMALLDATETIME, @openingDate SMALLDATETIME, @toDay SMALLDATETIME;
 	SELECT @apiDate = CAST(@Winlostdate AS DATE),
 		@toDay		= CAST(GETDATE() AS DATE),
 		@TotalRows	= 0;
-
-	DROP TABLE IF EXISTS #rptPlayerBalance;
-	CREATE TABLE #rptPlayerBalance (rIdx INT IDENTITY(1, 1) PRIMARY KEY, Nickname VARCHAR(50), Currency VARCHAR(5), ClosingBalance MONEY, TotalRows INT)
 
 	--TODO: Get players balance
 	IF @apiDate < @toDay AND @PageIndex > 0
@@ -60,6 +58,7 @@ BEGIN
 			WHERE c.roleid = 1
 				AND c.username2 IS NOT NULL --exclude dummy accounts
 				AND a.Currency <> 20 --exclude UUS accounts
+				AND c.creatdate < @openingDate
 			ORDER BY SUBSTRING(c.username2, CHARINDEX('$', c.username2)+1, 50)
 			OFFSET (@PageIndex-1)*@PageSize ROWS FETCH NEXT @PageSize ROWS ONLY
 		)
@@ -72,6 +71,7 @@ BEGIN
 		; 
 	END
 
+	RS_OUTPUT:
 	--TODO: @TotalRows
 	SELECT TOP(1) @TotalRows = TotalRows 
 	FROM #rptPlayerBalance
