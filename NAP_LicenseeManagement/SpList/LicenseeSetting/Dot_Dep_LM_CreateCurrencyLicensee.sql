@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-bodb_licensee" executers="Dot_Member" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-bodb_licensee" executers="svc_tig" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Dot_Dep_LM_CreateCurrencyLicensee]
 	@LicenseeName			VARCHAR(50)
 	, @Currency				INT = 0

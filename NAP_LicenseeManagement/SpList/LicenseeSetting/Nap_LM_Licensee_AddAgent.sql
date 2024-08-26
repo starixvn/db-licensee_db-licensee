@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-bodb_licensee" executers="bodbLicenseeNet,Dot_Member" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-bodb_licensee" executers="wsv_lap,svc_tig" viewers="" isFunction="0" isNested="0"></info>*/
 
 CREATE PROCEDURE [dbo].[Nap_LM_Licensee_AddAgent]
 	@LicenseeName		VARCHAR(50)
