@@ -3,6 +3,7 @@ ALTER PROCEDURE [dbo].[LAP_API_PlayerWinlossByPlatform]
 	@AgentList			VARCHAR(MAX),
 	@Winlostdate		SMALLDATETIME,
 	@PlatformTypeIds	VARCHAR(MAX)	= '0',
+	@SpecialPlatform	TINYINT	= 0,
 	@BaseCurrency		VARCHAR(10)		= 'USD',
 	@PageIndex			INT = 1,
 	@PageSize			INT = 500,
@@ -67,6 +68,7 @@ BEGIN
 	INSERT INTO #rptPlatform
 	SELECT DISTINCT f.PlatformType, f.betfrom
 	FROM bodb02.[dbo].[Lrf_f_BetFromType_Sel](@PlatformCheck) AS f
+	WHERE SpecialPlatform = @SpecialPlatform
 
 	--TODO: Get exchange rate
 	DECLARE @Exchange TABLE (ExchangeId	INT, Rate FLOAT);

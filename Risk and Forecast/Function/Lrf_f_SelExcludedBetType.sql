@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBBOF-bodb02,DBSID-bodb02" executers="" viewers="" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02,DBBOF-bodb02,DBSID-bodb02" selecters="wsv_lap" viewers="" isFunction="1" isNested="1"></info>*/
 
 ALTER FUNCTION [dbo].[Lrf_f_SelExcludedBetType]()
 RETURNS TABLE
@@ -26,6 +26,7 @@ RETURNS TABLE
 		- 20240701@Kelvin: Integrate Integrate FastSpin [RedmineID: #207099]
 		- 20240725@Kelvin: Vgaming - Integrate Promotion Prize [RedmineID: #208144]
 		- 20240827@Lewis: FA CHAI - Integrate Promotion Prize [RedmineID: #209881]
+		- 20240812@Bobby: Grant wsv_lap permission [RedmineID: #209041]
 
 */
 
