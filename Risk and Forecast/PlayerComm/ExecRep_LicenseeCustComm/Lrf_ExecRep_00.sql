@@ -3,77 +3,9 @@ ALTER PROCEDURE [dbo].[Lrf_ExecRep_00]
 (
 	@strCustId VARCHAR(MAX) = '',
 	@LicenseeID INT,
-	@GroupCommID INT = 0,
-	@MacauLicenseeID INT = 0,
-	@IsUpdateNG BIT = 0,
-	@IsUpdateRNG BIT = 0,	
-	@IsUpdateAllbet BIT = 0,
-	@IsUpdateMacau BIT = 0,
-	@IsUpdatePP BIT = 0,
-	@SBComm DECIMAL(9,8)=0,
-	@NGComm DECIMAL(9,8)=0,	
-	@RNGComm DECIMAL(9,8)=0,
-	@ParlayComm DECIMAL(9,8)=0,	
-	@AllbetComm DECIMAL(9,8)=0,	
-	@MacauComm DECIMAL(9,8)=0,	
-	@PPComm DECIMAL(9,8)=0,	
-	--start param of phase 2 
-	@IsUpdateSexyGaming BIT = 0,	
-	@SexyGamingComm DECIMAL(9,8) = 0,
-	@IsUpdateSpadeGaming BIT = 0,	
-	@SpadeGamingComm DECIMAL(9,8) = 0,
-	@IsUpdateKeno BIT = 0,	
-	@KenoComm DECIMAL(9,8) = 0,
-	@IsUpdateLottery BIT = 0,	
-	@LotteryComm DECIMAL(9,8) = 0,
-	@IsUpdateVS BIT = 0,	
-	@VSComm DECIMAL(9,8) = 0,
-	@IsUpdateTableGame BIT = 0,	
-	@TableGameComm DECIMAL(9,8) = 0,
-	-- end of phase 2
-	-- PHASE 3
-	@IsUpdateVirtualGames BIT = 0,
-	@IsUpdateArcadiaGaming BIT = 0,
-	@IsUpdateSabaclub BIT = 0,
-	@IsUpdateSAGaming BIT = 0,
-	@IsUpdatePGSoft BIT = 0,
-	@VirtualGamesComm DECIMAL(9,8) = 0,
-	@ArcadiaGamingComm DECIMAL(9,8) = 0,
-	@SabaclubComm DECIMAL(9,8) = 0,
-	@SAGamingComm DECIMAL(9,8) = 0,
-	@PGSoftComm DECIMAL(9,8) = 0,
-	-->phase 4
-	@IsUpdateWMCasino		BIT = 0,
-	@IsUpdateBigGaming		BIT = 0,
-	@IsUpdateJoker			BIT = 0,
-	@IsUpdateHabanero		BIT = 0,
-	@IsUpdateVGaming		BIT = 0,
-	@IsUpdateCG				BIT = 0,
-	@IsUpdateAdvant			BIT = 0,
-	@IsUpdateAdvantMini		BIT = 0,
-	@WMCasinoComm		DECIMAL(9,8) = 0,
-	@BigGamingComm		DECIMAL(9,8) = 0,
-	@JokerComm			DECIMAL(9,8) = 0,
-	@HabaneroComm		DECIMAL(9,8) = 0,
-	@VGamingComm		DECIMAL(9,8) = 0,
-	@CGComm				DECIMAL(9,8) = 0,
-	@AdvantComm			DECIMAL(9,8) = 0,
-	@AdvantMiniComm		DECIMAL(9,8) = 0,
-	
-	@IsUpdateMaxGame		BIT = 0,
-	@IsUpdateFGG			BIT = 0,
-	@IsUpdateJili			BIT = 0,
-	@MaxGameComm			DECIMAL(9,8) = 0,
-	@FGGComm				DECIMAL(9,8) = 0,
-	@JiliComm				DECIMAL(9,8) = 0,
-	
-	@IsUpdateYeeBet			BIT = 0,
-	@IsUpdateMgRNG			BIT = 0,
-	@YeeBetComm				DECIMAL(9,8) = 0,
-	@MgRNGComm				DECIMAL(9,8) = 0,
-
-	@isClearGroupComm BIT = 0,
-	@IsUpdateGroupComm BIT = 0
+	@GroupDiscountID INT = 0,	
+	@isClearGroupDiscount BIT = 0,
+	@IsUpdateGroupDiscount BIT = 0
 
 )
 AS
@@ -98,7 +30,7 @@ AS
 		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
-		
+		- 20240220@Johnson: Restructure Commission [redmine:#179088]
 	Param's Explanation:
 
 */
@@ -120,15 +52,16 @@ BEGIN
 	FROM @xml.nodes('/root/r') AS T(C)
 	OPTION (OPTIMIZE FOR (@xml = NULL ))
 	
-	IF @isClearGroupComm = 1
+	IF @isClearGroupDiscount = 1
 	BEGIN
 		UPDATE lc
-			SET GroupCommID = 0
-		FROM dbo.LicenseeCustComm lc WITH (ROWLOCK,UPDLOCK) 
+			SET GroupDiscountID = 0
+		FROM dbo.LicenseeCustDiscount lc WITH (ROWLOCK,UPDLOCK) 
 			INNER JOIN @TempList_Input t ON lc.CustID = t.CustID
 		
 		RETURN	
 	END
+/*	
 	-- Get list of BA members
 	INSERT INTO @TempLicenseeBA_batch (CustID)
 	SELECT t.CustID 
@@ -137,7 +70,31 @@ BEGIN
 	WHERE ba.Status ='Running' AND ba.LicenseeID = @LicenseeID 
 	
 	SET @BA_cnt = @@ROWCOUNT
-	
+*/	
+	IF @IsUpdateGroupDiscount = 1 
+	BEGIN
+		UPDATE lc
+			SET GroupDiscountID = @GroupDiscountID
+		FROM dbo.LicenseeCustDiscount lc WITH (ROWLOCK,UPDLOCK) 
+			INNER JOIN @TempList_Input t ON lc.CustID = t.CustID		
+	END
+	ELSE
+	BEGIN
+		MERGE dbo.LicenseeCustDiscount AS target
+		USING (SELECT @LicenseeID AS LicenseeID
+						,CustID
+						,@GroupDiscountID AS GroupDiscountID 
+				FROM @TempList_Input 
+				) AS source
+			ON (target.CustID = source.CustID)
+		WHEN MATCHED THEN 
+			UPDATE 
+			SET target.GroupDiscountID = source.GroupDiscountID
+		WHEN NOT MATCHED THEN	
+			INSERT (LicenseeID,CustID,GroupDiscountID)
+			VALUES (source.LicenseeID,source.CustID,source.GroupDiscountID);
+	END
+/*
 	-- performance tuning for update comm group
 	IF @IsUpdateGroupComm = 1
 	BEGIN
@@ -303,9 +260,9 @@ BEGIN
 			FROM dbo.LicenseeCustComm cs WITH (ROWLOCK,UPDLOCK)
 				INNER JOIN @TempList_Input ip ON ip.CustID = cs.CustID
 		END
-		
-	END
 	
+	END
+	*/	
 END
 
 GO

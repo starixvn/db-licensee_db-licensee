@@ -15,39 +15,27 @@ AS
 		- 20151005@Jim:HotFix #45031
 		- 20160805@Jim: LRF - Offer different member commission for parlay tickets [RedmineID:#61897]
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
+		- 20240403@Johnson: Restructure Commission [redmine:#179088]
 */
 BEGIN
 	DECLARE @SBComm [decimal](9,8), @ParlayComm [decimal](9,8)
 	SELECT  @SBComm = 0 , @ParlayComm = 0
 		
-	SELECT @SBComm = lgc.SBComm
-		   ,@ParlayComm = lgc.ParlayComm
-	FROM dbo.LicenseeCustComm lcs WITH (NOLOCK)
-		INNER JOIN dbo.LicenseeGroupComm lgc WITH (NOLOCK) ON lcs.GroupCommID = lgc.id AND lcs.LicenseeID = lgc.Licenseeid
+	SELECT @SBComm = ISNULL(MAX(CASE WHEN lgc.SportType = 1 AND lgc.BetType = 1 THEN lgc.Discount ELSE 0 END),0),
+		   @ParlayComm = ISNULL(MAX(CASE WHEN lgc.SportType = 1 AND lgc.BetType = 9 THEN lgc.Discount ELSE 0 END),0)
+	FROM LicenseeCustDiscount lcs WITH(NOLOCK)
+		INNER JOIN dbo.LicenseeGroupDiscountDetail lgc WITH (NOLOCK) ON lcs.GroupDiscountID = lgc.GroupDiscountID AND lcs.LicenseeID = lgc.Licenseeid
 	WHERE lcs.LicenseeID = @LicenseeID AND CustID = @CustID	   
 	  
 	IF (@IsBA =1 )	--- Turn-on BA
-	BEGIN 
-		IF  NOT EXISTS (SELECT 1 FROM dbo.licensees WITH (NOLOCK) WHERE LicenseeName='Macaubet' AND LicenseeId=@LicenseeID )	
-		BEGIN
-			UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
-			SET SBComm      =  0
-				,ParlayComm =  0
-			WHERE LicenseeID = @LicenseeID AND CustID = @CustID	   	
-		END
-
+	BEGIN 		
 		IF  NOT EXISTS (SELECT 1 FROM dbo.licensees WITH (NOLOCK) WHERE LicenseeName='Macaubet' AND LicenseeId=@LicenseeID )	
 		BEGIN
 			EXEC  CustDB.dbo.Lrf_LicenseeBACust_Playerdiscount_Upd @CustID = @CustID,@SBComm=0, @ParlayComm = 0
 		END
 	END
 	ELSE IF (@IsBA = 0 ) -- Turn-off BA
-	BEGIN 	
-		UPDATE dbo.LicenseeCustComm WITH (ROWLOCK,UPDLOCK)
-		SET SBComm      = @SBComm
-			,ParlayComm = @ParlayComm
-		WHERE LicenseeID = @LicenseeID AND CustID = @CustID	   	
-
+	BEGIN 			
 		IF  NOT EXISTS (SELECT 1 FROM dbo.licensees WITH (NOLOCK) WHERE LicenseeName='Macaubet' AND LicenseeId=@LicenseeID )	
 		BEGIN
 			EXEC  CustDB.dbo.Lrf_LicenseeBACust_Playerdiscount_Upd @CustID = @CustID,@SBComm=@SBComm, @ParlayComm = @ParlayComm

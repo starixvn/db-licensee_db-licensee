@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBLic-bodb_Licensee" executers="wsv_lap" viewers="" isFunction="0"></info>*/
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_LicenseeCustCommSel]
 	@CustID INT
 AS  
@@ -25,50 +25,55 @@ AS
 	- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 	- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 	- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
-
+	- 20240403@Johnson: Restructure Commission [redmine:#179088]
 */  
 BEGIN  
 	SET NOCOUNT ON;  
+		
+	DECLARE @IsGroupedComm BIT = 0,
+		@AgentID INT
+	
+	DECLARE @SportBetype TABLE (sporttype SMALLINT, bettype INT, ProductPrefix VARCHAR(10))
+	
+	INSERT INTO @SportBetype (sporttype,bettype,ProductPrefix)
+	SELECT SportType,bettype,
+		CASE WHEN SportType = 1 AND Bettype = 1 THEN 'SB'
+			WHEN SportType = 1 AND Bettype = 9 THEN 'Parlay'
+			WHEN SportType = 161 AND Bettype = 81 THEN 'NG' ELSE p.ProductPrefix END
+	FROM CustDB.dbo.Dep_ProductSetting d WITH(NOLOCK)
+		INNER JOIN CustDB.dbo.Dep_ProductSettingDetail dp WITH(NOLOCK) 
+			ON d.ProductSettingID = dp.ProductSettingID
+		LEFT JOIN Product3rd p WITH(NOLOCK) ON d.ProductID = p.ProductID
+	WHERE SettingType = 9
+		AND SettingStatus <> 2
+		AND 1 = CASE WHEN (Sporttype = 1 AND Bettype IN (4,5)) OR Sporttype = 2 THEN 0 ELSE 1 END
+					
+	SELECT @IsGroupedComm = IsGroupedComm
+	FROM CustDB.dbo.Dep_CustSettingMode d WITH(NOLOCK) 
+	WHERE custid = @CustID
+	
 	SELECT 
-		lc.CustID,
-		lc.SBComm,
-		lc.ParlayComm,
-		lc.NGComm,
-		lc.GroupCommID,		
-		ISNULL(lc.RNGComm, 0) AS RNGComm,						
-		ISNULL(lc.AllbetComm,0) AS AllbetComm,
-		ISNULL(lc.MacauComm,0) AS MacauComm,
-		ISNULL(lc.PPComm,0) AS PPComm,
-		ISNULL(SexyGamingComm,0) AS SexyGamingComm ,
-		ISNULL(SpadeGamingComm ,0) AS SpadeGamingComm,
-		ISNULL(KenoComm,0) AS KenoComm,
-		ISNULL(LotteryComm,0) AS LotteryComm,
-		ISNULL(VSComm,0) AS VSComm, 
-		ISNULL(TableGameComm,0) AS TableGameComm,
-		
-		ISNULL(VirtualGamesComm,0) AS VirtualGamesComm,	
-		ISNULL(ArcadiaGamingComm,0) AS  ArcadiaGamingComm,	
-		ISNULL(SabaclubComm,0) AS SabaclubComm,	
-		ISNULL(SAGamingComm,0) AS SAGamingComm,	
-		ISNULL(PGSoftComm,0) AS PGSoftComm,
-		-->phase 4:
-		ISNULL(WMCasinoComm,0) AS WMCasinoComm,
-		ISNULL(BigGamingComm,0) AS BigGamingComm,	
-		ISNULL(JokerComm,0) AS  JokerComm,	
-		ISNULL(HabaneroComm,0) AS HabaneroComm,
-		ISNULL(VGamingComm,0) AS VGamingComm,
-		-- phase 4.2
-		ISNULL(CGComm,0) AS CGComm,
-		ISNULL(AdvantComm,0) AS AdvantComm,
-		ISNULL(AdvantMiniComm,0) AS AdvantMiniComm,
-		
-		ISNULL(MaxGameComm,0) AS MaxGameComm,
-		ISNULL(FGGComm,0) AS FGGComm,
-		ISNULL(JiliComm,0) AS JiliComm,
-
-		ISNULL(YeeBetComm,0) AS YeeBetComm,
-		ISNULL(MgRNGComm,0) AS MgRNGComm
-	FROM dbo.LicenseeCustComm lc WITH (NOLOCK)					
+		lc.CustID,		
+		lc.GroupDiscountID		
+	FROM dbo.LicenseeCustDiscount lc WITH (NOLOCK)			
 	WHERE lc.CustID = @CustID	
+	
+	IF @IsGroupedComm = 0
+	BEGIN
+		SELECT cs.Sporttype, cs.Bettype, s.ProductPrefix as ProductCode, PlayerDiscount
+		FROM CustDB.dbo.Dep_CustDiscountSetting_Member cs WITH(NOLOCK)
+			INNER JOIN @SportBetype s ON cs.Sporttype = s.Sporttype AND cs.Bettype = s.Bettype
+		WHERE custid = @CustID
+			
+	END
+	ELSE 
+	BEGIN
+		SELECT @AgentID = recommend FROM CustDB.dbo.custinfo WITH(NOLOCK) WHERE custid = @custid
+		
+		SELECT cs.Sporttype, cs.Bettype,s.ProductPrefix as ProductCode, PlayerDiscount
+		FROM CustDB.dbo.Dep_CustDiscountGroupSetting_Member cs WITH(NOLOCK)
+			INNER JOIN @SportBetype s ON cs.Sporttype = s.Sporttype AND cs.Bettype = s.Bettype
+		WHERE AgentID = @AgentID			
+	END
 END
 GO

@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBLOG-bodb_CustomerLog" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+﻿/*<info serverAlias="DBLOG-bodb_CustomerLog" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE  [dbo].[Lrf_GroupCommLog_Sel]
 	@LicenseeID			INT,
 	@SiteName			VARCHAR(50),
@@ -16,7 +16,7 @@ Revisions:
 	20180711@Amanda: get username of LAP if log data is after LAP launch data [#97994]
 	20190405@Patrick: Support archive date range [Redmine: #111476]
 	- 20220422@Winfred: LAP - Support commission for 3rd party products - Phase 4.2 [Redmine: #171586]
-       
+    - 20240717@Johnson: Restructure Commission [redmine:#179088]   
 Param's Explaination:          
  - @FromDate: date range to view log
  - @ToDate: date range to view log      
@@ -50,8 +50,8 @@ BEGIN
 				l.trackingvalue2 AS trackingvalueold
 		FROM dbo.UserLog_RunSP l WITH(NOLOCK)
 			INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
-			INNER JOIN bodb_licensee.dbo.LicenseeGroupComm c WITH(NOLOCK) ON l.custid = c.id
-		WHERE Logdate >= @FromDate AND l.logdate < @logDataToDate AND (l.ActionID = 2609 OR l.ActionID = 2610) AND c.LicenseeID = @Licenseeid
+			INNER JOIN bodb_licensee.dbo.LicenseeGroupDiscount c WITH(NOLOCK) ON l.custid = c.GroupDiscountID
+		WHERE Logdate >= @FromDate AND l.logdate < @logDataToDate AND l.ActionID IN (2609,2610,2615,2616) AND c.LicenseeID = @Licenseeid
 
 		UNION ALL
 		SELECT	l.Logid,
@@ -63,7 +63,7 @@ BEGIN
 				l.trackingvalue2 AS trackingvalueold
 		FROM dbo.UserLog_RunSP l WITH(NOLOCK)
 			INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
-		WHERE l.Logdate >= @FromDate AND l.logdate < @logDataToDate AND l.actionid = 2611 AND l.custid = @Licenseeid
+		WHERE l.Logdate >= @FromDate AND l.logdate < @logDataToDate AND l.actionid IN (2611,2617) AND l.custid = @Licenseeid
 	END
 	ELSE IF @ToDate < @__archiveDate
 	BEGIN
@@ -77,8 +77,8 @@ BEGIN
 				l.trackingvalue2 AS trackingvalueold
 		FROM bodb_CustomerLog_Archive.dbo.UserLog_RunSP l WITH(NOLOCK)
 			INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
-			INNER JOIN bodb_licensee.dbo.LicenseeGroupComm c WITH(NOLOCK) ON l.custid = c.id
-		WHERE Logdate >= @FromDate AND l.logdate < @logDataToDate AND (l.ActionID = 2609 OR l.ActionID = 2610) AND c.LicenseeID = @Licenseeid
+			INNER JOIN bodb_licensee.dbo.LicenseeGroupDiscount c WITH(NOLOCK) ON l.custid = c.GroupDiscountID
+		WHERE Logdate >= @FromDate AND l.logdate < @logDataToDate AND l.ActionID IN (2609,2610,2615,2616) AND c.LicenseeID = @Licenseeid
 
 		UNION ALL
 		SELECT	l.Logid,
@@ -90,7 +90,7 @@ BEGIN
 				l.trackingvalue2 AS trackingvalueold
 		FROM bodb_CustomerLog_Archive.dbo.UserLog_RunSP l WITH(NOLOCK)
 			INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
-		WHERE l.Logdate >= @FromDate AND l.logdate < @logDataToDate AND l.actionid = 2611 AND l.custid = @Licenseeid
+		WHERE l.Logdate >= @FromDate AND l.logdate < @logDataToDate AND l.actionid IN (2611,2617) AND l.custid = @Licenseeid
 	END
 	ELSE
 	BEGIN
@@ -104,8 +104,8 @@ BEGIN
 				l.trackingvalue2 AS trackingvalueold
 		FROM dbo.UserLog_RunSP l WITH(NOLOCK)
 			INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
-			INNER JOIN bodb_licensee.dbo.LicenseeGroupComm c WITH(NOLOCK) ON l.custid = c.id
-		WHERE Logdate >= @__archiveDate AND l.logdate < @logDataToDate AND (l.ActionID = 2609 OR l.ActionID = 2610) AND c.LicenseeID = @Licenseeid
+			INNER JOIN bodb_licensee.dbo.LicenseeGroupDiscount c WITH(NOLOCK) ON l.custid = c.GroupDiscountID
+		WHERE Logdate >= @__archiveDate AND l.logdate < @logDataToDate AND l.ActionID IN (2609,2610,2615,2616) AND c.LicenseeID = @Licenseeid
 
 		UNION ALL
 		SELECT	l.Logid,
@@ -117,7 +117,7 @@ BEGIN
 				l.trackingvalue2 AS trackingvalueold
 		FROM dbo.UserLog_RunSP l WITH(NOLOCK)
 			INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
-		WHERE l.Logdate >= @__archiveDate AND l.logdate < @logDataToDate AND l.actionid = 2611 AND l.custid = @Licenseeid
+		WHERE l.Logdate >= @__archiveDate AND l.logdate < @logDataToDate AND l.actionid IN (2611,2617) AND l.custid = @Licenseeid
 		UNION ALL
 		--archive
 		SELECT	l.Logid,
@@ -129,8 +129,8 @@ BEGIN
 				l.trackingvalue2 AS trackingvalueold
 		FROM bodb_CustomerLog_Archive.dbo.UserLog_RunSP l WITH(NOLOCK)
 			INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
-			INNER JOIN bodb_licensee.dbo.LicenseeGroupComm c WITH(NOLOCK) ON l.custid = c.id
-		WHERE Logdate >= @FromDate AND l.logdate < @__archiveDate AND (l.ActionID = 2609 OR l.ActionID = 2610) AND c.LicenseeID = @Licenseeid
+			INNER JOIN bodb_licensee.dbo.LicenseeGroupDiscount c WITH(NOLOCK) ON l.custid = c.GroupDiscountID
+		WHERE Logdate >= @FromDate AND l.logdate < @__archiveDate AND l.ActionID IN (2609,2610,2615,2616) AND c.LicenseeID = @Licenseeid
 
 		UNION ALL
 		SELECT	l.Logid,
@@ -142,7 +142,7 @@ BEGIN
 				l.trackingvalue2 AS trackingvalueold
 		FROM bodb_CustomerLog_Archive.dbo.UserLog_RunSP l WITH(NOLOCK)
 			INNER JOIN dbo.LogAction a WITH(NOLOCK) ON a.actionid = l.actionid
-		WHERE l.Logdate >= @FromDate AND l.logdate < @__archiveDate AND l.actionid = 2611 AND l.custid = @Licenseeid
+		WHERE l.Logdate >= @FromDate AND l.logdate < @__archiveDate AND l.actionid IN (2611,2617) AND l.custid = @Licenseeid
 	END
 
 	IF @ToDate < @LapLaunchDate

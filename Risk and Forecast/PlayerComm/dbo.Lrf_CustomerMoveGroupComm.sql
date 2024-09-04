@@ -1,48 +1,9 @@
 ﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerMoveGroupComm]
 	@LicenseeID INT,
-	@strCustIDOriginal VARCHAR(MAX),--member
-	@strCustID VARCHAR(MAX) OUTPUT,--member
+	@strCustIDOriginal VARCHAR(MAX),--member	
 	@UserID INT,
-	@GroupCommID INT,
-	@IsUpdateNG BIT = 0,
-	@IsUpdateRNG BIT = 0,
-	@IsUpdateAllbet BIT = 0,
-	@IsUpdateMacau BIT = 0,
-	@IsUpdatePP BIT = 0,
-	--@IsUpdateGD BIT = 0,
-	--@IsUpdateAG BIT = 0,
-	--start param of phase 2 
-	@IsUpdateSexyGaming BIT = 0,	
-	@IsUpdateSpadeGaming BIT = 0,	
-	@IsUpdateKeno BIT = 0,	
-	@IsUpdateLottery BIT = 0,	
-	@IsUpdateVS BIT = 0,	
-	@IsUpdateTableGame BIT = 0,	
-	-- end of phase 2
-	-- phase 3
-	@IsUpdateVirtualGames BIT = 0,
-	@IsUpdateArcadiaGaming BIT = 0,
-	@IsUpdateSabaclub BIT = 0,
-	@IsUpdateSAGaming BIT = 0,
-	@IsUpdatePGSoft BIT = 0,
-	--> phase 4
-	@IsUpdateWMCasino		BIT = 0,
-	@IsUpdateBigGaming		BIT = 0,
-	@IsUpdateJoker			BIT = 0,
-	@IsUpdateHabanero		BIT = 0,
-	@IsUpdateVGaming		BIT = 0,
-	@IsUpdateCG				BIT = 0,
-	@IsUpdateAdvant			BIT = 0,
-	@IsUpdateAdvantMini		BIT = 0,
-	
-	@IsUpdateMaxGame		BIT = 0,
-	@IsUpdateFGG			BIT = 0,
-	@IsUpdateJili			BIT = 0,
-
-	@IsUpdateYeeBet			BIT = 0,
-	@IsUpdateMgRNG			BIT = 0,
-	
+	@GroupDiscountID INT,	
 	@IP VARCHAR(40),
 	@Langkey VARCHAR(20) = 'en-US',
 	@ErrCode INT = 0 OUTPUT,
@@ -83,6 +44,7 @@ AS
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		- 20230821@Luke: LAP - SEA Localization [Redmine: #187132]
 		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
+		- 20240402@Johnson: Restructure Commission [redmine:#179088]
 	Param's Explanation:
 */ 
 BEGIN
@@ -114,7 +76,7 @@ BEGIN
 		RETURN 
 	END
 	
-	SET @custID_cnt = (SELECT COUNT(1) FROM bodb_licensee.dbo.LicenseeCustComm WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID)
+	SET @custID_cnt = (SELECT COUNT(1) FROM bodb_licensee.dbo.LicenseeCustDiscount WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND GroupDiscountID = @GroupDiscountID)
 	
 	IF @custID_cnt >= 100000
 	BEGIN
@@ -124,48 +86,29 @@ BEGIN
 		
 		RETURN
 	END
+	
+	DECLARE @DiscountSettings VARCHAR(MAX) = ''
+	DECLARE @tblSettingDCS AS TABLE (sporttype SMALLINT,Bettype SMALLINT)
+		
+	INSERT INTO @tblSettingDCS (sporttype,Bettype)	
+	SELECT SportType,bettype
+	FROM CustDB.dbo.Dep_ProductSetting d WITH(NOLOCK)
+		INNER JOIN CustDB.dbo.Dep_ProductSettingDetail dp WITH(NOLOCK) 
+			ON d.ProductSettingID = dp.ProductSettingID
+	WHERE SettingType = 9
+
+	SELECT @DiscountSettings = (
+		SELECT SportType as '@SportType', BetType as '@BetType', 0 as '@Discount'
+		FROM @tblSettingDCS			
+		FOR XML PATH('r'), ROOT('Root')
+	)		
 		
 	EXEC [Lrf_CustomerUpdMemberComm] 
 		@LicenseeID=@LicenseeID
 		,@strCustID=@strCustIDOriginal
 		,@UserID=@UserID
-		,@GroupCommID=@GroupCommID
-		,@IsUpdateNG=@IsUpdateNG
-		,@IsUpdateRNG=@IsUpdateRNG		
-		,@IsUpdateAllbet=@IsUpdateAllbet
-		,@IsUpdateMacau=@IsUpdateMacau
-		,@IsUpdatePP=@IsUpdatePP
-		---start param of phase 2
-		,@IsUpdateSexyGaming = @IsUpdateSexyGaming	
-		,@IsUpdateSpadeGaming = @IsUpdateSpadeGaming	
-		,@IsUpdateKeno = @IsUpdateKeno
-		,@IsUpdateLottery  = @IsUpdateLottery	
-		,@IsUpdateVS = @IsUpdateVS 	
-		,@IsUpdateTableGame = @IsUpdateTableGame
-		-- end of param phase 2
-		-- phase 3
-		,@IsUpdateVirtualGames = @IsUpdateVirtualGames
-		,@IsUpdateArcadiaGaming = @IsUpdateArcadiaGaming
-		,@IsUpdateSabaclub  = @IsUpdateSabaclub
-		,@IsUpdateSAGaming  = @IsUpdateSAGaming
-		,@IsUpdatePGSoft  = @IsUpdatePGSoft
-		--> phase 4
-		,@IsUpdateWMCasino		= @IsUpdateWMCasino		
-		,@IsUpdateBigGaming		= @IsUpdateBigGaming		
-		,@IsUpdateJoker			= @IsUpdateJoker			
-		,@IsUpdateHabanero		= @IsUpdateHabanero
-		,@IsUpdateVGaming		= @IsUpdateVGaming
-		--> phase 4.2
-		,@IsUpdateCG			= @IsUpdateCG
-		,@IsUpdateAdvant		= @IsUpdateAdvant
-		,@IsUpdateAdvantMini	= @IsUpdateAdvantMini
-		
-		,@IsUpdateMaxGame		= @IsUpdateMaxGame
-		,@IsUpdateFGG			= @IsUpdateFGG
-		,@IsUpdateJili			= @IsUpdateJili
-
-		,@IsUpdateYeeBet		= @IsUpdateYeeBet
-		,@IsUpdateMgRNG			= @IsUpdateMgRNG
+		,@GroupDiscountID=@GroupDiscountID
+		,@DiscountSettings = @DiscountSettings
 
 		,@Langkey=@Langkey
 		,@IP=@IP

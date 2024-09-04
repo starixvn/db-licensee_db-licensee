@@ -1,6 +1,6 @@
-﻿/*<info serverAlias="DBLIC-bodb_Licensee" executers="wsv_lap" viewers="" isFunction="0"></info>*/ 
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="wsv_lap" viewers="" isFunction="0"></info>*/ 
 ALTER PROCEDURE [dbo].[Lrf_GroupCommGetById]
-	@GroupCommID	INT,
+	@GroupDiscountID	INT,
 	@LicenseeID		INT
 
 AS  
@@ -33,51 +33,42 @@ AS
 	- 20230426@Johnson: missing version PRO [redmine:#182922]
 	- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 	- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
-
+	- 20240403@Johnson: Restructure Commission [redmine:#179088]
 */  
 BEGIN  
 SET NOCOUNT ON;  
-
-SELECT g.ID AS GroupCommID,
+DECLARE @SportBetype TABLE (sporttype SMALLINT, bettype INT, ProductPrefix VARCHAR(10))
+	
+INSERT INTO @SportBetype (sporttype,bettype,ProductPrefix)
+SELECT SportType,bettype,
+	CASE WHEN SportType = 1 AND Bettype = 1 THEN 'SB'
+		WHEN SportType = 1 AND Bettype = 9 THEN 'Parlay'
+		WHEN SportType = 161 AND Bettype = 81 THEN 'NG' ELSE p.ProductPrefix END
+FROM CustDB.dbo.Dep_ProductSetting d WITH(NOLOCK)
+	INNER JOIN CustDB.dbo.Dep_ProductSettingDetail dp WITH(NOLOCK) 
+		ON d.ProductSettingID = dp.ProductSettingID
+	LEFT JOIN Product3rd p WITH(NOLOCK) ON d.ProductID = p.ProductID
+WHERE SettingType = 9
+	AND SettingStatus <> 2
+	AND 1 = CASE WHEN (Sporttype = 1 AND Bettype IN (4,5)) OR Sporttype = 2 THEN 0 ELSE 1 END
+				
+SELECT g.GroupDiscountID,
 	g.GroupName,
-	g.SBComm,
-	g.NGComm,
-	g.RNGComm,
-	g.Parlaycomm,	
-	g.AllbetComm,
-	g.MacauComm,
-	g.PPComm,
 	g.color AS GroupColor, 
-	g.IsDefault,
-	g.SexyGamingComm,
-	g.SpadeGamingComm,
-	g.LotteryComm,
-	g.KenoComm,
-	g.VSComm,
-	g.TableGameComm,
-	g.VirtualGamesComm,	
-	g.ArcadiaGamingComm,	
-	g.SabaclubComm,	
-	g.SAGamingComm,	
-	g.PGSoftComm,
-	--> Phase 4
-	g.WMCasinoComm,
-	g.BigGamingComm,
-	g.JokerComm,
-	g.HabaneroComm,
-	g.VGamingComm,
-	g.CGComm, 			
-	g.AdvantComm, 		
-	g.AdvantMiniComm, 	
-	g.MaxGameComm,
-	g.FGGComm,
-	g.JiliComm,
-	g.YeeBetComm,	
-	g.MgRNGComm
-FROM dbo.LicenseeGroupComm g WITH (NOLOCK) 
+	g.IsDefault
+FROM LicenseeGroupDiscount g WITH(NOLOCK)
 WHERE 
 	IsActive = 1 
-	AND Id = @GroupCommID
+	AND GroupDiscountID = @GroupDiscountID
 	AND Licenseeid=@LicenseeID
+	
+SELECT gd.Sporttype, gd.Bettype, s.ProductPrefix as ProductCode, Discount
+FROM LicenseeGroupDiscount g WITH(NOLOCK)
+	INNER JOIN LicenseeGroupDiscountDetail gd WITH (NOLOCK) ON g.GroupDiscountID = gd.GroupDiscountID	
+	INNER JOIN @SportBetype s ON gd.SportType = s.SportType AND s.Bettype = gd.Bettype
+WHERE 
+	IsActive = 1 
+	AND g.GroupDiscountID = @GroupDiscountID
+	AND g.Licenseeid=@LicenseeID		
 END
 GO   

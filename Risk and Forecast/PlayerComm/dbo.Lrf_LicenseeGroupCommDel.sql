@@ -1,7 +1,7 @@
 /*<info serverAlias="DBCUST-bodb_Licensee" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_LicenseeGroupCommDel]
 	@LicenseeID INT,
-	@GroupCommID INT,
+	@GroupDiscountID INT,
 	@UserID INT,
 	@IP varchar(40),
 	@IsRemovePlayercomm BIT,
@@ -43,7 +43,7 @@ AS
 		- 20230314@Johnson: Add MaxGame, FGG, Jili Comm [redmine:#182922]
 		- 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
-		
+		- 20240202@Johnson: Restructure Commission [redmine:#179088]
 	Param's Explanation:
 
 */
@@ -58,52 +58,16 @@ BEGIN
 	DECLARE @LogSPData VARCHAR(MAX)
 	DECLARE @TrackingValue2 VARCHAR(MAX)
 	DECLARE @IsexistMember BIT = 0
-
-	DECLARE @SBComm DECIMAL(9,8), 
-		@NGComm DECIMAL(9,8),
-		@RNGComm DECIMAL(9,8),
-		@ParlayComm DECIMAL(9,8), 		
-		@AllbetComm DECIMAL(9,8),
-		@MacauComm DECIMAL(9,8),
-		@PPComm DECIMAL(9,8),
-		--phase 2
-		@SexyGamingComm DECIMAL(9,8),
-		@SpadeGamingComm DECIMAL(9,8),
-		@KenoComm DECIMAL(9,8),
-		@LotteryComm DECIMAL(9,8),
-		@VSComm DECIMAL(9,8),
-		@TableGameComm DECIMAL(9,8),
-		--phase 3
-		@VirtualGamesComm DECIMAL(9,8) ,
-		@ArcadiaGamingComm DECIMAL(9,8),
-		@SabaclubComm DECIMAL(9,8),
-		@SAGamingComm DECIMAL(9,8),
-		@PGSoftComm DECIMAL(9,8),
-		--Phase 4
-		@WMCasinoComm		DECIMAL(9,8),
-		@BigGamingComm		DECIMAL(9,8),
-		@JokerComm			DECIMAL(9,8),
-		@HabaneroComm		DECIMAL(9,8),
-		@VGamingComm		DECIMAL(9,8),
-		-- phase 4.2
-		@CGComm				DECIMAL(9,8),
-		@AdvantComm			DECIMAL(9,8),
-		@AdvantMiniComm		DECIMAL(9,8),
+	
+	DECLARE @tblSettings TABLE(SportType SMALLINT, BetType SMALLINT, Discount DECIMAL(9,8))
 		
-		@MaxGameComm		DECIMAL(9,8),
-		@FGGComm			DECIMAL(9,8),
-		@JiliComm			DECIMAL(9,8),
-		
-		@YeeBetComm			DECIMAL(9,8),
-		@MgRNGComm			DECIMAL(9,8),
-
-		@GroupColor VARCHAR(20), 
+	DECLARE @GroupColor VARCHAR(20), 
 		@GroupName VARCHAR(100), 
 		@IsDefault BIT
 	
 	IF @IsRemovePlayercomm = 1
 	BEGIN
-		SET @custID_cnt = (SELECT COUNT(1) FROM LicenseeCustComm WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID)
+		SET @custID_cnt = (SELECT COUNT(1) FROM LicenseeCustDiscount WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND GroupDiscountID = @GroupDiscountID)
 		
 		IF @custID_cnt > 100000
 		BEGIN
@@ -114,8 +78,8 @@ BEGIN
 		END
 	END
 	IF NOT EXISTS(
-		SELECT TOP 1 1 FROM dbo.LicenseeGroupComm WITH (NOLOCK)
-		WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
+		SELECT TOP 1 1 FROM dbo.LicenseeGroupDiscount WITH (NOLOCK)
+		WHERE LicenseeID = @LicenseeID AND GroupDiscountID = @GroupDiscountID
 	)
 	BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'This Group does not exist!'
@@ -125,51 +89,20 @@ BEGIN
 	ELSE
 	BEGIN
 		--Get old setting
-		SELECT @SBComm=SBComm,
-			@NGComm=NGComm,
-			@RNGComm=RNGComm,
-			@ParlayComm=ParlayComm,			
-			@AllbetComm=AllbetComm,
-			@MacauComm=MacauComm,
-			@PPComm=PPComm,
-			@SexyGamingComm = SexyGamingComm ,
-			@SpadeGamingComm = SpadeGamingComm,
-			@KenoComm = KenoComm,
-			@LotteryComm = LotteryComm,
-			@VSComm = VSComm,
-			@TableGameComm = TableGameComm,
-			
-			@VirtualGamesComm = VirtualGamesComm,
-			@ArcadiaGamingComm = ArcadiaGamingComm,
-			@SabaclubComm = SabaclubComm,
-			@SAGamingComm = SAGamingComm,
-			@PGSoftComm = PGSoftComm,
-			--Phase 4
-			@WMCasinoComm		= WMCasinoComm,
-			@BigGamingComm		= BigGamingComm,
-			@JokerComm			= JokerComm,
-			@HabaneroComm		= HabaneroComm,
-			@VGamingComm		= VGamingComm,
-			-- phase 4.2
-			@CGComm				= CGComm,
-			@AdvantComm			= AdvantComm,
-			@AdvantMiniComm		= AdvantMiniComm,
-			
-			@MaxGameComm		= MaxGameComm,
-			@FGGComm			= FGGComm,
-			@JiliComm			= JiliComm,
-
-			@YeeBetComm			= YeeBetComm,
-			@MgRNGComm			= MgRNGComm,
-
-			@GroupColor=color,
+		SELECT @GroupColor=color,
 			@GroupName=GroupName,
 			@IsDefault=IsDefault
-		FROM dbo.LicenseeGroupComm WITH (NOLOCK)
+		FROM dbo.LicenseeGroupDiscount WITH (NOLOCK)
 		WHERE LicenseeID = @LicenseeID 
-			AND ID = @GroupCommID
+			AND GroupDiscountID = @GroupDiscountID
 		
-		IF @IsResetDefault=0 AND EXISTS(SELECT TOP 1 1 FROM dbo.LicenseeGroupComm WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND  IsDefault=1 AND IsActive = 1 AND ID=@GroupCommID)
+		INSERT INTO @tblSettings (SportType, BetType, Discount)
+		SELECT SportType, Bettype, Discount
+		FROM LicenseeGroupDiscountDetail WITH(NOLOCK)
+		WHERE LicenseeID = @LicenseeID 
+			AND GroupDiscountID = @GroupDiscountID
+		
+		IF @IsResetDefault=0 AND EXISTS(SELECT TOP 1 1 FROM dbo.LicenseeGroupDiscount WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND  IsDefault=1 AND IsActive = 1 AND GroupDiscountID=@GroupDiscountID)
 		BEGIN
 			SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'This is the default group. Do you want to proceed?'
 														ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200017,@Langkey) 
@@ -179,17 +112,17 @@ BEGIN
 		--#1 delete group, keep comm of member: @IsRemovePlayercomm = 0
 		IF @IsRemovePlayercomm=0
 		BEGIN
-			UPDATE dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK) SET IsActive = 0
-			WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID
+			UPDATE dbo.LicenseeGroupDiscount WITH (ROWLOCK,UPDLOCK) SET IsActive = 0
+			WHERE LicenseeID = @LicenseeID AND GroupDiscountID = @GroupDiscountID
 			
 			DECLARE @TempCustID AS TABLE (CustID INT,IsFinished BIT)
 			DECLARE @TempList_batch AS TABLE (CustID INT)
 			
 			INSERT INTO @TempCustID (CustID)
 			SELECT ls.custid
-			FROM dbo.LicenseeCustComm ls WITH (NOLOCK)
+			FROM dbo.LicenseeCustDiscount ls WITH (NOLOCK)
 				INNER JOIN CustDB.dbo.Customer c WITH (NOLOCK) ON ls.CustID = c.custid
-			WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID
+			WHERE LicenseeID = @LicenseeID AND GroupDiscountID = @GroupDiscountID
 			
 			IF @@ROWCOUNT > 0
 			BEGIN
@@ -211,13 +144,13 @@ BEGIN
 									FROM @TempList_batch
 									FOR XML PATH('')
 									),1,1,'')
-					--Update GroupcommID = 0 for LicenseeCustComm
+					--Update GroupDiscountID = 0 for LicenseeCustDiscount
 					BEGIN TRY
 						EXEC dbo.Lrf_ExecRep_00
 								@strCustId = @strCustID,
 								@LicenseeID = @LicenseeID,
-								@GroupCommID = @GroupCommID,
-								@isClearGroupComm = 1
+								@GroupDiscountID = @GroupDiscountID,
+								@isClearGroupDiscount = 1
 								
 					END TRY
 					BEGIN CATCH
@@ -230,97 +163,49 @@ BEGIN
 		--#1 delete group, clear comm of member: @IsRemovePlayercomm = 1
 		ELSE IF @IsRemovePlayercomm=1
 		BEGIN
-			UPDATE dbo.LicenseeGroupComm WITH (ROWLOCK,UPDLOCK) SET IsActive = 0
-			WHERE LicenseeID = @LicenseeID AND ID = @GroupCommID AND IsActive=1		
+			UPDATE dbo.LicenseeGroupDiscount WITH (ROWLOCK,UPDLOCK) SET IsActive = 0
+			WHERE LicenseeID = @LicenseeID AND GroupDiscountID = @GroupDiscountID AND IsActive=1		
 			
 			--get list of affected Customers
 			SELECT @StrCustID=''
 			
 			--Remove commission of players in group
 			SET @IsexistMember = (SELECT TOP (1) 1 
-								FROM LicenseeCustComm ls WITH (NOLOCK)
-								WHERE LicenseeID = @LicenseeID AND GroupCommID = @GroupCommID)
+								FROM LicenseeCustDiscount ls WITH (NOLOCK)
+								WHERE LicenseeID = @LicenseeID AND GroupDiscountID = @GroupDiscountID)
 						
 			IF @IsexistMember = 1			
 			BEGIN
+				DECLARE @DiscountSettings VARCHAR(MAX) = ''
+				DECLARE @tblSettingDCS AS TABLE (sporttype SMALLINT,Bettype SMALLINT)
+					
+				INSERT INTO @tblSettingDCS (sporttype,Bettype)	
+				SELECT SportType,bettype
+				FROM CustDB.dbo.Dep_ProductSetting d WITH(NOLOCK)
+					INNER JOIN CustDB.dbo.Dep_ProductSettingDetail dp WITH(NOLOCK) 
+						ON d.ProductSettingID = dp.ProductSettingID
+				WHERE SettingType = 9
+					AND 1 = CASE WHEN (Sporttype = 1 AND Bettype IN (4,5)) OR Sporttype = 2 THEN 0 ELSE 1 END
+					AND SettingStatus <> 2
+
+				SELECT @DiscountSettings = (
+					SELECT SportType, BetType, 0 Discount
+					FROM @tblSettingDCS			
+					FOR XML RAW('r'), ROOT('Root')
+				)		
+				
 				--Update List of affected Customers               
 				EXEC [Lrf_CustomerUpdMemberComm] 
 					@LicenseeID=@LicenseeID,
 					@StrCustID='',
 					@UserID=@UserID,
-					@GroupCommID=0,
-					@SBComm=0,
-					@NGComm=0,
-					@RNGComm=0,
-					@ParlayComm=0,	
-					@AllbetComm=0,
-					@MacauComm=0,
-					@PPComm=0,
-					@IsUpdateNG=1,
-					@IsUpdateRNG=1,					
-					@IsUpdateAllbet=1,
-					@IsUpdateMacau=1,
-					@IsUpdatePP=1,
-					---start param of phase 2
-					@IsUpdateSexyGaming = 1,	
-					@SexyGamingComm = 0,
-					@IsUpdateSpadeGaming = 1,	
-					@SpadeGamingComm = 0,
-					@IsUpdateKeno = 1,
-					@KenoComm = 0,
-					@IsUpdateLottery = 1,	
-					@LotteryComm = 0,
-					@IsUpdateVS = 1,
-					@VSComm = 0,
-					@IsUpdateTableGame = 1,
-					@TableGameComm = 0,
-					-- phase 3
-					@IsUpdateVirtualGames = 1,
-					@IsUpdateArcadiaGaming = 1,
-					@IsUpdateSabaclub  = 1,
-					@IsUpdateSAGaming  = 1,
-					@IsUpdatePGSoft  = 1,
+					@GroupDiscountID=0,
 					
-					@VirtualGamesComm = 0,
-					@ArcadiaGamingComm = 0,
-					@SabaclubComm = 0,
-					@SAGamingComm = 0,
-					@PGSoftComm = 0,
-					--> phase 4
-					@IsUpdateWMCasino		= 1,		
-					@IsUpdateBigGaming		= 1,		
-					@IsUpdateJoker			= 1,			
-					@IsUpdateHabanero		= 1,
-					@IsUpdateVGaming		= 1,
-					-- phase 4.2
-					@IsUpdateCG				= 1,
-					@IsUpdateAdvant			= 1,
-					@IsUpdateAdvantMini		= 1,
-					@WMCasinoComm			= 0	,	
-					@BigGamingComm			= 0,		
-					@JokerComm				= 0,			
-					@HabaneroComm			= 0,
-					@VGamingComm			= 0,	
-					-- phase 4.2
-					@CGComm					= 0,
-					@AdvantComm				= 0,
-					@AdvantMiniComm			= 0,
-					
-					@IsUpdateMaxGame		= 1,
-					@IsUpdateFGG			= 1,
-					@IsUpdateJili			= 1,
-					@MaxGameComm			= 0,
-					@FGGComm				= 0,
-					@JiliComm				= 0,
+					@DiscountSettings = @DiscountSettings,
 
-					@IsUpdateYeeBet			= 1,
-					@IsUpdateMgRNG			= 1,
-					@YeeBetComm				= 0,
-					@MgRNGComm				= 0,
-
-					@isClearGroupComm = 1,
-					@ClearGroupCommGroupID = @GroupCommID,
-					@IsUpdateGroupComm = 1,
+					@isClearGroupDiscount = 1,
+					@ClearGroupDiscountGroupID = @GroupDiscountID,
+					@IsUpdateGroupDiscount = 1,
 					@IP=@IP,
 					@ErrCode=@ErrCode OUTPUT,
 					@ErrMsg=@ErrMsg OUTPUT
@@ -335,109 +220,41 @@ BEGIN
 		SET @endRun = GETDATE()
 		SET @duration  = datediff (millisecond,@startRun,@endRun)	
 		
-		SELECT @LogSPData = '<Lrf_LicenseeGroupCommDel GroupCommID="'+ COALESCE(CAST(@GroupCommID as VARCHAR(50)),SPACE(1)) + '" ' +
+		SELECT @LogSPData = '<Lrf_LicenseeGroupCommDel GroupDiscountID="'+ COALESCE(CAST(@GroupDiscountID as VARCHAR(50)),SPACE(1)) + '" ' +
 		'LicenseeID="'+ COALESCE(CAST(@LicenseeID as VARCHAR(50)),SPACE(1)) + '" ' +
-		'GroupName="'+ COALESCE(CAST(@GroupName as VARCHAR(100)),SPACE(1)) + '" ' +
-		'SBComm="'+ COALESCE(CAST(@SBComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'NGComm="'+ COALESCE(CAST(@NGComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'IsRemovePlayercomm="'+ COALESCE(CAST(@IsRemovePlayercomm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'RNGComm="'+ COALESCE(CAST(@RNGComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'ParlayComm="'+ COALESCE(CAST(@ParlayComm as VARCHAR(50)),SPACE(1)) + '" ' +			
-		'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'MacauComm="'+ COALESCE(CAST(@MacauComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		--phase 2
-		'SexyGamingComm="'+ COALESCE(CAST(@SexyGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'SpadeGamingComm="'+ COALESCE(CAST(@SpadeGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'KenoComm="'+ COALESCE(CAST(@KenoComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'LotteryComm="'+ COALESCE(CAST(@LotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'VSComm="'+ COALESCE(CAST(@VSComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'TableGameComm="'+ COALESCE(CAST(@TableGameComm as VARCHAR(50)),SPACE(1)) + '" '+
-		-- phase 3
-		'VirtualGamesComm="'+ COALESCE(CAST(@VirtualGamesComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'ArcadiaGamingComm="'+ COALESCE(CAST(@ArcadiaGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'SabaclubComm="'+ COALESCE(CAST(@SabaclubComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'SAGamingComm="'+ COALESCE(CAST(@SAGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'PGSoftComm="'+ COALESCE(CAST(@PGSoftComm as VARCHAR(50)),SPACE(1)) + '" '+
-		-- phase 4
-		'WMCasinoComm="'+ COALESCE(CAST(@WMCasinoComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'BigGamingComm="'+ COALESCE(CAST(@BigGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'JokerComm="'+ COALESCE(CAST(@JokerComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'VGamingComm="'+ COALESCE(CAST(@VGamingComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		-- phase 4.2
-		'CGComm="'+ COALESCE(CAST(@CGComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'AdvantComm="'+ COALESCE(CAST(@AdvantComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm as VARCHAR(50)),SPACE(1)) + '" '+
-		
-		'MaxGameComm="'+ COALESCE(CAST(@MaxGameComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'FGGComm="'+ COALESCE(CAST(@FGGComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'JiliComm="'+ COALESCE(CAST(@JiliComm as VARCHAR(50)),SPACE(1)) + '" '+
-
-		'YeeBetComm="'+ COALESCE(CAST(@YeeBetComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'MgRNGComm="'+ COALESCE(CAST(@MgRNGComm as VARCHAR(50)),SPACE(1)) + '" '+
-
+		'GroupName="'+ COALESCE(CAST(@GroupName as VARCHAR(100)),SPACE(1)) + '" ' +		
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
 		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
 		'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
 		'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
-		'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" />'
-
-		SELECT @TrackingValue2 = '<Lrf_LicenseeGroupCommDel GroupCommID="'+ COALESCE(CAST(@GroupCommID as VARCHAR(50)),SPACE(1)) + '" ' +
-		'LicenseeID="'+ COALESCE(CAST(@LicenseeID as VARCHAR(50)),SPACE(1)) + '" ' +
-		'GroupName="'+ COALESCE(CAST(@GroupName as VARCHAR(100)),SPACE(1)) + '" ' +
-		'SBComm="'+ COALESCE(CAST(@SBComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'NGComm="'+ COALESCE(CAST(@NGComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'IsRemovePlayercomm="'+ COALESCE(CAST(@IsRemovePlayercomm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'RNGComm="'+ COALESCE(CAST(@RNGComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'ParlayComm="'+ COALESCE(CAST(@ParlayComm as VARCHAR(50)),SPACE(1)) + '" ' +			
-		'AllbetComm="'+ COALESCE(CAST(@AllbetComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'MacauComm="'+ COALESCE(CAST(@MacauComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'PPComm="'+ COALESCE(CAST(@PPComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		-- phase 2
-		'SexyGamingComm="'+ COALESCE(CAST(@SexyGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'SpadeGamingComm="'+ COALESCE(CAST(@SpadeGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'KenoComm="'+ COALESCE(CAST(@KenoComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'LotteryComm="'+ COALESCE(CAST(@LotteryComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'VSComm="'+ COALESCE(CAST(@VSComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'TableGameComm="'+ COALESCE(CAST(@TableGameComm as VARCHAR(50)),SPACE(1)) + '" '+
-		-- phase 3
-		'VirtualGamesComm="'+ COALESCE(CAST(@VirtualGamesComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'ArcadiaGamingComm="'+ COALESCE(CAST(@ArcadiaGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'SabaclubComm="'+ COALESCE(CAST(@SabaclubComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'SAGamingComm="'+ COALESCE(CAST(@SAGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'PGSoftComm="'+ COALESCE(CAST(@PGSoftComm as VARCHAR(50)),SPACE(1)) + '" '+
-
-		-- phase 4
-		'WMCasinoComm="'+ COALESCE(CAST(@WMCasinoComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'BigGamingComm="'+ COALESCE(CAST(@BigGamingComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'JokerComm="'+ COALESCE(CAST(@JokerComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'HabaneroComm="'+ COALESCE(CAST(@HabaneroComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		'VGamingComm="'+ COALESCE(CAST(@VGamingComm as VARCHAR(50)),SPACE(1)) + '" ' +
-		-- phase 4.2
-		'CGComm="'+ COALESCE(CAST(@CGComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'AdvantComm="'+ COALESCE(CAST(@AdvantComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'AdvantMiniComm="'+ COALESCE(CAST(@AdvantMiniComm as VARCHAR(50)),SPACE(1)) + '" '+
+		'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" >' +
+		COALESCE(CAST((SELECT SportType,BetType,Discount
+				FROM @tblSettings
+				FOR XML RAW('r')		
+				) AS VARCHAR(MAX)), SPACE(1)) + 
+		'</Lrf_LicenseeGroupCommDel>'		
 		
-		'MaxGameComm="'+ COALESCE(CAST(@MaxGameComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'FGGComm="'+ COALESCE(CAST(@FGGComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'JiliComm="'+ COALESCE(CAST(@JiliComm as VARCHAR(50)),SPACE(1)) + '" '+
 
-		'YeeBetComm="'+ COALESCE(CAST(@YeeBetComm as VARCHAR(50)),SPACE(1)) + '" '+
-		'MgRNGComm="'+ COALESCE(CAST(@MgRNGComm as VARCHAR(50)),SPACE(1)) + '" '+
-
+		SELECT @TrackingValue2 = '<Lrf_LicenseeGroupCommDel GroupDiscountID="'+ COALESCE(CAST(@GroupDiscountID as VARCHAR(50)),SPACE(1)) + '" ' +
+		'LicenseeID="'+ COALESCE(CAST(@LicenseeID as VARCHAR(50)),SPACE(1)) + '" ' +
+		'GroupName="'+ COALESCE(CAST(@GroupName as VARCHAR(100)),SPACE(1)) + '" ' +		
 		'GroupColor="'+ COALESCE(CAST(@GroupColor as VARCHAR(40)),SPACE(1)) + '" ' +
 		'IsDefault="'+ COALESCE(CAST(@IsDefault as VARCHAR(40)),SPACE(1)) + '" ' +
 		'UserID="'+ COALESCE(CAST(@UserID as VARCHAR(50)),SPACE(1)) + '" ' +
 		'IP="'+ COALESCE(CAST(@IP as VARCHAR(40)),SPACE(1)) + '" ' +
 		'ErrCode="'+ COALESCE(CAST(@ErrCode as VARCHAR(50)),SPACE(1)) + '" ' +
-		'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" />'
+		'ErrMsg="'+ COALESCE(CAST(@ErrMsg as VARCHAR(8000)),SPACE(1))+ '" >' +
+		COALESCE(CAST((SELECT SportType,BetType,Discount
+				FROM @tblSettings
+				FOR XML RAW('r')		
+				) AS VARCHAR(MAX)), SPACE(1)) + 
+		'</Lrf_LicenseeGroupCommDel>'	
 		
 		EXEC Lrf_WriteLog_UserLog_RunSP_Wrapper
 			@UserID = @UserID,
 			@CustID = @LicenseeID,
-			@ActionID = 2611,
+			@ActionID = 2617,
 			@TrackingValue = @LogSPData,
 			@TrackingValue2 = @TrackingValue2,
 			@duration = @duration	

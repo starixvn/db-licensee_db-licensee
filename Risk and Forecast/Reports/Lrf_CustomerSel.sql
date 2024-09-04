@@ -8,7 +8,7 @@ ALTER PROCEDURE [dbo].[Lrf_CustomerSel]
 	@CustStatus		VARCHAR(50)		= '',
 	@TotalRows		INT				= 0 OUTPUT,
 	@SpecialLevel	INT				= -1, --ALL
-	@GroupCommID	INT				= -1, --ALL
+	@GroupDiscountID INT			= -1, --ALL
 	@OddsGroups		VARCHAR(100)	= '',
 	@AgentList		VARCHAR(MAX),
 	@BaseCurrency	VARCHAR(12)
@@ -70,7 +70,7 @@ AS
 		- 20211111@Sol: Split Transfer out of bettrans/Support IPv6 - [RedmineID: #164301]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20230227@Evan: Ensure correct balance calculation when allow to transfer 247 (BU) [Redmine: #173554]
-
+		- 20240614@Johnson: Restructure Commission [redmine:#179088]
 	Param's Explanation:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value = -1 (all)
@@ -227,11 +227,11 @@ BEGIN
 					 LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH (NOLOCK) ON lc.CustID = lci.CustID
 				 WHERE lci.RoleID = 1 
 				 ) lc ON lc.custid = c.custid
-				LEFT JOIN  bodb_licensee.dbo.LicenseeCustComm cc WITH(NOLOCK) ON c.custid = cc.custid AND cc.Licenseeid = '
+				LEFT JOIN  bodb_licensee.dbo.LicenseeCustDiscount cc WITH(NOLOCK) ON c.custid = cc.custid AND cc.Licenseeid = '
 				+ CONVERT(VARCHAR(10),@LicenseeID) + '
 			WHERE 
 				(' + CONVERT(VARCHAR(10),@SpecialLevel) + ' = -1 OR ISNULL(lc.speciallevel,0) = ' +  CONVERT(VARCHAR(10),@SpecialLevel) + ')
-				AND (' + CONVERT(VARCHAR(10),@GroupCommID) + ' = -1 OR ISNULL(cc.GroupCommID, 0) = ' + CONVERT(VARCHAR(10),@GroupCommID) + ')'
+				AND (' + CONVERT(VARCHAR(10),@GroupDiscountID) + ' = -1 OR ISNULL(cc.GroupDiscountID, 0) = ' + CONVERT(VARCHAR(10),@GroupDiscountID) + ')'
 			
 			--EXEC sp_executesql @strSQL
 			EXEC (@strSQL)
@@ -271,7 +271,7 @@ BEGIN
 								INNER JOIN Customer cu WITH (NOLOCK) ON ci.CustID = cu.custid 
 								INNER JOIN #TempAg t ON ci.recommend = t.custid
 								LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON ci.custid = lc.custid
-								LEFT JOIN  bodb_licensee.dbo.LicenseeCustComm cc WITH(NOLOCK) ON ci.custid = cc.custid AND cc.Licenseeid = '
+								LEFT JOIN  bodb_licensee.dbo.LicenseeCustDiscount cc WITH(NOLOCK) ON ci.custid = cc.custid AND cc.Licenseeid = '
 								+ CONVERT(VARCHAR(10),@LicenseeID) + '
 							 WHERE lb.LicenseeID = ' + CONVERT(VARCHAR(10),@LicenseeID) + '
 								   AND lb.[Status] = ''Running''
@@ -289,7 +289,7 @@ BEGIN
 									)
 									AND (''' + @OddsGroups + ''' = '''' OR RIGHT(cu.ugroup,1) IN (' + @OddsGroupsC + '))
 									AND (' + CONVERT(VARCHAR(10),@SpecialLevel) + ' = -1 OR ISNULL(lc.speciallevel,0) = ' +  CONVERT(VARCHAR(10),@SpecialLevel) + ')
-									AND (' + CONVERT(VARCHAR(10),@GroupCommID) + ' = -1 OR ISNULL(cc.GroupCommID, 0) = ' + CONVERT(VARCHAR(10),@GroupCommID) + ')'
+									AND (' + CONVERT(VARCHAR(10),@GroupDiscountID) + ' = -1 OR ISNULL(cc.GroupDiscountID, 0) = ' + CONVERT(VARCHAR(10),@GroupDiscountID) + ')'
 			
 			--EXEC sp_executesql @strSQL
 			EXEC (@strSQL)
@@ -354,11 +354,11 @@ BEGIN
 				 WHERE c.RoleID = 1
 				 ) lc ON lc.custid = c.custid
 				LEFT JOIN bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) ON lb.LicenseeID = ' + CONVERT(VARCHAR(10),@LicenseeID) + ' AND c.custid = lb.custid AND lb.[Status] = ''Running''
-				LEFT JOIN  bodb_licensee.dbo.LicenseeCustComm cc WITH(NOLOCK) ON c.custid = cc.custid AND cc.Licenseeid = '
+				LEFT JOIN  bodb_licensee.dbo.LicenseeCustDiscount cc WITH(NOLOCK) ON c.custid = cc.custid AND cc.Licenseeid = '
 				+ CONVERT(VARCHAR(10),@LicenseeID) + '
 			WHERE ISNULL (lb.CustID, 0) = 0
 				AND (' + CONVERT(VARCHAR(10),@SpecialLevel) + ' = -1 OR ISNULL(lc.speciallevel,0) = ' +  CONVERT(VARCHAR(10),@SpecialLevel) + ')
-				AND (' + CONVERT(VARCHAR(10),@GroupCommID) + ' = -1 OR ISNULL(cc.GroupCommID, 0) = ' + CONVERT(VARCHAR(10),@GroupCommID) + ')'
+				AND (' + CONVERT(VARCHAR(10),@GroupDiscountID) + ' = -1 OR ISNULL(cc.GroupDiscountID, 0) = ' + CONVERT(VARCHAR(10),@GroupDiscountID) + ')'
 		
 			--EXEC sp_executesql @strSQL
 			EXEC (@strSQL)
@@ -399,7 +399,7 @@ BEGIN
 					INNER JOIN dbo.Customer c WITH (NOLOCK) ON c.recommend = t.custid
 					INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
 					LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.custid = lc.custid
-					LEFT JOIN bodb_licensee.dbo.LicenseeCustComm cc ON c.custid = cc.custid AND cc.Licenseeid = ' + CONVERT(VARCHAR(10),@LicenseeID) + '
+					LEFT JOIN bodb_licensee.dbo.LicenseeCustDiscount cc ON c.custid = cc.custid AND cc.Licenseeid = ' + CONVERT(VARCHAR(10),@LicenseeID) + '
 				WHERE 
 					c.RoleID = 1
 					AND (c.username2 LIKE ' + '''%$' + @Username + '%''' + ' OR c.username LIKE ''' + @Username + '%''' + ')
@@ -419,7 +419,7 @@ BEGIN
 					)
 					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
 					AND (' + CONVERT(VARCHAR(10),@SpecialLevel) + ' = -1 OR ISNULL(lc.SpecialLevel,0) = ' +  CONVERT(VARCHAR(10),@SpecialLevel) + ')
-					AND (' + CONVERT(VARCHAR(10),@GroupCommID) + ' = -1 OR ISNULL(cc.GroupCommID, 0) = ' + CONVERT(VARCHAR(10),@GroupCommID) + ')'
+					AND (' + CONVERT(VARCHAR(10),@GroupDiscountID) + ' = -1 OR ISNULL(cc.GroupDiscountID, 0) = ' + CONVERT(VARCHAR(10),@GroupDiscountID) + ')'
 		END
 		ELSE
 		BEGIN
@@ -429,7 +429,7 @@ BEGIN
 					INNER JOIN dbo.Customer c WITH (NOLOCK) ON c.recommend = t.custid
 					INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
 					LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.custid = lc.custid
-					LEFT JOIN bodb_licensee.dbo.LicenseeCustComm cc ON cc.custid = lc.custid AND cc.Licenseeid = ' + CONVERT(VARCHAR(10),@LicenseeID) + '
+					LEFT JOIN bodb_licensee.dbo.LicenseeCustDiscount cc ON cc.custid = lc.custid AND cc.Licenseeid = ' + CONVERT(VARCHAR(10),@LicenseeID) + '
 					LEFT JOIN bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) ON lb.LicenseeID = ' + CONVERT(VARCHAR(10),@LicenseeID) + 
 					' AND ci.custid = lb.custid AND lb.[Status] = ''Running''
 				WHERE 
@@ -451,7 +451,7 @@ BEGIN
 					)
 					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
 					AND (' + CONVERT(VARCHAR(10),@SpecialLevel) + ' = -1 OR ISNULL(lc.SpecialLevel,0) = ' +  CONVERT(VARCHAR(10),@SpecialLevel) + ')
-					AND (' + CONVERT(VARCHAR(10),@GroupCommID) + ' = -1 OR ISNULL(cc.GroupCommID, 0) = ' + CONVERT(VARCHAR(10),@GroupCommID) + ')
+					AND (' + CONVERT(VARCHAR(10),@GroupDiscountID) + ' = -1 OR ISNULL(cc.GroupDiscountID, 0) = ' + CONVERT(VARCHAR(10),@GroupDiscountID) + ')
 					AND ((' + CONVERT(VARCHAR(10),@BAFilter) + ' = 1 AND ISNULL(lb.[Status],'''') = ''Running'')'
 					+ ' OR ('+ CONVERT(VARCHAR(10),@BAFilter) + '= 2 AND ISNULL(lb.[Status],'''') != ''Running''))'
 		END
@@ -636,11 +636,23 @@ BEGIN
 		CAST((ISNULL(d.Outstanding, 0)	+ ISNULL(tl.actual_stake,0) * ISNULL(e.Rate,0))	 AS MONEY) AS Outstanding,
 		ISNULL(lg.color, '') AS GroupColor,
 		ISNULL(lg.GroupName, '') AS GroupName,
-		ISNULL(lc.SBComm, 0) AS SBComm,
-		ISNULL(lc.NGComm, 0) AS NGComm,
-		ISNULL(lc.RNGComm, 0) AS RNGComm,
-		ISNULL(lc.ParlayComm, 0) AS ParlayComm,
-		ISNULL(lg.id, 0) AS GroupCommID,
+		ISNULL((SELECT discount 
+				FROM bodb_Licensee.dbo.LicenseeGroupDiscountDetail gd (NOLOCK) 
+				WHERE gd.GroupDiscountID = lc.GroupDiscountID AND SportType = 1 AND BetType =1 )
+			, 0) AS SBComm,
+		ISNULL((SELECT discount 
+				FROM bodb_Licensee.dbo.LicenseeGroupDiscountDetail gd (NOLOCK) 
+				WHERE gd.GroupDiscountID = lc.GroupDiscountID AND SportType = 161 AND BetType =81 )
+			, 0) AS NGComm,
+		ISNULL((SELECT discount 
+				FROM bodb_Licensee.dbo.LicenseeGroupDiscountDetail gd (NOLOCK) 
+				WHERE gd.GroupDiscountID = lc.GroupDiscountID AND SportType = 208 AND BetType =2101 )
+			, 0) AS RNGComm,
+		ISNULL((SELECT discount 
+				FROM bodb_Licensee.dbo.LicenseeGroupDiscountDetail gd (NOLOCK) 
+				WHERE gd.GroupDiscountID = lc.GroupDiscountID AND SportType = 1 AND BetType = 9 )
+			, 0) AS ParlayComm,
+		ISNULL(lg.GroupDiscountID, 0) AS GroupDiscountID,
 		ISNULL(UPPER(t.ugroup), '') AS OddsGroup
 	FROM #Temp t
 		LEFT JOIN #Data d ON t.custid = d.custid
@@ -651,8 +663,8 @@ BEGIN
 			GROUP BY Custid, Currency
 		)tl ON t.custid = tl.Custid
 		LEFT JOIN #ExchangeRate e ON tl.Currency = e.ExchangeID
-		LEFT JOIN bodb_Licensee.dbo.LicenseeCustComm lc WITH (NOLOCK) ON t.custid = lc.custid AND lc.Licenseeid = @Licenseeid
-		LEFT JOIN bodb_Licensee.dbo.LicenseeGroupComm lg WITH (NOLOCK) ON lc.GroupCommID = lg.id
+		LEFT JOIN bodb_Licensee.dbo.LicenseeCustDiscount lc WITH (NOLOCK) ON t.custid = lc.custid AND lc.Licenseeid = @Licenseeid
+		LEFT JOIN bodb_Licensee.dbo.LicenseeGroupDiscount lg WITH (NOLOCK) ON lc.GroupDiscountID = lg.GroupDiscountID
 	ORDER BY t.username
 
 	DROP TABLE #TempAg
