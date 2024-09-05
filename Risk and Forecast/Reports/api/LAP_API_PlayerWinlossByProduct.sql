@@ -61,10 +61,6 @@ BEGIN
 	FROM bodb02.dbo.Lrf_f_GetExchangeRate(@apiDate, @apiDate, @BaseCurrency, '') e
 	WHERE EXISTS (SELECT 1 FROM #TempAg AS c WHERE c.Currency = e.ExchangeID)
 	
-	--MERGE Sports Lotery vs Bicons INTO Sportbook
-	SELECT @ProductCheck = CONCAT(@ProductCheck, ',SLT,BTC')
-	WHERE CONCAT(',',@ProductCheck,',') LIKE '%,SB,%';
-
 	--TODO: filter by product
 	DROP TABLE IF EXISTS #tmpBettype;
 	CREATE TABLE #tmpBettype(ProductId INT, Bettype INT, RefTable TINYINT, ProductCode VARCHAR(30), PRIMARY KEY(ProductId, Bettype));
@@ -72,38 +68,20 @@ BEGIN
 	WITH CTE_ProductFilter AS (
 		SELECT Code
 		FROM (VALUES('SLT'),('BTC')) AS t (Code)
-		WHERE @ProductCheck = 'ALL' OR CONCAT(',',@ProductCheck,',') LIKE '%,SB,%'
+		WHERE CONCAT(',',@ProductCheck,',') LIKE '%,SB,%'
 		UNION 
 		SELECT [value] AS Code 
 		FROM STRING_SPLIT(@ProductCheck, ',') AS t
-	),
-	CTE_Product AS (
-		SELECT 0 AS ProductID, p.ProductPrefix AS ProductCode
-		FROM bodb02.dbo.Products p WITH(NOLOCK) 
-		WHERE p.ProductID = 1
-		UNION ALL
-		SELECT DISTINCT p3.ProductID, p3.ProductPrefix AS ProductCode
-		FROM bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK)
-			INNER JOIN bodb_licensee.dbo.LicenseeProduct3rd lp WITH(NOLOCK) ON p3.ProductID = lp.ProductID
-		WHERE p3.Enabled = 1
+		WHERE @ProductCheck <> 'ALL'
 	)
-	INSERT INTO #tmpBettype
-	SELECT tbl.ProductId, tbl.Bettype, tbl.RefTable,tbl.ProductCode
-	FROM (
-		SELECT DISTINCT IIF(p.ProductID IN (63, 69), 1, p.ProductID) AS ProductID, 
-			IIF(p.ProductID IN (63, 69), 'SB', p3.ProductCode) AS ProductCode,
-			m.BetType, 
-			m.RefTable
-		FROM CTE_Product p3 WITH(NOLOCK)
-			INNER JOIN bodb02.dbo.Products p WITH(NOLOCK) ON p.ProductPrefix = p3.ProductCode
-			LEFT JOIN bodb02.dbo.Lrf_f_GroupProduct() lf ON p.Productid = lf.GroupProductId
-			INNER JOIN bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK) ON m.ProductID = ISNULL(lf.ProductID, p.ProductID)
-			LEFT JOIN CTE_ProductFilter pm ON pm.Code = p3.ProductCode
-		WHERE p.ProductID NOT IN (11, 31, 37) -- NOT Support Saba Promotion, AG-Casino & Exchange
-			AND (@ProductCheck = 'ALL' OR pm.Code IS NOT NULL)
-	) AS tbl
+	INSERT INTO #tmpBettype (ProductID, ProductCode, Bettype, RefTable)
+	SELECT DISTINCT IIF(tbl.ProductID IN (63, 69), 1, ISNULL(lf.GroupProductId, tbl.ProductID)) AS ProductID
+		, IIF(tbl.ProductID IN (63, 69), 'SB', ISNULL(lf.GroupProductPrefix, tbl.ProductPrefix)) AS ProductCode
+		, tbl.Bettype, tbl.RefTable
+	FROM bodb02.dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', '', 0) AS tbl
+		LEFT JOIN CTE_ProductFilter pf ON pf.Code = tbl.ProductPrefix
 		LEFT JOIN bodb02.[dbo].[Lrf_f_SelExcludedBetType]() e ON e.BetType = tbl.BetType
-		LEFT JOIN bodb02.dbo.Lrf_f_GroupProduct() lf ON tbl.Productid = lf.Productid AND lf.GroupProductId <> lf.ProductId
+		LEFT JOIN bodb02.dbo.Lrf_f_GroupProduct() lf ON tbl.Productid = lf.Productid
 		OUTER APPLY 
 		(
 			SELECT f.Bettype
@@ -113,8 +91,8 @@ BEGIN
 		) AS cont
 	WHERE e.BetType IS NULL
 		AND cont.Bettype IS NULL
-		AND (lf.Productid IS NULL OR @ProductCheck <> 'ALL') -- exclude product in group product
-	;
+		AND tbl.ProductID NOT IN (11, 31, 37) -- NOT Support Saba Promotion, AG-Casino & Exchange
+		AND (@ProductCheck = 'ALL' OR pf.Code IS NOT NULL)
 
 	--TODO: Get players winloss by betxxx
 	INSERT INTO #rptPlayerWinloss (ProductID, ProductCode, Nickname, BetCount, Turnover, Winloss, TotalRows)
