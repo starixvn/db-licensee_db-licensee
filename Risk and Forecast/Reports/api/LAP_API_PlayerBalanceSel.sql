@@ -21,7 +21,7 @@ BEGIN
 	CREATE TABLE #TempAg(CustId INT PRIMARY KEY, Currency INT);
 
 	DROP TABLE IF EXISTS #rptPlayerBalance;
-	CREATE TABLE #rptPlayerBalance (rIdx INT IDENTITY(1, 1) PRIMARY KEY, Nickname VARCHAR(50), Currency VARCHAR(5), ClosingBalance MONEY, TotalRows INT)
+	CREATE TABLE #rptPlayerBalance (rIdx INT IDENTITY(1, 1) PRIMARY KEY, Nickname VARCHAR(50), ExchangeId INT, ClosingBalance MONEY, TotalRows INT)
 
 	DECLARE @DocHandler INT
 	BEGIN TRY
@@ -63,10 +63,9 @@ BEGIN
 			OFFSET (@PageIndex-1)*@PageSize ROWS FETCH NEXT @PageSize ROWS ONLY
 		)
 		INSERT INTO #rptPlayerBalance
-		SELECT c.Nickname, ex.Code AS Currency, ISNULL(rpt.OpeningBalance,0) AS ClosingBalance
+		SELECT c.Nickname, c.Currency AS ExchangeId, ISNULL(rpt.OpeningBalance,0) AS ClosingBalance
 			,c.TotalRows
 		FROM CTE_Player c
-			INNER JOIN bodb02.dbo.Exchange ex WITH (NOLOCK) ON ex.ExchangeId = c.Currency
 			LEFT JOIN dbo.rptDepWinlost_Main AS rpt WITH (NOLOCK) ON rpt.CustID = c.custid AND rpt.winlostdate = @openingDate
 		; 
 	END
@@ -77,7 +76,7 @@ BEGIN
 	FROM #rptPlayerBalance
 
 	--TODO: result
-	SELECT Nickname, Currency, ClosingBalance
+	SELECT Nickname, ExchangeId, ClosingBalance
 	FROM #rptPlayerBalance
 	ORDER BY rIdx
 	;
