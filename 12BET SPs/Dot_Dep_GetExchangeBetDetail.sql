@@ -17,6 +17,7 @@ Revisions:
 --20230920@Boren(Licensee DB) : add @betPlaced.
 --20240710@Alex.Kan(Licensee DB) : improve performance
 --20240730@Kelvin(Licensee DB) : Enhance pull data by Subsidiary [RedmineID: #208468]
+--20240821@Kelvin(Licensee DB) : LAP - Exchange - Support Running ticket [RedmineID: #208108]
 
 */
 BEGIN
@@ -104,11 +105,11 @@ BEGIN
 						, b.fancyBetRuns
 						, CONVERT(BIGINT, b.tstamp) AS version_key
 			FROM [dbo].[Bettrans_Exchange] b WITH (NOLOCK)
-				INNER JOIN [dbo].[Sum_winloss_Exchange] s WITH (NOLOCK) 
+				LEFT JOIN [dbo].[Sum_winloss_Exchange] s WITH (NOLOCK) 
 					ON	b.eventid = s.eventid
 					AND b.userid = s.userid
 					AND b.marketid = s.marketid
-				INNER JOIN #TmpCust c WITH(NOLOCK) ON c.CustID = s.CustID
+				INNER JOIN #TmpCust c WITH(NOLOCK) ON c.CustID = b.CustID
 			WHERE b.tstamp > @tstamp
 				AND b.extension1 = @extension1								
 			ORDER BY b.tstamp
