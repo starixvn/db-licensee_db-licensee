@@ -26,7 +26,8 @@ Param's Explanation:
 	- 20181121@Joseph: Imlement search for dormant customer [#102680]
 	- 20181219@Joseph: Force index hint IX_agent [#105409]
 	- 20190626@Elodie: Use table variable to use IX_recommend index [#105409]
-	- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
+	- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]
+	- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #199292]
 
 */
 
@@ -62,6 +63,7 @@ BEGIN
 		INNER JOIN @TempAg lc ON c.recommend = lc.custid AND c.currency = lc.Currency
 	WHERE (c.username2 LIKE + '%$' + @Username + '%' OR c.username LIKE @Username + '%') 
 		AND c.username NOT LIKE '%01OddsAdj%'
+		AND c.username NOT LIKE '%01OddsBoostAdj%'
 		AND c.RoleId = 1
 	ORDER BY username
 

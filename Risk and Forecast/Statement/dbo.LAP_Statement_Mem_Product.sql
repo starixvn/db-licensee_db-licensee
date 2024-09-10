@@ -29,6 +29,7 @@ AS
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240416@Evan: Integrate Saba Coins - add param @ReportViewType [RedmineID: #202281]
 		- 20240808@Kelvin: Add new bettype 11009 for "Saba Nickname Edited" - change bettype range [11001 -> 11049] [RedmineID: #209038]
+		- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #199292]
 
 	Param's Explanation:
 		- @ModeView: TINYINT
@@ -136,7 +137,7 @@ BEGIN
 		WHERE
 			b.custid = @_custID
 			AND b.winlostdate = @_winlostdate
-			AND b.bettype NOT IN (903, 71, 913, 914, 999)
+			AND b.bettype NOT IN (903, 71, 913, 914, 999, 997)
 			AND ((ISNULL(@IsCOMember, 0) = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE
 						WHEN @_ModeView = 1 AND b.statusID IN (111, 112, 113) AND pb.betTypeId IS NULL THEN 1
@@ -202,7 +203,7 @@ BEGIN
 		WHERE
 			b.custid = @_custid
 			AND b.winlostdate = @_winlostdate
-			AND b.bettype NOT IN (903, 71, 913, 914, 999)
+			AND b.bettype NOT IN (903, 71, 913, 914, 999, 997)
 			AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE
 						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND pb.betTypeId IS NULL THEN 1
@@ -228,7 +229,7 @@ BEGIN
 		WHERE 
 			b.custid = @_custid
 			AND b.winlostdate = @_winlostdate
-			AND b.bettype NOT IN (903, 71, 913, 914, 999)
+			AND b.bettype NOT IN (903, 71, 913, 914, 999, 997)
 			AND ((@IsCOMember = 0 AND b.bettype <> 912) OR (@IsCOMember = 1 AND b.bettype <> 911))
 			AND 1 = CASE
 						WHEN @_ModeView = 1 AND b.statusID IN (111,112,113) AND pb.betTypeId IS NULL THEN 1
