@@ -27,7 +27,7 @@ Param's Explanation:
 	- 20181219@Joseph: Force index hint IX_agent [#105409]
 	- 20190626@Elodie: Use table variable to use IX_recommend index [#105409]
 	- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]
-	- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #199292]
+	- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #210613]
 
 */
 

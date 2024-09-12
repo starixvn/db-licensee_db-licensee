@@ -25,7 +25,7 @@ AS
 		- 20220513@Kos: Support Sports Lottery and Bitcoin [RedmineID: #160160]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20241701@Evan: Update f_GroupBettype to Lrf_f_GroupBettype [RedmineID: #199523]
-		- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #199292]
+		- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #210613]
 
 	Param's Explanation:
 		- @BetTypeList: bettype list separated by ','

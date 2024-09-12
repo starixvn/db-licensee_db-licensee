@@ -35,7 +35,7 @@ AS
 		- 20230227@Evan: Ensure correct balance calculation when allow to transfer 247 (BU) [Redmine: #173554]
 		- 20240304@Johnson: HF filter Risk Level "Uncategorized" not show [redmine: #200913]
 		- 20240614@Johnson: Restructure Commission [redmine:#179088]
-		- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #199292]
+		- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #210613]
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value '1,2,3,4,5,6,7,8,9,10' (all)

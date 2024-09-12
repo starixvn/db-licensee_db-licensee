@@ -25,7 +25,7 @@ AS
 		- 20220106@Kos: Support search by username [RedmineID: #165926]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20241701@Evan: Update f_GroupBettype to Lrf_f_GroupBettype [RedmineID: #199523]
-		- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #199292]
+		- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #210613]
 
 	Param's Explanation:
 		- @BetTypeList: bettype list separated by ','

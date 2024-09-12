@@ -71,7 +71,7 @@ AS
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20230227@Evan: Ensure correct balance calculation when allow to transfer 247 (BU) [Redmine: #173554]
 		- 20240614@Johnson: Restructure Commission [redmine:#179088]
-		- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #199292]
+		- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #210613]
 	Param's Explanation:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value = -1 (all)

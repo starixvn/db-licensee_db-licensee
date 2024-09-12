@@ -21,7 +21,7 @@ AS
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240306@Evan: Remove checking Enabled in SportBettypeMatrix [RedmineID: #201944]
 		- 20240816@Kelvin: Hide BetType in Lrf_f_SelExcludedBetType [RedmineID: #208144]
-		- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #199292]
+		- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #210613]
 */
 
 BEGIN
