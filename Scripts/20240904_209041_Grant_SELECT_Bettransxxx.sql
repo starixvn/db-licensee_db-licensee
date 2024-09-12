@@ -7,8 +7,16 @@
 */
 use bodb02;
 
-GRANT SELECT ON bettrans to [wsv_lap];
+--GRANT SELECT ON bettrans to [wsv_lap];
+--GO
+--GRANT SELECT ON bettransLC to [wsv_lap];
+--GO
+--GRANT SELECT ON bettransRNG to [wsv_lap];
+--GO
+
+--- 20240912@support bet14 range
+GRANT SELECT ON bettrans14 to [wsv_lap];
 GO
-GRANT SELECT ON bettransLC to [wsv_lap];
+GRANT SELECT ON bettransLC14 to [wsv_lap];
 GO
-GRANT SELECT ON bettransRNG to [wsv_lap];
+GRANT SELECT ON bettransRNG14 to [wsv_lap];

@@ -2,6 +2,7 @@
 ALTER PROCEDURE [dbo].[LAP_API_PlayerWinlossByProduct]
 	@AgentList		VARCHAR(MAX),
 	@Winlostdate	SMALLDATETIME,
+	@MoveBetDay		SMALLDATETIME,
 	@ProductCodes	VARCHAR(MAX)	= '0',
 	@BaseCurrency	VARCHAR(10)		= 'USD',
 	@PageIndex		INT = 1,
@@ -33,6 +34,9 @@ BEGIN
 		Winloss MONEY, 
 		TotalRows INT
 	);
+
+	IF @PageIndex <= 0
+		GOTO RS_OUTPUT;
 
 	DECLARE @DocHandler INT
 	BEGIN TRY
@@ -94,64 +98,127 @@ BEGIN
 		AND tbl.ProductID NOT IN (11, 31, 37) -- NOT Support Saba Promotion, AG-Casino & Exchange
 		AND (@ProductCheck = 'ALL' OR pf.Code IS NOT NULL)
 
-	--TODO: Get players winloss by betxxx
-	INSERT INTO #rptPlayerWinloss (ProductID, ProductCode, Nickname, BetCount, Turnover, Winloss, TotalRows)
-	SELECT rpt.ProductID, rpt.ProductCode
-		,SUBSTRING(c.username2, CHARINDEX('$', c.username2)+1, 50) AS Nickname
-		,SUM(rpt.BetCount) AS BetCount
-		,SUM(rpt.Turnover) AS Turnover
-		,SUM(rpt.Winloss) AS Winloss
-		,COUNT(1) OVER() AS TotalRows
-	FROM (
-		SELECT bt.ProductID, bt.ProductCode
-			,rpt.custid
-			,COUNT(1) BetCount
-			,SUM(ABS(rpt.stake) * ex.rate) AS Turnover
-			,SUM((rpt.winlost - rpt.actual_stake) * ex.rate) AS Winloss
+	--TODO: Get players winloss - betxxx
+	IF @apiDate > @MoveBetDay
+	BEGIN	
+		INSERT INTO #rptPlayerWinloss (ProductID, ProductCode, Nickname, BetCount, Turnover, Winloss, TotalRows)
+		SELECT rpt.ProductID, rpt.ProductCode
+			,SUBSTRING(c.username2, CHARINDEX('$', c.username2)+1, 50) AS Nickname
+			,SUM(rpt.BetCount) AS BetCount
+			,SUM(rpt.Turnover) AS Turnover
+			,SUM(rpt.Winloss) AS Winloss
+			,COUNT(1) OVER() AS TotalRows
+		FROM (
+			SELECT bt.ProductID, bt.ProductCode
+				,rpt.custid
+				,COUNT(1) BetCount
+				,SUM(ABS(rpt.stake) * ex.rate) AS Turnover
+				,SUM((rpt.winlost - rpt.actual_stake) * ex.rate) AS Winloss
 			
-		FROM bodb02.dbo.bettrans AS rpt WITH (NOLOCK)
-			INNER JOIN #TempAg AS a ON a.custid = rpt.recommend
-			INNER JOIN @Exchange ex ON ex.ExchangeId = a.Currency
-			INNER JOIN #tmpBettype AS bt ON bt.bettype = rpt.bettype AND bt.RefTable NOT IN (1,2)
-		WHERE rpt.winlostdate = @apiDate
-			AND rpt.statusid IN (111, 112, 113)
-		GROUP BY bt.ProductID, bt.ProductCode, rpt.custid
+			FROM bodb02.dbo.bettrans AS rpt WITH (NOLOCK)
+				INNER JOIN #TempAg AS a ON a.custid = rpt.recommend
+				INNER JOIN @Exchange ex ON ex.ExchangeId = a.Currency
+				INNER JOIN #tmpBettype AS bt ON bt.bettype = rpt.bettype AND bt.RefTable NOT IN (1,2)
+			WHERE rpt.winlostdate = @apiDate
+				AND rpt.statusid IN (111, 112, 113)
+			GROUP BY bt.ProductID, bt.ProductCode, rpt.custid
 
-		UNION ALL
-		SELECT bt.ProductID, bt.ProductCode
-			,rpt.custid
-			,COUNT(1) BetCount
-			,SUM(ABS(rpt.stake) * ex.rate) AS Turnover
-			,SUM((rpt.winlost - rpt.actual_stake) * ex.rate) AS Winloss
-		FROM bodb02.dbo.bettransRNG AS rpt WITH (NOLOCK)
-			INNER JOIN #TempAg AS a ON a.custid = rpt.recommend
-			INNER JOIN @Exchange ex ON ex.ExchangeId = a.Currency
-			INNER JOIN #tmpBettype AS bt ON bt.bettype = rpt.gameID AND bt.RefTable IN (1)
-		WHERE rpt.winlostdate = @apiDate
-			AND rpt.statusid IN (111, 112, 113)
-		GROUP BY bt.ProductID, bt.ProductCode, rpt.custid
+			UNION ALL
+			SELECT bt.ProductID, bt.ProductCode
+				,rpt.custid
+				,COUNT(1) BetCount
+				,SUM(ABS(rpt.stake) * ex.rate) AS Turnover
+				,SUM((rpt.winlost - rpt.actual_stake) * ex.rate) AS Winloss
+			FROM bodb02.dbo.bettransRNG AS rpt WITH (NOLOCK)
+				INNER JOIN #TempAg AS a ON a.custid = rpt.recommend
+				INNER JOIN @Exchange ex ON ex.ExchangeId = a.Currency
+				INNER JOIN #tmpBettype AS bt ON bt.bettype = rpt.gameID AND bt.RefTable IN (1)
+			WHERE rpt.winlostdate = @apiDate
+				AND rpt.statusid IN (111, 112, 113)
+			GROUP BY bt.ProductID, bt.ProductCode, rpt.custid
 
-		UNION ALL
-		SELECT bt.ProductID, bt.ProductCode
-			,rpt.custid
-			,COUNT(1) BetCount
-			,SUM(ABS(rpt.stake) * ex.rate) AS Turnover
-			,SUM((rpt.winlost - rpt.actual_stake) * ex.rate) AS Winloss
-		FROM bodb02.dbo.bettransLC AS rpt WITH (NOLOCK)
-			INNER JOIN #TempAg AS a ON a.custid = rpt.recommend
-			INNER JOIN @Exchange ex ON ex.ExchangeId = a.Currency
-			INNER JOIN #tmpBettype AS bt ON bt.bettype = rpt.gameID AND bt.RefTable IN (2)
-		WHERE rpt.winlostdate = @apiDate
-			AND rpt.statusid IN (111, 112, 113)
-		GROUP BY bt.ProductID, bt.ProductCode, rpt.custid
-	) AS rpt
-	INNER JOIN bodb02.dbo.Customer c ON c.custid = rpt.custid
-	GROUP BY rpt.ProductID, rpt.ProductCode
-		,SUBSTRING(c.username2, CHARINDEX('$', c.username2)+1, 50)
-	ORDER BY rpt.ProductID
-		,SUBSTRING(c.username2, CHARINDEX('$', c.username2)+1, 50)
-	OFFSET (@PageIndex-1)*@PageSize ROWS FETCH NEXT @PageSize ROWS ONLY
-	; 
+			UNION ALL
+			SELECT bt.ProductID, bt.ProductCode
+				,rpt.custid
+				,COUNT(1) BetCount
+				,SUM(ABS(rpt.stake) * ex.rate) AS Turnover
+				,SUM((rpt.winlost - rpt.actual_stake) * ex.rate) AS Winloss
+			FROM bodb02.dbo.bettransLC AS rpt WITH (NOLOCK)
+				INNER JOIN #TempAg AS a ON a.custid = rpt.recommend
+				INNER JOIN @Exchange ex ON ex.ExchangeId = a.Currency
+				INNER JOIN #tmpBettype AS bt ON bt.bettype = rpt.gameID AND bt.RefTable IN (2)
+			WHERE rpt.winlostdate = @apiDate
+				AND rpt.statusid IN (111, 112, 113)
+			GROUP BY bt.ProductID, bt.ProductCode, rpt.custid
+		) AS rpt
+		INNER JOIN bodb02.dbo.Customer c ON c.custid = rpt.custid
+		GROUP BY rpt.ProductID, rpt.ProductCode
+			,SUBSTRING(c.username2, CHARINDEX('$', c.username2)+1, 50)
+		ORDER BY rpt.ProductID
+			,SUBSTRING(c.username2, CHARINDEX('$', c.username2)+1, 50)
+		OFFSET (@PageIndex-1)*@PageSize ROWS FETCH NEXT @PageSize ROWS ONLY
+		; 
+	END
+	ELSE
+	BEGIN
+		INSERT INTO #rptPlayerWinloss (ProductID, ProductCode, Nickname, BetCount, Turnover, Winloss, TotalRows)
+		SELECT rpt.ProductID, rpt.ProductCode
+			,SUBSTRING(c.username2, CHARINDEX('$', c.username2)+1, 50) AS Nickname
+			,SUM(rpt.BetCount) AS BetCount
+			,SUM(rpt.Turnover) AS Turnover
+			,SUM(rpt.Winloss) AS Winloss
+			,COUNT(1) OVER() AS TotalRows
+		FROM (
+			SELECT bt.ProductID, bt.ProductCode
+				,rpt.custid
+				,COUNT(1) BetCount
+				,SUM(ABS(rpt.stake) * ex.rate) AS Turnover
+				,SUM((rpt.winlost - rpt.actual_stake) * ex.rate) AS Winloss
+			
+			FROM bodb02.dbo.bettrans14 AS rpt WITH (NOLOCK)
+				INNER JOIN #TempAg AS a ON a.custid = rpt.recommend
+				INNER JOIN @Exchange ex ON ex.ExchangeId = a.Currency
+				INNER JOIN #tmpBettype AS bt ON bt.bettype = rpt.bettype AND bt.RefTable NOT IN (1,2)
+			WHERE rpt.winlostdate = @apiDate
+				AND rpt.statusid IN (111, 112, 113)
+			GROUP BY bt.ProductID, bt.ProductCode, rpt.custid
+
+			UNION ALL
+			SELECT bt.ProductID, bt.ProductCode
+				,rpt.custid
+				,COUNT(1) BetCount
+				,SUM(ABS(rpt.stake) * ex.rate) AS Turnover
+				,SUM((rpt.winlost - rpt.actual_stake) * ex.rate) AS Winloss
+			FROM bodb02.dbo.bettransRNG14 AS rpt WITH (NOLOCK)
+				INNER JOIN #TempAg AS a ON a.custid = rpt.recommend
+				INNER JOIN @Exchange ex ON ex.ExchangeId = a.Currency
+				INNER JOIN #tmpBettype AS bt ON bt.bettype = rpt.gameID AND bt.RefTable IN (1)
+			WHERE rpt.winlostdate = @apiDate
+				AND rpt.statusid IN (111, 112, 113)
+			GROUP BY bt.ProductID, bt.ProductCode, rpt.custid
+
+			UNION ALL
+			SELECT bt.ProductID, bt.ProductCode
+				,rpt.custid
+				,COUNT(1) BetCount
+				,SUM(ABS(rpt.stake) * ex.rate) AS Turnover
+				,SUM((rpt.winlost - rpt.actual_stake) * ex.rate) AS Winloss
+			FROM bodb02.dbo.bettransLC14 AS rpt WITH (NOLOCK)
+				INNER JOIN #TempAg AS a ON a.custid = rpt.recommend
+				INNER JOIN @Exchange ex ON ex.ExchangeId = a.Currency
+				INNER JOIN #tmpBettype AS bt ON bt.bettype = rpt.gameID AND bt.RefTable IN (2)
+			WHERE rpt.winlostdate = @apiDate
+				AND rpt.statusid IN (111, 112, 113)
+			GROUP BY bt.ProductID, bt.ProductCode, rpt.custid
+		) AS rpt
+		INNER JOIN bodb02.dbo.Customer c ON c.custid = rpt.custid
+		GROUP BY rpt.ProductID, rpt.ProductCode
+			,SUBSTRING(c.username2, CHARINDEX('$', c.username2)+1, 50)
+		ORDER BY rpt.ProductID
+			,SUBSTRING(c.username2, CHARINDEX('$', c.username2)+1, 50)
+		OFFSET (@PageIndex-1)*@PageSize ROWS FETCH NEXT @PageSize ROWS ONLY
+		; 
+	END
 
 	RS_OUTPUT:
 	--TODO: @TotalRows
