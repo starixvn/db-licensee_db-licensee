@@ -1,9 +1,9 @@
 /*<info serverAlias="DBACC-bodb02" executers="ow_12bet" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[DOT_Dep_Rpt_MemberSummary_Agent_V2]
-	@fromDate smalldatetime,
-	@toDate smalldatetime,
-	@CustId INT,
-	@agentid NVARCHAR(3500)
+    @fromDate smalldatetime,
+    @toDate smalldatetime,
+    @CustId INT,
+    @agentid NVARCHAR(3500)
 AS
 /*
 DB: DB06.bodb02
@@ -85,8 +85,9 @@ Revisions:
 --20240207@KenYang(DB06.bodb02): Add Virtual Football League(SportType:178), Virtual Soccer Bundesliga(SportType:195) Report Data
 --20240313@MaxCheng(DB06.bodb02): Combine Virtual Sports 2,3 to Virtual Sports ,and remove Cash Out
 --20240410@Eddie: Change metadata 'Dot_Admin,Dot_Member' to 'ow_12bet' - [Redmine: #202118]
---20240620@Benson: Add Saba Coins Cash Exchange (bettype: 17008) in the promotion 
---20240712@Benson: Add Virtual Cock Fighting (sport: 188) 
+--20240620@Benson: Add Saba Coins Cash Exchange (bettype: 17008) in the promotion
+--20240712@Benson: Add Virtual Cock Fighting (sport: 188)  
+--20240905@Edward: Add BG(SportType:239) and Yeebet(SportType:159) Report Data
 */
 BEGIN
     SET NOCOUNT ON
@@ -120,6 +121,8 @@ BEGIN
         VgamingDraw money default(0), VgamingTOver money default(0), VgamingWL money default(0), --Vgaming
         MaxGameDraw money default(0), MaxGameTOver money default(0), MaxGameWL money default(0), --MaxGame
         BTCDraw money default(0), BTCTOver money default(0), BTCWL money default(0), --Bitcoin
+		BGDraw money default(0), BGTOver money default(0), BGWL money default(0), --BG
+		YBDraw money default(0), YBTOver money default(0), YBWL money default(0), --Yeebet
         Winloss money default(0), ClosingBalance money default(0), Transfer3rd money default(0), DrawGame money default(0),
         recommend int, mrecommend int, srecommend int, actualrate float, Promotion money,
         Transfer3rd_AG money default(0), Transfer3rd_CRYSTAL money default(0),
@@ -152,6 +155,8 @@ BEGIN
         VgamingDraw money default(0), VgamingTOver money default(0), VgamingWL money default(0), --Vgaming
         MaxGameDraw money default(0), MaxGameTOver money default(0), MaxGameWL money default(0), --MaxGame
         BTCDraw money default(0), BTCTOver money default(0), BTCWL money default(0), --Bitcoin
+		BGDraw money default(0), BGTOver money default(0), BGWL money default(0), --BG
+		YBDraw money default(0), YBTOver money default(0), YBWL money default(0), --Yeebet
         Winloss money default(0), ClosingBalance money default(0), Transfer3rd money default(0), DrawGame money default(0),
         recommend int, mrecommend int, srecommend int, actualrate float, Promotion money)
 
@@ -186,6 +191,8 @@ BEGIN
                ISNULL(p1.VgamingDraw, 0) AS VgamingDraw, ISNULL(p1.VgamingTOver, 0) AS VgamingTOver, ISNULL(p1.VgamingWL, 0) AS VgamingWL, --Vgaming
                ISNULL(p1.MaxGameDraw, 0) AS MaxGameDraw, ISNULL(p1.MaxGameTOver, 0) AS MaxGameTOver, ISNULL(p1.MaxGameWL, 0) AS MaxGameWL, --MaxGame
                ISNULL(p1.BTCDraw, 0) AS BTCDraw, ISNULL(p1.BTCTOver, 0) AS BTCTOver, ISNULL(p1.BTCWL, 0) AS BTCWL, --Bitcoin
+			   ISNULL(p1.BGDraw, 0) AS BGDraw, ISNULL(p1.BGTOver, 0) AS BGTOver, ISNULL(p1.BGWL, 0) AS BGWL, --BG
+			   ISNULL(p1.YBDraw, 0) AS YBDraw, ISNULL(p1.YBTOver, 0) AS YBTOver, ISNULL(p1.YBWL, 0) AS YBWL, --Yeebet
                b.Winloss, b.ClosingBalance, b.Transfer3rd, b.DrawGame,
                b.recommend, b.mrecommend, b.srecommend, b.actualrate, b.Promotion
         FROM bodb_Report.dbo.rptDepWinlost_bk b WITH(NOLOCK)
@@ -247,10 +254,16 @@ BEGIN
                                 SUM(CASE WHEN p.sporttype = 237 THEN p.winlost ELSE 0 END) AS MaxGameWL,
                                 SUM(CASE WHEN p.sporttype = 175 THEN p.drawTO ELSE 0 END) AS BTCDraw,
                                 SUM(CASE WHEN p.sporttype = 175 THEN p.turnover ELSE 0 END) AS BTCTOver,
-                                SUM(CASE WHEN p.sporttype = 175 THEN p.winlost ELSE 0 END) AS BTCWL
+                                SUM(CASE WHEN p.sporttype = 175 THEN p.winlost ELSE 0 END) AS BTCWL,
+								SUM(CASE WHEN p.sporttype = 239 THEN p.drawTO ELSE 0 END) AS BGDraw,
+                                SUM(CASE WHEN p.sporttype = 239 THEN p.turnover ELSE 0 END) AS BGTOver,
+                                SUM(CASE WHEN p.sporttype = 239 THEN p.winlost ELSE 0 END) AS BGWL,
+								SUM(CASE WHEN p.sporttype = 159 THEN p.drawTO ELSE 0 END) AS YBDraw,
+                                SUM(CASE WHEN p.sporttype = 159 THEN p.turnover ELSE 0 END) AS YBTOver,
+                                SUM(CASE WHEN p.sporttype = 159 THEN p.winlost ELSE 0 END) AS YBWL
                         FROM bodb_Report.dbo.rptDepWinlostByProduct_BK p WITH(NOLOCK)
                         WHERE winlostdate BETWEEN @fromDate AND @toDate 
-                            AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,164,194,196,245,222,243,244,168,169,165,171,231,237,175,195,178,188) 
+                            AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,164,194,196,245,222,243,244,168,169,165,171,231,237,175,195,178,188,239,159) 
                             AND p.custid = @CustId 
                         GROUP BY p.winlostdate, p.custid
                     ) p1 ON b.winlostdate = p1.winlostdate
@@ -320,6 +333,8 @@ BEGIN
                ISNULL(p1.VgamingDraw, 0) AS VgamingDraw, ISNULL(p1.VgamingTOver, 0) AS VgamingTOver, ISNULL(p1.VgamingWL, 0) AS VgamingWL, --Vgaming
                ISNULL(p1.MaxGameDraw, 0) AS MaxGameDraw, ISNULL(p1.MaxGameTOver, 0) AS MaxGameTOver, ISNULL(p1.MaxGameWL, 0) AS MaxGameWL, --MaxGame
                ISNULL(p1.BTCDraw, 0) AS BTCDraw, ISNULL(p1.BTCTOver, 0) AS BTCTOver, ISNULL(p1.BTCWL, 0) AS BTCWL, --Bitcoin
+			   ISNULL(p1.BGDraw, 0) AS BGDraw, ISNULL(p1.BGTOver, 0) AS BGTOver, ISNULL(p1.BGWL, 0) AS BGWL, --BG
+			   ISNULL(p1.YBDraw, 0) AS YBDraw, ISNULL(p1.YBTOver, 0) AS YBTOver, ISNULL(p1.YBWL, 0) AS YBWL, --Yeebet
                b.Winloss, b.ClosingBalance, b.Transfer3rd, b.DrawGame,
                b.recommend, b.mrecommend, b.srecommend, b.actualrate, b.Promotion
         FROM bodb_Report.dbo.rptDepWinlost b WITH(NOLOCK)
@@ -381,11 +396,17 @@ BEGIN
                                 SUM(CASE WHEN p.sporttype = 237 THEN p.winlost ELSE 0 END) AS MaxGameWL,
                                 SUM(CASE WHEN p.sporttype = 175 THEN p.drawTO ELSE 0 END) AS BTCDraw,
                                 SUM(CASE WHEN p.sporttype = 175 THEN p.turnover ELSE 0 END) AS BTCTOver,
-                                SUM(CASE WHEN p.sporttype = 175 THEN p.winlost ELSE 0 END) AS BTCWL
+                                SUM(CASE WHEN p.sporttype = 175 THEN p.winlost ELSE 0 END) AS BTCWL,
+								SUM(CASE WHEN p.sporttype = 239 THEN p.drawTO ELSE 0 END) AS BGDraw,
+                                SUM(CASE WHEN p.sporttype = 239 THEN p.turnover ELSE 0 END) AS BGTOver,
+                                SUM(CASE WHEN p.sporttype = 239 THEN p.winlost ELSE 0 END) AS BGWL,
+								SUM(CASE WHEN p.sporttype = 159 THEN p.drawTO ELSE 0 END) AS YBDraw,
+                                SUM(CASE WHEN p.sporttype = 159 THEN p.turnover ELSE 0 END) AS YBTOver,
+                                SUM(CASE WHEN p.sporttype = 159 THEN p.winlost ELSE 0 END) AS YBWL
 
                         FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)
                         WHERE winlostdate BETWEEN @fromDate AND @toDate 
-                            AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,164,194,196,245,222,243,244,168,169,165,171,231,237,175,195,178,188)
+                            AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,164,194,196,245,222,243,244,168,169,165,171,231,237,175,195,178,188,239,159)
                             AND p.custid = @CustId 
                         GROUP BY p.winlostdate, p.custid
                     ) p1 ON b.winlostdate = p1.winlostdate
@@ -550,7 +571,9 @@ BEGIN
             ARCADraw = ISNULL(p1.ARCADraw,0), ARCATOver = ISNULL(p1.ARCATOver,0), ARCAWL = ISNULL(p1.ARCAWL,0),  --Arcadia Gaming
             VgamingDraw = ISNULL(p1.VgamingDraw,0), VgamingTOver = ISNULL(p1.VgamingTOver,0), VgamingWL = ISNULL(p1.VgamingWL,0), --Vgaming
             MaxGameDraw = ISNULL(p1.MaxGameDraw,0), MaxGameTOver = ISNULL(p1.MaxGameTOver,0), MaxGameWL = ISNULL(p1.MaxGameWL,0),  --MaxGame
-            BTCDraw = ISNULL(p1.BTCDraw,0), BTCTOver = ISNULL(p1.BTCTOver,0), BTCWL = ISNULL(p1.BTCWL,0)  --Bitcoin
+            BTCDraw = ISNULL(p1.BTCDraw,0), BTCTOver = ISNULL(p1.BTCTOver,0), BTCWL = ISNULL(p1.BTCWL,0),  --Bitcoin
+			BGDraw = ISNULL(p1.BGDraw,0), BGTOver = ISNULL(p1.BGTOver,0), BGWL = ISNULL(p1.BGWL,0),  --BG
+			YBDraw = ISNULL(p1.YBDraw,0), YBTOver = ISNULL(p1.YBTOver,0), YBWL = ISNULL(p1.YBWL,0)  --Yeebet
         FROM @TodayData d
             LEFT JOIN (
                         SELECT p.winlostdate, p.custid, 
@@ -611,10 +634,16 @@ BEGIN
                                SUM(CASE WHEN p.sporttype = 237 THEN p.winlost ELSE 0 END) AS MaxGameWL,
                                SUM(CASE WHEN p.sporttype = 175 THEN p.drawTO ELSE 0 END) AS BTCDraw,
                                SUM(CASE WHEN p.sporttype = 175 THEN p.turnover ELSE 0 END) AS BTCTOver,
-                               SUM(CASE WHEN p.sporttype = 175 THEN p.winlost ELSE 0 END) AS BTCWL
+                               SUM(CASE WHEN p.sporttype = 175 THEN p.winlost ELSE 0 END) AS BTCWL,
+							   SUM(CASE WHEN p.sporttype = 239 THEN p.drawTO ELSE 0 END) AS BGDraw,
+                               SUM(CASE WHEN p.sporttype = 239 THEN p.turnover ELSE 0 END) AS BGTOver,
+                               SUM(CASE WHEN p.sporttype = 239 THEN p.winlost ELSE 0 END) AS BGWL,
+							   SUM(CASE WHEN p.sporttype = 159 THEN p.drawTO ELSE 0 END) AS YBDraw,
+                               SUM(CASE WHEN p.sporttype = 159 THEN p.turnover ELSE 0 END) AS YBTOver,
+                               SUM(CASE WHEN p.sporttype = 159 THEN p.winlost ELSE 0 END) AS YBWL
                         FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)
                         WHERE winlostdate = @dbtodaydate
-                            AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,164,194,196,245,222,243,244,168,169,165,171,231,237,175,195,178,188)
+                            AND p.sporttype IN (0,161,180,190,191,192,193,202,211,212,220,251,208,209,164,194,196,245,222,243,244,168,169,165,171,231,237,175,195,178,188,239,159)
                             AND p.custid = @CustId 
                         GROUP BY p.winlostdate, p.custid
                     ) p1 ON d.custid = p1.custid
