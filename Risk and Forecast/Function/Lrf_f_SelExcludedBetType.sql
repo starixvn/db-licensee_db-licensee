@@ -25,6 +25,7 @@ RETURNS TABLE
 		- 20240416@Evan: Integrate Saba Coins [RedmineID: #202281]
 		- 20240701@Kelvin: Integrate Integrate FastSpin [RedmineID: #207099]
 		- 20240725@Kelvin: Vgaming - Integrate Promotion Prize [RedmineID: #208144]
+		- 20240827@Lewis: FA CHAI - Integrate Promotion Prize [RedmineID: #209881]
 
 */
 
@@ -84,5 +85,7 @@ RETURN
 	SELECT 'L22', 7698									-- L22 promotion prize
 	UNION ALL
 	SELECT 'FS', 11295									-- FastSpin promotion prize
+	UNION ALL
+	SELECT 'FAC', 11399									-- FA CHAI promotion prize
 
 GO
