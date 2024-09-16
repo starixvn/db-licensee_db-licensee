@@ -29,7 +29,7 @@ AS
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240416@Evan: Integrate Saba Coins - add param @ReportViewType [RedmineID: #202281]
 		- 20240808@Kelvin: Add new bettype 11009 for "Saba Nickname Edited" - change bettype range [11001 -> 11049] [RedmineID: #209038]
-		- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #210613]
+		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
 
 	Param's Explanation:
 		- @ModeView: TINYINT

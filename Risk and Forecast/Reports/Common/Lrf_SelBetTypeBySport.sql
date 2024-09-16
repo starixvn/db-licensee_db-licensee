@@ -43,7 +43,7 @@ AS
 		- 20220714@Hogan: Integrate Volleyball AIO [RedmineID: #175143]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20242901@Evan: Hide Upcoming bettype [RedmineID: #199347]
-		- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #210613]
+		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
 	Param's Explanation:
 		- @SportList: XML format (999: Parlay sport)
 			<products>

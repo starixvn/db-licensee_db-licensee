@@ -28,7 +28,7 @@ AS
 		- 20240318@Bobby: LAP EC enhancement - [RedmineID: #191592]
 		- 20240318@Bobby: HF - Filter SpecialLevel - [RedmineID: #208328]
 		- 20240618@Johnson: Restructure Commission [redmine:#179088]
-		- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #210613]
+		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value '1,2,3,4,5,6,7,8,9,10' (all)

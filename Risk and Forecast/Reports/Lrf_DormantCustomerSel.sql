@@ -22,7 +22,7 @@ AS
 		- 20201001@Louis: Licensee Spread Setting [RedmineID: #142532]	
 		- 20211222@Johnson: support search by option for dormant accounts [RedmineID: #164294]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
-		- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #210613]
+		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
 	Parameter's Explanation:
 		@searchOption: 0- default search on LRF
 						1- Match prefix

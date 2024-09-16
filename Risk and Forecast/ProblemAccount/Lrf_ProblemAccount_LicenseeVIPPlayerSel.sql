@@ -31,7 +31,7 @@ AS
 			- 20230628@Johnson: VIP Management - Enhance Export Excel incase order by CC [redmine:#190159]
 			- 20230803@Winfred: LAP - Player Segmentation - Add Risk Level's last update time [redmine:#191101]
 			- 20231219@Winfred: LAP - Allow mark VIP for BA players [Redmine: #198627]
-			- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #210613]
+			- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
 		Paramter's Explanations:
 			- @VipOption: 0: All, 1: Yes, 2 : No
 			- @OrderCol = 1: sort by System ID	
