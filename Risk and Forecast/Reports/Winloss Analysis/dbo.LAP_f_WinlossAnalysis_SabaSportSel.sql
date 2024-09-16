@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" selecters="wsv_lap" viewers="" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02" selecters="wsv_lap" viewers="" isFunction="1" isNested="1"></info>*/
 ALTER FUNCTION [dbo].[LAP_f_WinlossAnalysis_SabaSportSel] ()
 RETURNS TABLE
 AS
@@ -12,6 +12,7 @@ AS
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 		- 20240304@Evan: Integrate Saba Ice Hockey [RedmineID: #201283]
 		- 20240508@Bobby: Integrate Saba Kabaddi [RedmineID: #203612]
+		- 20240915@Bobby: Deploy WL SettleTime [RedmineID: #209631]
 */
 RETURN
 	WITH cteProduct AS (

@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" selecters="wsv_lap" viewers="" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBEXT-bodb02,DBACC-bodb02" selecters="wsv_lap" viewers="" isFunction="1" isNested="1"></info>*/
 ALTER FUNCTION [dbo].[LAP_f_WinlossAnalysis_BettypeMatrix] (
 	@ProductCheck	VARCHAR(MAX),
 	@SportCheck		VARCHAR(MAX),
@@ -18,6 +18,7 @@ AS
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240304@Evan: Grant execute new acc [RedmineID: #201283]
 		- 20242901@Evan: Enhance code use function Lrf_f_GroupBettype [RedmineID: #199347]
+		- 20240915@Bobby: Deploy WL SettleTime [RedmineID: #209631]
 		
 */
 RETURN
