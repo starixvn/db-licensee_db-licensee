@@ -31,6 +31,7 @@ AS
 		- 20240416@Evan: Integrate Saba Coins [RedmineID: #202281]
 		- 20240701@Kelvin: Integrate Integrate FastSpin [RedmineID: #207099]
 		- 20240725@Kelvin: Vgaming - Integrate Promotion Prize [RedmineID: #208144]
+		- 20240827@Lewis: FA CHAI - Integrate Promotion Prize [RedmineID: #209881]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -66,6 +67,7 @@ AS
 			- 7301: MGRNG - Promotion Prize (BetType: 8695)
 			- 7901: Live22 - Promotion Prize (BetType: 7698)
 			- 8701: FastSpin - Promotion Prize (BetType: 11295)
+			- 8901: FACHAI - Promotion Prize (BetType: 11399)
 		+ @ReportType: 1: Daily, 2: Monthly
 */
 
@@ -162,6 +164,7 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7301,%' AND BetType = 8695 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7901,%' AND BetType = 7698 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,8701,%' AND BetType = 11295 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,8901,%' AND BetType = 11399 THEN 1
 				ELSE 0
 			END
 
