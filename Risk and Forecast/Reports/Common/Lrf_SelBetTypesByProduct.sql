@@ -61,7 +61,7 @@ BEGIN
 			LEFT JOIN bodb02.dbo.Lrf_f_GroupBettype() AS ss ON sp.bettype = ss.bettype
 		WHERE ',' + @ProductCode + ',' LIKE '%,' + p.ProductPrefix + ',%'
 			AND sp.BetType NOT IN (913, 914)
-			AND sp.BetType NOT IN (901,902,903,904/*bettrade*/,500,502/*Criket*/,300,301,302,303,304/*MO*/,999/*Licensee Spread Setting*/,9/*Mix Parlay*/,997/*Odds Boost Bonus*/)
+			AND sp.BetType NOT IN (901,902,903,904/*bettrade*/,500,502/*Criket*/,300,301,302,303,304/*MO*/,9/*Mix Parlay*/)
 			AND (sp.BetType < 801 OR sp.BetType > 899) -- MG
 			AND b.typenamee NOT LIKE '%Upcoming%'
 			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = sp.Bettype)
