@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 
 ALTER PROCEDURE	dbo.Dep_UpdCustSetting_AGC
 	@CustIDs	VARCHAR(MAX),
@@ -7,10 +7,11 @@ AS
 /*
 	Created: 20140818@Victor
 	Task: Update setting of AG Casino product for Members
-	DB: DBTXN.CustDB
+	DB: DBCUST.CustDB
 	Original:
 	Revisions:
 		- 20220614@Elodie: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
+		- 20240716@Johnson: Apply In-house Replication for Deposit Customer Setting [redmine:#207025]
 	Param's Explanation:
 */
 BEGIN
@@ -23,11 +24,12 @@ BEGIN
 	WHERE value <> ''
 
 	UPDATE dbo.Dep_CustSetting_AGCasino WITH (ROWLOCK, UPDLOCK)
-	SET AGGroup = @AGGroup
+	SET AGGroup = @AGGroup,
+		RepUpdateTime = SYSDATETIME()
 	WHERE CustID IN (SELECT CustID FROM #CustList)
 
-	INSERT INTO dbo.Dep_CustSetting_AGCasino (CustID, AGGroup, IsEnabled)
-	SELECT c.CustID, @AGGroup, 0
+	INSERT INTO dbo.Dep_CustSetting_AGCasino (CustID, AGGroup, IsEnabled, RepUpdateTime)
+	SELECT c.CustID, @AGGroup, 0, SYSDATETIME()
 	FROM #CustList c
 	WHERE NOT EXISTS(SELECT 1 FROM dbo.Dep_CustSetting_AGCasino cs WITH (NOLOCK) WHERE cs.CustID = c.CustID)
 

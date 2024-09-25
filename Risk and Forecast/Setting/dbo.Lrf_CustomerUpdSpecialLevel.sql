@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+﻿/*<info serverAlias="DBCUST-CustDB" executers="wsv_lap" viewers="vnteam" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerUpdSpecialLevel]
 	@CustID INT,
 	@UserID INT,
@@ -19,7 +19,7 @@ Revisions:
 	- 20130413@Jim: support multi language
 	- 20180810@Sophia: Change the way to update/insert SpecialLevel, use new table Dep_CustSpecialLevel [redmine: #99464] 
 	- 20230821@Luke: LAP - SEA Localization [Redmine: #187132]
-	
+	- 20240709@Johnson: Apply In-house Replication for Customer Setting [redmine:#207025]
 Param's Explanation:
 
 */
@@ -50,13 +50,14 @@ BEGIN
 	--- Not exists then insert new
 	IF ISNULL(@OldSpecialLevel,0) = 0
 	BEGIN 	
-		INSERT INTO dbo.Dep_CustSpecialLevel (CustID, SpecialLevel)
-		VALUES (@CustId, @SpecialLevel)			
+		INSERT INTO dbo.Dep_CustSpecialLevel (CustID, SpecialLevel,RepUpdateTime)
+		VALUES (@CustId, @SpecialLevel,SYSDATETIME())			
 	END	
 	ELSE
 	BEGIN
 		UPDATE dbo.Dep_CustSpecialLevel WITH(ROWLOCK)
-		SET SpecialLevel = @SpecialLevel 
+		SET SpecialLevel = @SpecialLevel,
+			RepUpdateTime = SYSDATETIME()
 		WHERE custid = @custid 
 		
 		IF (@@ERROR <> 0)
@@ -80,7 +81,9 @@ BEGIN
 	--- Not exists then insert new
 	IF ISNULL(@OldSpecialLevel,0) <> 0
 	BEGIN
-		DELETE dbo.Dep_CustSpecialLevel WITH(ROWLOCK)		
+		DELETE dbo.Dep_CustSpecialLevel WITH(ROWLOCK)	
+		OUTPUT DELETED.custid, SYSDATETIME()
+		INTO Dep_CustSpecialLevel_Del_InHouse(custid,RepUpdateTime)
 		WHERE custid = @custid 
 		
 		IF (@@ERROR <> 0)

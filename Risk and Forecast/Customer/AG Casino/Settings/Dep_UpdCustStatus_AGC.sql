@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 
 ALTER PROCEDURE	dbo.Dep_UpdCustStatus_AGC
 	@CustIDs	VARCHAR(MAX),
@@ -11,6 +11,7 @@ AS
 	Original:
 	Revisions:
 		- 20220614@Elodie: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831]
+		- 20240723@Johnson: Apply In-house Replication for Deposit Customer Setting [redmine:#207025]
 	Param's Explanation:
 */
 BEGIN
@@ -22,11 +23,12 @@ BEGIN
 	SELECT value FROM string_split(@CustIDs,',') WHERE value <> ''
 
 	UPDATE dbo.Dep_CustSetting_AGCasino WITH (ROWLOCK, UPDLOCK)
-	SET IsEnabled = @IsEnabled
+	SET IsEnabled = @IsEnabled,
+		RepUpdateTime = SYSDATETIME()
 	WHERE CustID IN (SELECT CustID FROM #CustList)
 
-	INSERT INTO dbo.Dep_CustSetting_AGCasino (CustID, AGGroup, IsEnabled)
-	SELECT c.CustID, '', @IsEnabled
+	INSERT INTO dbo.Dep_CustSetting_AGCasino (CustID, AGGroup, IsEnabled, RepUpdateTime)
+	SELECT c.CustID, '', @IsEnabled, SYSDATETIME()
 	FROM #CustList c
 	WHERE NOT EXISTS(SELECT 1 FROM dbo.Dep_CustSetting_AGCasino cs WITH (NOLOCK) WHERE cs.CustID = c.CustID)
 

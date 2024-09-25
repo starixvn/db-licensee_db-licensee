@@ -88,6 +88,7 @@ BEGIN
 				FOR XML RAW('r'), ROOT('Root')
 			)		
 			
+			
 			EXEC [Lrf_CustomerUpdMemberComm] 
 				@LicenseeID=@LicenseeID
 				,@strCustID=@strCustID
