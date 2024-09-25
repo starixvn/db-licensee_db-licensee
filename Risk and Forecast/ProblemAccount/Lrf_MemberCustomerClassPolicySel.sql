@@ -13,6 +13,7 @@ AS
 		
 		Revisions:
 			- 20240911@Winfred: LAP - Risk Level - Show policy of Saba Virtual Sports [redmine:#210545]
+			- 20240920@Winfred: Fix all Site all Curency [redmine:#211114]
 	*/
 BEGIN
 	SET NOCOUNT ON
@@ -71,7 +72,7 @@ BEGIN
 			AND NOT EXISTS (SELECT 1 FROM Scc WHERE Scc.SportType = r.SportType)
 			AND r.CustomerClass = @CustomerClass
 			AND (
-				(sm.Site IN ('All', 'AllDeposit') AND sm.Currency = @CurrencyID) OR
+				(sm.Site IN ('All', 'AllDeposit') AND sm.Currency IN ( @CurrencyID,0)) OR
 				(sm.Site = @site AND sm.Currency = 0))
 			AND NOT EXISTS (SELECT 1
 							FROM T
@@ -91,7 +92,7 @@ BEGIN
 			AND pm.IsTest <= @IsTest
 			AND EXISTS (SELECT 1 FROM Scc WHERE Scc.SportType = r.SportType)
 			AND (
-				(sm.Site IN ('All', 'AllDeposit') AND sm.Currency = @CurrencyID) OR
+				(sm.Site IN ('All', 'AllDeposit') AND sm.Currency IN ( @CurrencyID,0)) OR
 				(sm.Site = @site AND sm.Currency = 0))
 			AND r.CustomerClass IN ( @CustomerClass, 0)
 			AND ISNUll(r.CustomerClassDetail,0) IN (sc.CustomerClass, 0)
