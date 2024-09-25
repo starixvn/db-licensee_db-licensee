@@ -31,6 +31,7 @@ Revisions:
 	- 20230920@Evan: Hardcode show USDKH, MP [RedmineID: #193757]
 	- 20240304@Evan: Integrate Saba Ice Hockey [RedmineID: #201283]
 	- 20240508@Bobby: Integrate Saba Kabaddi [RedmineID: #203612]
+	- 20240925@Lewis: Deployed SIT [RedmineID: #209344]
 
 Param's Explanation:
 	- @AgentList: XML structure
