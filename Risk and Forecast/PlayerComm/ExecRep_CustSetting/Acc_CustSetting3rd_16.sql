@@ -41,6 +41,7 @@ Revisions:
 	- 20240126@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 	- 20240222@Johnson: Restructure Commission [redmine:#179088]
 	- 20240715@Johnson: Apply In-house Replication for Customer Setting [redmine:#207025]	
+	- 20240925@Johnson: Add DBKLC1 [redmine: #207025]
 Param's Explanation:
 � @ErrCode:
     = 0: Transaction recorded successfully.
@@ -49,7 +50,7 @@ Param's Explanation:
 � @ErrMsg: Error description.
 */
 BEGIN
-	IF @@SERVERNAME NOT IN ('DBCUST','DBSPARE','SITDBCUST','TESTDBCUST','DB-60\DEVDBCUST')
+	IF @@SERVERNAME NOT IN ('DBKLC1','DBCUST','DBSPARE','SITDBCUST','TESTDBCUST','DB-60\DEVDBCUST')
 		RETURN;
 		
 	SET NOCOUNT ON;
