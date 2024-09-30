@@ -28,6 +28,7 @@ AS
 		- 20240318@Bobby: LAP EC enhancement - [RedmineID: #191592]
 		- 20240318@Bobby: HF - Filter SpecialLevel - [RedmineID: #208328]
 		- 20240618@Johnson: Restructure Commission [redmine:#179088]
+		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
 	Parameter's explanations:
 		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value '1,2,3,4,5,6,7,8,9,10' (all)
@@ -230,6 +231,7 @@ BEGIN
 				AND ci.custid IN (SELECT custid FROM #tblCustList)
 				AND c.username  NOT LIKE ''%CASHOUT%''
 				AND c.username  NOT LIKE ''%01OddsAdj%''
+				AND c.username  NOT LIKE ''%01OddsBoostAdj%''
 				AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))'
 				
 		IF ISNULL(@CustomerClass, '') <> ''
@@ -360,7 +362,8 @@ BEGIN
 		WHERE ci.roleid=1 
 				AND ci.custid IN (SELECT custid FROM #tblCustList)
 				AND c.username NOT LIKE ''%CashOut%''
-				AND c.username  NOT LIKE ''%01OddsAdj%''					
+				AND c.username  NOT LIKE ''%01OddsAdj%''
+				AND c.username  NOT LIKE ''%01OddsBoostAdj%''
 				AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + ')) '
 				
 		IF ISNULL(@CustomerClass, '') <> ''

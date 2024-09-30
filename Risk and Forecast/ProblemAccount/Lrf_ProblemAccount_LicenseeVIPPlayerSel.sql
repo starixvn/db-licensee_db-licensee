@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_ProblemAccount_LicenseeVIPPlayerSel]
 	@Username	VARCHAR(50) = '',
 	@AgentList	VARCHAR(MAX),
@@ -31,6 +31,7 @@ AS
 			- 20230628@Johnson: VIP Management - Enhance Export Excel incase order by CC [redmine:#190159]
 			- 20230803@Winfred: LAP - Player Segmentation - Add Risk Level's last update time [redmine:#191101]
 			- 20231219@Winfred: LAP - Allow mark VIP for BA players [Redmine: #198627]
+			- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
 		Paramter's Explanations:
 			- @VipOption: 0: All, 1: Yes, 2 : No
 			- @OrderCol = 1: sort by System ID	
@@ -94,6 +95,7 @@ BEGIN
 		AND t.username  NOT LIKE '%ClearBal%'
 		AND t.username  NOT LIKE '%BetTrade%'
 		AND t.username  NOT LIKE '%01OddsAdj%'
+		AND t.username  NOT LIKE '%01OddsBoostAdj%'
 		
 	SELECT ID, RTRIM(LTRIM(VAL)) AS CustomerClass
 	INTO #tblCustomerClass

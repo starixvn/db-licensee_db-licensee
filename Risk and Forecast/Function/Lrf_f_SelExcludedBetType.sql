@@ -27,11 +27,14 @@ RETURNS TABLE
 		- 20240725@Kelvin: Vgaming - Integrate Promotion Prize [RedmineID: #208144]
 		- 20240827@Lewis: FA CHAI - Integrate Promotion Prize [RedmineID: #209881]
 		- 20240812@Bobby: Grant wsv_lap permission [RedmineID: #209041]
+		- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #199292]
 
 */
 
 RETURN
 	SELECT 'SB' AS ProductCode, 999 AS BetType			-- Licensee Spread Setting
+	UNION ALL
+	SELECT 'SB', 997									-- Odds Boost Bonus
 	UNION ALL
 	SELECT 'PP', 4297 									-- Pragmatic Play - Promotion Prize
 	UNION ALL

@@ -21,6 +21,7 @@ AS
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240306@Evan: Remove checking Enabled in SportBettypeMatrix [RedmineID: #201944]
 		- 20240816@Kelvin: Hide BetType in Lrf_f_SelExcludedBetType [RedmineID: #208144]
+		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
 */
 
 BEGIN
@@ -60,7 +61,7 @@ BEGIN
 			LEFT JOIN bodb02.dbo.Lrf_f_GroupBettype() AS ss ON sp.bettype = ss.bettype
 		WHERE ',' + @ProductCode + ',' LIKE '%,' + p.ProductPrefix + ',%'
 			AND sp.BetType NOT IN (913, 914)
-			AND sp.BetType NOT IN (901,902,903,904/*bettrade*/,500,502/*Criket*/,300,301,302,303,304/*MO*/,999/*Licensee Spread Setting*/,9/*Mix Parlay*/)
+			AND sp.BetType NOT IN (901,902,903,904/*bettrade*/,500,502/*Criket*/,300,301,302,303,304/*MO*/,9/*Mix Parlay*/)
 			AND (sp.BetType < 801 OR sp.BetType > 899) -- MG
 			AND b.typenamee NOT LIKE '%Upcoming%'
 			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = sp.Bettype)

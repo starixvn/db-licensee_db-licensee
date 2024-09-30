@@ -33,6 +33,7 @@ AS
 		- 20241701@Evan: Update f_GroupBettype to Lrf_f_GroupBettype [RedmineID: #199523]
 		- 20240304@Evan: Integrate Saba Ice Hockey [RedmineID: #201283]
 		- 20240508@Bobby: Integrate Saba Kabaddi [RedmineID: #203612]
+		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
 
 	Param's Explanation:
 		- @SportTypeList: sporttype list separated by ','
@@ -129,7 +130,7 @@ BEGIN
 	INSERT INTO #SportBetType (BetType, ProductCode, EventType)
 	SELECT DISTINCT BetType, ProductPrefix, EventType
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
-	WHERE BetType NOT IN (901, 902, 903, 904, 999)
+	WHERE BetType NOT IN (901, 902, 903, 904, 999, 997)
 		AND BetType NOT BETWEEN 801 AND 806
 		AND (@BetTypeList = 'All'
 			OR ',' + @BetTypeList + ',' LIKE '%,' + CAST(BetType AS VARCHAR(5)) + ',%'

@@ -30,6 +30,7 @@ AS
 		- 20240701@Kelvin: Integrate Integrate FastSpin [RedmineID: #207099]
 		- 20240725@Kelvin: Vgaming - Integrate Promotion Prize [RedmineID: #208144]
 		- 20240827@Lewis: FA CHAI - Integrate Promotion Prize [RedmineID: #209881]
+		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -66,6 +67,7 @@ AS
 			- 7901: Live22 - Promotion Prize (BetType: 7698)
 			- 8701: FastSpin - Promotion Prize (BetType: 11295)
 			- 8901: FACHAI - Promotion Prize (BetType: 11399)
+			- 101: Sportsbook - Odds Boost Adjustment (BetType: 997)
 */
 
 BEGIN
@@ -162,6 +164,7 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7901,%' AND BetType = 7698 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,8701,%' AND BetType = 11295 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,8901,%' AND BetType = 11399 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,101,%'  AND BetType = 997 THEN 1
 				ELSE 0
 			END
 
@@ -235,6 +238,7 @@ BEGIN
 				WHEN b.bettype = 7698 THEN 7901
 				WHEN b.bettype = 11295 THEN 8701
 				WHEN b.bettype = 11399 THEN 8901
+				WHEN b.bettype = 997 THEN 101
 				ELSE 0
 			END AS PromotionType,
 			b.winlostdate,
@@ -244,8 +248,14 @@ BEGIN
 					WHEN b.bettype IN (4297, 1698, 3898, 4599) THEN b.oddsspread
 					ELSE b.stake
 				END) AS Turnover,
-			SUM(b.winlost - b.actual_stake) AS Amount,
-			SUM(b.awinlost) AS SharingAmount
+			SUM(CASE 
+					WHEN b.bettype IN (997) THEN b.oddsspread 
+					ELSE (b.winlost - b.actual_stake) 
+				END) AS Amount,
+			SUM(CASE
+					WHEN b.bettype IN (997) THEN 0
+					ELSE b.awinlost
+				END) AS SharingAmount			
 		FROM
 			dbo.bettrans AS b WITH (NOLOCK)
 			INNER JOIN #TempAg AS a ON a.CustId = b.recommend
@@ -297,6 +307,7 @@ BEGIN
 				WHEN b.bettype = 7698 THEN 7901
 				WHEN b.bettype = 11295 THEN 8701
 				WHEN b.bettype = 11399 THEN 8901
+				WHEN b.bettype = 997 THEN 101
 				ELSE 0
 			END,
 			b.winlostdate,
@@ -370,6 +381,7 @@ BEGIN
 				WHEN b.bettype = 7698 THEN 7901
 				WHEN b.bettype = 11295 THEN 8701
 				WHEN b.bettype = 11399 THEN 8901
+				WHEN b.bettype = 997 THEN 101
 				ELSE 0
 			END AS PromotionType,
 			b.winlostdate,
@@ -379,8 +391,14 @@ BEGIN
 					WHEN b.bettype IN (4297, 1698, 3898, 4599) THEN b.BuyBackAmt
 					ELSE b.turnover
 				END) AS Turnover,
-			SUM(b.winlost) AS Amount,
-			SUM(b.awinlost) AS SharingAmount
+			SUM(CASE
+					WHEN b.bettype IN (997) THEN b.BuyBackAmt
+					ELSE b.winlost
+				END) AS Amount,
+			SUM(CASE
+					WHEN b.bettype IN (997) THEN 0
+					ELSE b.awinlost
+				END) AS SharingAmount
 		FROM
 			bodb_LicenseeReport.dbo.rptLicWinloss2 AS b WITH (NOLOCK)
 			INNER JOIN #TempAg AS a ON a.CustId = b.recommend
@@ -439,6 +457,7 @@ BEGIN
 				WHEN b.bettype = 7698 THEN 7901
 				WHEN b.bettype = 11295 THEN 8701
 				WHEN b.bettype = 11399 THEN 8901
+				WHEN b.bettype = 997 THEN 101
 				ELSE 0
 			END,
 			b.winlostdate,
