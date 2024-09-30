@@ -16,6 +16,7 @@ AS
 
 	Revisions:
 		- 20240812@Bobby: Init [RedmineID: #209041]
+		- 20240930@Bobby: HF - Filter by VS products - [RedmineID: #211447]
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -83,9 +84,9 @@ BEGIN
 		, IIF(tbl.ProductID IN (63, 69), 'SB', ISNULL(lf.GroupProductPrefix, tbl.ProductPrefix)) AS ProductCode
 		, tbl.Bettype, tbl.RefTable
 	FROM bodb02.dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', '', 0) AS tbl
-		LEFT JOIN CTE_ProductFilter pf ON pf.Code = tbl.ProductPrefix
 		LEFT JOIN bodb02.[dbo].[Lrf_f_SelExcludedBetType]() e ON e.BetType = tbl.BetType
 		LEFT JOIN bodb02.dbo.Lrf_f_GroupProduct() lf ON tbl.Productid = lf.Productid
+		LEFT JOIN CTE_ProductFilter pf ON pf.Code = IIF(tbl.ProductID IN (63, 69), 'SB', ISNULL(lf.GroupProductPrefix, tbl.ProductPrefix))
 		OUTER APPLY 
 		(
 			SELECT f.Bettype
