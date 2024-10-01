@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap,wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_LM_LicenseeBetSettingCheck] 
 	@CustID INT	
 	,@AgentID INT = 0
@@ -17,11 +17,12 @@ AS
 	Original:
 
 	Revisions:
-		   - 20230224@Winfred: NAP LM - Enhance Bet Setting function for AM to use [redmine:#178105]
-		   - 20230630@Winfred: When update Currency Bet Setting in case All Subsidiaries + All players, system check violated with its own players [redmine:#190506]
-		   - 20230717@Winfred: Enhance performace  [redmine:#191470]
-		   - 20230722@Winfred: NAP LM - Enhance Bet Setting function for AM to use - New Case [redmine:#178105]
-			-20230722@Winfred: NAP LM - Enhance performance when adjusting betlimit for big licensees  [redmine:#195079]
+		- 20230224@Winfred: NAP LM - Enhance Bet Setting function for AM to use [redmine:#178105]
+		- 20230630@Winfred: When update Currency Bet Setting in case All Subsidiaries + All players, system check violated with its own players [redmine:#190506]
+		- 20230717@Winfred: Enhance performace  [redmine:#191470]
+		- 20230722@Winfred: NAP LM - Enhance Bet Setting function for AM to use - New Case [redmine:#178105]
+		- 20230722@Winfred: NAP LM - Enhance performance when adjusting betlimit for big licensees  [redmine:#195079]
+		- 20240912@Tacy: exclude Odds Boost dummy account [Redmine: #210613]
     Param's Explanation:
 		- @CustID : super ID
 		- @AgentID : 0 for All Subsidiary AND <> 0 for only Specific Subsidiary 
@@ -128,7 +129,7 @@ BEGIN
 
 	CREATE TABLE #Subsidiary(custid INT PRIMARY KEY, username VARCHAR(100) )
 	CREATE TABLE #ExcludeMember(custid INT PRIMARY KEY)
-	CREATE TABLE #Upline(custid INT PRIMARY KEY, CashOut NVARCHAR(50), OddsAdj NVARCHAR(50), ClearBal NVARCHAR(50), Bettrade NVARCHAR(50), username NVARCHAR(50))
+	CREATE TABLE #Upline(custid INT PRIMARY KEY, username NVARCHAR(50))
 
 	CREATE TABLE #DummyMaster(custid INT PRIMARY KEY)
 	INSERT INTO #DummyMaster(custid)
@@ -138,24 +139,16 @@ BEGIN
 		
 	IF @AgentID = 0
 	BEGIN
-		INSERT INTO #Upline(custid, CashOut, OddsAdj, ClearBal, Bettrade, username)
+		INSERT INTO #Upline(custid, username)
 		SELECT ci.custid 
-				, ci.username + 'CashOut' AS CashOut
-				, @Site + @currency + '01OddsAdj' AS OddsAdj
-				, ci.username + 'ClearBal' AS ClearBal
-				, ci.username + 'BetTrade' AS Bettrade
 				, ci.username
 		FROM custinfo ci WITH(NOLOCK)
 		WHERE srecommend = @CustID AND roleid=2 AND mrecommend NOT IN (SELECT custid FROM #DummyMaster)	
 	END
 	ELSE
 	BEGIN
-		INSERT INTO #Upline(custid, CashOut, OddsAdj, ClearBal, Bettrade, username)
+		INSERT INTO #Upline(custid, username)
 		SELECT ci.custid 
-				, ci.username + 'CashOut' AS CashOut
-				, @Site + @currency + '01OddsAdj' AS OddsAdj
-				, ci.username + 'ClearBal' AS ClearBal
-				, ci.username + 'BetTrade' AS Bettrade
 				, ci.username
 		FROM custinfo ci WITH(NOLOCK)
 		WHERE srecommend = @CustID AND roleid=2 
@@ -170,7 +163,9 @@ BEGIN
 		SELECT c.custid
 		FROM custinfo c WITH(NOLOCK)
 			INNER JOIN #Upline a ON c.recommend = a.custid
-		WHERE c.roleid = 1 AND (c.username = a.OddsAdj OR c.username = a.ClearBal OR  c.username = a.CashOut OR c.username = a.Bettrade)
+			CROSS APPLY (SELECT f.custid FROM dbo.f_Dep_DummyMember_Select(c.srecommend) f
+						 WHERE f.custid=c.custid) dm
+		WHERE c.roleid = 1
 
 		IF EXISTS (SELECT TOP 1 1 FROM #Upline WHERE custid = 835046)
 		BEGIN

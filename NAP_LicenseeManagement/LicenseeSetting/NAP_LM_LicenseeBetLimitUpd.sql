@@ -21,14 +21,16 @@ AS
 	Original:
 
 	Revisions:
-		   - 20230224@Winfred: NAP LM - Enhance Bet Setting function for AM to use [redmine:#178105]
-		   - 20230629@Winfred: NAP LM - PRO - Licensee Bet Setting - Currency filter has not taken data according to Currency Code [redmine:#190436]
-		   - 20230707@Winfred: NAP LM - Insert icorrect data in Dep_CustBetSettingGame_Member for players have isGroupBetLimit = 1 [redmine:#191020]
-		   - 20230717@Winfred: Enhance performace  [redmine:#191470]
-		   - 20230722@Winfred: NAP LM - Enhance Bet Setting function for AM to use - New Case [redmine:#178105]
-		   - 20230929@Winfred: Bet Setting of players not updated in case update Player Bet Setting (all players) [redmine:#194669]
-			- 20240429@Tacy: Apply @SettingStatus [RedmineID: #201239]
-		   - 20240708@Johnson: Apply In-house Replication for Customer Setting [redmine:#207025]
+		- 20230224@Winfred: NAP LM - Enhance Bet Setting function for AM to use [redmine:#178105]
+		- 20230629@Winfred: NAP LM - PRO - Licensee Bet Setting - Currency filter has not taken data according to Currency Code [redmine:#190436]
+		- 20230707@Winfred: NAP LM - Insert icorrect data in Dep_CustBetSettingGame_Member for players have isGroupBetLimit = 1 [redmine:#191020]
+		- 20230717@Winfred: Enhance performace  [redmine:#191470]
+		- 20230722@Winfred: NAP LM - Enhance Bet Setting function for AM to use - New Case [redmine:#178105]
+		- 20230929@Winfred: Bet Setting of players not updated in case update Player Bet Setting (all players) [redmine:#194669]
+		- 20240429@Tacy: Apply @SettingStatus [RedmineID: #201239]
+		- 20240708@Johnson: Apply In-house Replication for Customer Setting [redmine:#207025]
+		- 20240912@Tacy: exclude Odds Boost dummy account [Redmine: #210613]
+
     Param's Explanation:
 		- @CustID : super ID
 		- @AgentID : 0 for All Subsidiary AND <> 0 for only Specific Subsidiary 
@@ -189,20 +191,19 @@ BEGIN
 
 	CREATE TABLE #temp(custid INT PRIMARY KEY, recommend INT, roleid TINYINT, Subsidiary NVARCHAR(100), isfinished BIT DEFAULT(0))
 	INSERT INTO #temp(custid, recommend, roleid, Subsidiary)
-	SELECT custid, recommend, roleid , username
+	SELECT c.custid, recommend, roleid , username
 	FROM customer c WITH(NOLOCK)	
+		OUTER APPLY (SELECT f.custid FROM dbo.f_Dep_DummyMember_Select(c.srecommend) f
+						WHERE f.custid=c.custid) dm
 	WHERE srecommend = @CustID
 	AND mrecommend NOT IN (SELECT custid FROM custinfo WITH(NOLOCK)
 							WHERE srecommend = @CustID 
 								AND (username LIKE '%Acc%' OR username LIKE '%LocalBank%' OR username LIKE '%AFF%' OR username LIKE 'AB88' + 'CAS%')
 								AND roleid=3)
-	AND c.username NOT LIKE '%CashOut%'
-	AND c.username  NOT LIKE '%OddsAdj%'
-	AND c.username  NOT LIKE '%ClearBal%'
-	AND c.username  NOT LIKE '%Bettrade%'			
+	AND dm.custid IS NULL			
 	AND 1 = CASE WHEN EXISTS (SELECT 1 FROM #SportTypeBetType ps WHERE SportType IN (161,202)) THEN 1
 			ELSE 
-			CASE WHEN @Option = 0 AND @ExistedMember = 0 AND ((@AgentID <> 0 AND (custid = @AgentID OR (roleid IN (3,4)))) OR (roleid IN (2,3,4) AND @AgentID = 0)) THEN 1
+			CASE WHEN @Option = 0 AND @ExistedMember = 0 AND ((@AgentID <> 0 AND (c.custid = @AgentID OR (roleid IN (3,4)))) OR (roleid IN (2,3,4) AND @AgentID = 0)) THEN 1
 			WHEN @Option = 0 AND @ExistedMember = 1 AND ((@AgentID <> 0 AND (recommend = @AgentID OR roleid IN (3,4))) OR (@AgentID =0 AND roleid IN (1,2,3,4))) THEN 1
 			WHEN @Option = 1 AND ((@AgentID <> 0 AND (recommend = @AgentID AND roleid IN (1,2))) OR (@AgentID = 0 AND roleid IN (1,2))) THEN 1 ELSE 0 END
 			END
