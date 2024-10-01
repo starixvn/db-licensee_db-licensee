@@ -53,6 +53,7 @@ AS
 					- Don't return BetType, ShowTime, AmountDueTo3rd column anymore
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20241701@Evan: Merge VS1, VS2, VS3 as VS only [RedmineID: #199523]
+		- 20240830@Lewis: BaseBallAIO - phase 2 [RedmineID: #209344]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -157,7 +158,7 @@ BEGIN
 			b.currency,
 			b.bettype,
 			CASE
-				WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID
+				WHEN m.ChildMatchType = 200 THEN m.ParentID
 				ELSE m.matchid
 			END AS MatchId,
 			m.homeid,
@@ -192,7 +193,7 @@ BEGIN
 			b.currency,
 			b.bettype,
 			CASE
-				WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID
+				WHEN m.ChildMatchType = 200 THEN m.ParentID
 				ELSE m.matchid
 			END,
 			m.homeid,
@@ -213,7 +214,7 @@ BEGIN
 			b.currency,
 			b.bettype,
 			CASE
-				WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID
+				WHEN m.ChildMatchType = 200 THEN m.ParentID
 				ELSE m.matchid
 			END AS MatchId,
 			m.homeid,
@@ -248,7 +249,7 @@ BEGIN
 			b.currency,
 			b.bettype,
 			CASE
-				WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID
+				WHEN m.ChildMatchType = 200 THEN m.ParentID
 				ELSE m.matchid
 			END,
 			m.homeid,

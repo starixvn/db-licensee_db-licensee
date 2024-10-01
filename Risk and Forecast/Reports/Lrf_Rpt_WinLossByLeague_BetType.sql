@@ -27,6 +27,7 @@ AS
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20241701@Evan: Update f_GroupBettype to Lrf_f_GroupBettype [RedmineID: #199523]
 		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
+		- 20240830@Lewis: BaseBallAIO - phase 2 [RedmineID: #209344]
 	Param's Explanation:
 		- @StatusIdList: status ID list separated by ','
 		- @Username: exact System ID or External ID
@@ -164,7 +165,7 @@ BEGIN
 
 		IF @MatchSportType IS NOT NULL
 		BEGIN
-			IF @MatchSportType = 50 AND @ParentId IS NULL	-- Cricket, parent match
+			IF @MatchSportType IN (50, 8) AND @ParentId IS NULL	-- Cricket, parent match
 			BEGIN
 				INSERT INTO @Match
 				SELECT
