@@ -25,14 +25,10 @@ Revisions:
 	- 20231206@Evan: Integrate VS3 Sport 179 [RedmineID: #190908]
 	- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 	- 20242901@Evan: Integrate VS4 (add missing sportid VS3) [RedmineID: #199347]
+	- 20241001@Kelvin: LAP - Integrate BetRadar Virtual Horses & Dogs Racing [RedmineID: #210808]
 */
 
 BEGIN
-	SET NOCOUNT ON
-
-	DECLARE @ShowNG BIT
-		  , @ShowVS BIT
-
 	SELECT @isShowAll =
 					   CASE @isShowAll
 						   WHEN 1 THEN NULL
@@ -52,72 +48,63 @@ BEGIN
 		, NonEntered INT
 	)
 
-	INSERT INTO @Result (IsToday, EventDate, Sporttype, Entered, NonEntered)
-	SELECT DATEDIFF(dd, @FromDate, EventDate) AS IsToday
-		 , EventDate
-		 , sporttype
-		 , SUM(CASE
-			   WHEN EventStatus IN ('completed', 'refund') THEN 1
-			   ELSE 0
-		   END) AS Entered
-		 , SUM(CASE
-			   WHEN EventStatus NOT IN ('completed', 'refund') THEN 1
-			   ELSE 0
-		   END) AS NonEntered
-	FROM (
-		SELECT leagueid
-			 , EventDate
-			 , MAX(EventStatus) AS EventStatus
-		FROM Match WITH (NOLOCK)
-		WHERE Match.EventDate BETWEEN @FromDate AND @ToDate
-			AND Match.EventStatus <> 'closed'
-		GROUP BY leagueid
-			   , EventDate
-			   , matchid--, awayid
-		UNION ALL
-		SELECT r.leagueid
-			 , o.EventDate
-			 , MAX(o.EventStatus)
-		FROM VSOutright o WITH (NOLOCK)
-			INNER JOIN VSRaceInfo r WITH (NOLOCK) ON r.EventID = o.EventID
-		WHERE o.EventDate BETWEEN @FromDate AND @ToDate
-			AND o.EventStatus <> 'closed'
-		GROUP BY r.leagueid
-			   , o.EventDate
-			   , EventTime
-	) AS Match
-		INNER JOIN League WITH (NOLOCK) ON Match.leagueid = League.leagueid
-			AND League.isTest = ISNULL(@isShowAll,League.isTest)
-	GROUP BY EventDate
-		   , sporttype
-	--   ORDER BY EventDate, sporttype
-
+	DECLARE @ExcludedBetType AS TABLE (SportType smallint)
 
 	IF @LicenseeID <> 0
-	BEGIN
-		SELECT @ShowNG = 0
-			 , @ShowVS = 0
-
-		IF EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID = @LicenseeID
-			   AND ProductID = 2)
-			SET @ShowNG = 1
-
-		IF EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID = @LicenseeID
-			   AND ProductID = 5)
-			SET @ShowVS = 1
-
-		IF @ShowNG = 0
-			DELETE FROM @Result WHERE Sporttype IN (161, 164)
-
-		IF @ShowVS = 0
+	BEGIN	
+		--Exclude NG-Number Game
+		IF NOT EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND ProductID = 2)
 		BEGIN
-			DELETE FROM @Result WHERE Sporttype BETWEEN 178 AND 199
+			INSERT INTO @ExcludedBetType (SportType)
+			SELECT distinct SportType FROM SportBettypeMatrix WITH(NOLOCK) WHERE ProductID = 3
 		END
 
+		--Exclude VS-Virtual Sports
+		IF NOT EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeProduct3rd WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND ProductID = 5)
+		BEGIN
+			INSERT INTO @ExcludedBetType (SportType)
+			SELECT distinct b.SportType
+			FROM dbo.SportBettypeMatrix b WITH(NOLOCK) 
+				JOIN dbo.Lrf_f_GroupProduct() f ON f.GroupProductId = 5 AND f.ProductId = b.ProductID
+		END
 	END
+			
+	--Match
+	INSERT INTO @Result (IsToday, EventDate, Sporttype, Entered, NonEntered)
+	SELECT DATEDIFF(dd, @FromDate, m.eventdate) AS IsToday
+		 , m.eventdate
+		 , l.sporttype
+		 , SUM(CASE WHEN m.eventstatus IN ('completed', 'refund') THEN 1 ELSE 0 END) AS Entered
+		 , SUM(CASE WHEN m.eventstatus NOT IN ('completed', 'refund') THEN 1 ELSE 0 END) AS NonEntered
+	FROM Match m 
+	INNER JOIN League l WITH(NOLOCK) 
+		ON m.leagueid = l.leagueid AND l.isTest = ISNULL(@isShowAll, l.isTest)
+	WHERE m.eventdate BETWEEN @FromDate AND @ToDate
+		AND m.eventstatus <> 'closed'
+		AND m.IsDeleted <> 1
+		AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType b WHERE b.SportType = l.sporttype)
+	GROUP BY m.eventdate, l.sporttype
 
-	DELETE @Result WHERE Sporttype = 219
-
+	--VSRaceInfo/VSOutright
+	INSERT INTO @Result (IsToday, EventDate, Sporttype, Entered, NonEntered)
+	SELECT DATEDIFF(dd, @FromDate, EventDate) AS IsToday
+		 , m.EventDate
+		 , m.SportType
+		 , SUM(CASE WHEN m.EventStatus = 'completed' AND m.BetStatus <> 'refund' THEN 1 ELSE 0 END) AS Entered
+		 , SUM(CASE WHEN m.EventStatus <> 'completed' THEN 1 ELSE 0 END) AS NonEntered
+	FROM 
+	( 
+		SELECT o.EventDate, r.SportType, MAX(r.EventStatus) AS EventStatus, MAX(r.BetStatus) AS BetStatus  
+		FROM VSRaceInfo r WITH (NOLOCK)
+		INNER JOIN VSOutright o WITH (NOLOCK) 
+			ON r.EventID = o.EventID	
+		WHERE o.EventDate BETWEEN @FromDate AND @ToDate
+			AND r.EventStatus <> 'closed'
+			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType b WHERE b.SportType = r.SportType)
+		GROUP BY r.EventID, o.EventDate, r.SportType
+	) m
+	GROUP BY m.EventDate, m.SportType
+		
 	SELECT IsToday, EventDate, Sporttype, Entered, NonEntered
 	FROM @Result
 	ORDER BY EventDate, Sporttype

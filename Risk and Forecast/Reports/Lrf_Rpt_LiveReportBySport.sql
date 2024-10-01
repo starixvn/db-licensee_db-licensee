@@ -119,6 +119,7 @@ AS
 		- 20240308@Eddie: Integrate UU Slots and change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
 		- 20242503@Evan: Enhance code to avoid hardcode  [RedmineID: #199843]
 		- 20240509@Evan: Integrate VS4 [RedmineID: #199347]
+		- 20241001@Kelvin: LAP - Integrate BetRadar Virtual Horses & Dogs Racing [RedmineID: #210808]
 
 	Param's Explanation:
 		@Liveindicator : indicate that whether the report will get live data or not
@@ -389,7 +390,8 @@ BEGIN
 			 , b.CurrencyID
 			 , CASE
 				   WHEN b.bettype = 10 THEN 103
-				   WHEN bt.EventType IN (0,5) THEN  bt.SportType 
+				   WHEN bt.EventType IN (0,5) THEN  bt.SportType
+				   WHEN bt.EventType = 3 THEN ISNULL(l3rd.SportType, 0)
 				   ELSE ISNULL(l.sporttype, 0)
 			   END AS SportType
 			 , SUM(b.turnover) turnover
@@ -402,7 +404,8 @@ BEGIN
 		FROM bodb_LicenseeReport.dbo.rpt_Betting b WITH (NOLOCK)
 			INNER JOIN #LicenseeList ll ON b.SiteID = ll.LicenseeID AND b.CurrencyID = ll.Currency
 			INNER JOIN #tmpBettype bt ON b.Bettype = bt.Bettype
-			LEFT JOIN League l WITH (NOLOCK) ON b.LeagueID = l.LeagueID
+			LEFT JOIN League l WITH (NOLOCK) ON b.LeagueID = l.LeagueID AND bt.EventType NOT IN (3, 5)
+			LEFT JOIN League3rd l3rd WITH (NOLOCK) ON b.LeagueID = l3rd.League3rdId AND bt.EventType IN (3, 5)
 		WHERE b.rptDate BETWEEN @FDate AND @TempToDate
 			AND b.status NOT IN (-1, 103)
 			AND (b.IsLive = @Liveindicator OR @Liveindicator = 2)
