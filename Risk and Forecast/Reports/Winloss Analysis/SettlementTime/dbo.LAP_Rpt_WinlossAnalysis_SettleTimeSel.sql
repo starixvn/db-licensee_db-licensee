@@ -8,7 +8,7 @@ ALTER PROCEDURE dbo.LAP_Rpt_WinlossAnalysis_SettleTimeSel
 
 	----------filtering
 	@BaseCurrency	VARCHAR(10)		= 'EUR',
-	@ProductCodes	VARCHAR(MAX)	= 'ALL', --'SB,NG,etc...'
+	@ProductCodes	VARCHAR(MAX)	= 'ALL', --'SB,NG,VS'
 	@SportIds		VARCHAR(MAX)	= 'ALL',
 	@BettypeIds		XML,
 	@StatusIds		VARCHAR(1000)	= 'ALL',
@@ -79,7 +79,9 @@ BEGIN
 		@IsViewCOOnlyCheck	BIT,
 		@BettypeIdsCheck	VARCHAR(MAX),
 		@NASporttype		SMALLINT = 0,
-		@SettleToDate		SMALLDATETIME
+		@SettleToDate		SMALLDATETIME,
+		@SettleFromDate		SMALLDATETIME,
+		@SettleToTime		DATETIME
 		;
 
 	DECLARE @IsVIPOnlyCheck		BIT,
@@ -100,7 +102,7 @@ BEGIN
 		@yesterday		= DATEADD(DAY, -1, @today),
 		@FromDate		= IIF(@FromDate IS NULL, @yesterday, @FromDate),
 		@ToDate			= IIF(@ToDate IS NULL, @today, @ToDate),
-		@SettleToDate	= IIF(@ToDate = @today, @ToDate, DATEADD(DAY, 1, @ToDate)), --> move winlostdate
+		@SettleFromDate	= IIF(@FromDate >= @MovebetDay, DATEADD(DAY, -1, @FromDate), @FromDate),
 
 		----------------Default values 
 		@ProductCodes	= IIF(@ProductCodes='ALL', NULL, @ProductCodes),
@@ -122,7 +124,6 @@ BEGIN
 		@SearchUsernameCheck	= @SearchUsername,
 		@IsVIPOnlyCheck			= ISNULL(@IsVIPOnly,0)
 	;
-
 
 	DROP TABLE IF EXISTS #rptData;
 	CREATE TABLE #rptData(
@@ -158,7 +159,7 @@ BEGIN
 	SELECT @IsValidGroupMode = CASE 
 							WHEN @GroupMode IN (3,4,5) AND @BreakdownMode = 2 THEN 0
 							WHEN @GroupMode IN (6) AND @BreakdownMode = 1 THEN 0
-							WHEN @BreakdownMode NOT IN (1,2) THEN 0
+							WHEN @BreakdownMode NOT IN (1,2,3) THEN 0
 							ELSE 1
 						END,
 			@GroupBy	= @GroupMode,
@@ -180,9 +181,29 @@ BEGIN
 	CREATE TABLE #BetTypeSel (ProductCode VARCHAR(10), Bettype INT, ProductId INT);
 	CREATE TABLE #ProductSel (ProductId INT, Product3rdId INT);
 
+	-- TODO: Agency selection
+	;WITH AgencySel AS (
+		SELECT t.c.value('@AgentId', 'INT') AS recommend
+			,t.c.value('@Currency', 'INT') AS Currency
+		FROM @AgentList.nodes('/ROOT/Agent') AS t(c)
+	)
+	INSERT INTO #AgencySel(recommend, Currency)
+	SELECT a.recommend, Currency
+	FROM AgencySel a;
+
+	--TODO: Check max winlostdate in bettrans
+	SELECT @SettleToTime = DATEADD(DAY, 1, @ToDate);
+	SELECT @SettleToDate = MAX(b.winlostdate)
+	FROM dbo.bettrans b (NOLOCK)
+		INNER JOIN #AgencySel a ON a.recommend = b.recommend
+	WHERE b.statusID in (111,112,113)
+		AND b.SettlementTime < @SettleToTime
+	;
+	SET @SettleToDate = ISNULL(@SettleToDate, @ToDate)
+
 	--TODO: Settle Time
 	DROP TABLE IF EXISTS #tmpSettleTime;
-	CREATE TABLE #tmpSettleTime (SettlementTime SMALLDATETIME PRIMARY KEY, HourSettleTime INT);
+	CREATE TABLE #tmpSettleTime (SettlementTime DATETIME PRIMARY KEY, SettlementTimeEnd DATETIME);
 	IF @HourParts = 'ALL'
 	BEGIN
 		;WITH CTE_HourCheck(HourPart) AS (
@@ -205,23 +226,13 @@ BEGIN
 		UNION ALL
 		SELECT DATEADD(DAY, 1, SettleDate)
 		FROM CTE_SettleDate
-		WHERE SettleDate < @SettleToDate
+		WHERE SettleDate < @ToDate
 	) 
-	INSERT INTO #tmpSettleTime(SettlementTime, HourSettleTime)
-	SELECT ck.SettlementTime, DATEDIFF(HOUR, @BaseDate, ck.SettlementTime) AS HourSettleTime
+	INSERT INTO #tmpSettleTime(SettlementTime, SettlementTimeEnd)
+	SELECT st.SettlementTime, DATEADD(HOUR, 1, st.SettlementTime) AS SettlementTimeEnd
 	FROM CTE_SettleDate ft
 	CROSS JOIN CTE_SettleTime a
-	CROSS APPLY (SELECT CAST(CONCAT(FORMAT(ft.SettleDate, 'yyyy-MM-dd'), ' ', a.HourPart, ':00:00') AS SMALLDATETIME)) AS ck (SettlementTime)
-
-	-- TODO: Agency selection
-	;WITH AgencySel AS (
-		SELECT t.c.value('@AgentId', 'INT') AS recommend
-			,t.c.value('@Currency', 'INT') AS Currency
-		FROM @AgentList.nodes('/ROOT/Agent') AS t(c)
-	)
-	INSERT INTO #AgencySel(recommend, Currency)
-	SELECT a.recommend, Currency
-	FROM AgencySel a;
+	CROSS APPLY (SELECT CAST(CONCAT(FORMAT(ft.SettleDate, 'yyyy-MM-dd'), ' ', a.HourPart, ':00:00') AS DATETIME)) AS st (SettlementTime)
 
 	--TODO: Player selection
 	DECLARE @checkPlayer BIT = 0;
@@ -238,10 +249,10 @@ BEGIN
 		-- TODO: Search player
 		INSERT INTO #playerSel(custid, Currency)
 		SELECT c.CustID, ag.Currency
-		FROM bodb02.dbo.Customer c WITH(NOLOCK)
+		FROM dbo.Customer c WITH(NOLOCK)
 		INNER JOIN #AgencySel ag ON ag.recommend = c.recommend
-		INNER JOIN bodb02.dbo.custInfo ci WITH(NOLOCK) ON ci.custid = c.custid
-		LEFT JOIN bodb02.dbo.Dep_CustVIP vip ON c.custid = vip.CustID
+		INNER JOIN dbo.custInfo ci WITH(NOLOCK) ON ci.custid = c.custid
+		LEFT JOIN dbo.Dep_CustVIP vip ON c.custid = vip.CustID
 		WHERE c.roleid = 1
 			AND (@SearchUsernameCheck IS NULL OR (
 				(@SearchModeCheck = 1 AND (c.username2 LIKE  + '%$' + @SearchUsernameCheck OR c.username LIKE  @SearchUsernameCheck))) OR
@@ -341,12 +352,13 @@ BEGIN
 	CREATE CLUSTERED INDEX CIX_tmpBettype ON #tmpBettype(Bettype, ProductId);
 
 	INSERT INTO #tmpBettype 
-	SELECT ProductId, Bettype, RefTable, EventType,IsContributionBettype,
-		CASE WHEN ProductID = 1 THEN @SBBACheck ELSE Product3rdID END AS Product3rdId,
-		IsPriceBettype,
-		GroupTypeId
+	SELECT bm.ProductId, bm.Bettype, bm.RefTable, bm.EventType, bm.IsContributionBettype,
+		CASE WHEN bm.ProductID = 1 THEN @SBBACheck ELSE bm.Product3rdID END AS Product3rdId,
+		bm.IsPriceBettype,
+		bm.GroupTypeId
 	FROM dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductCheck, @SportCheck, @BettypeIdsCheck, @SBBACheck) AS bm
-	WHERE @BettypeIdsCheck IS NULL OR EXISTS (SELECT 1 FROM #BetTypeSel bts WHERE bts.ProductId = bm.ProductId)
+		INNER JOIN dbo.LAP_f_SettlementTime_ProductSel () ps ON ps.ProductId = bm.ProductId
+		INNER JOIN #BetTypeSel bts ON bts.ProductId = bm.ProductId AND bts.Bettype = ISNULL(bm.GroupTypeId, bm.Bettype)
 
 	;WITH CTE_ProductMap AS (
 		SELECT DISTINCT ISNULL(lf.ProductId,t.ProductId) AS ProductId
@@ -380,13 +392,13 @@ BEGIN
 
 	INSERT INTO #tmpExchange
 	SELECT FromDate, ToDate, ExchangeID, Rate
-	FROM dbo.Lrf_f_GetExchangeRate(@FromDate, @ToDate, @BaseCurrency, '') AS e
+	FROM dbo.Lrf_f_GetExchangeRate(@SettleFromDate, @SettleToDate, @BaseCurrency, '') AS e
 	WHERE EXISTS (SELECT TOP 1 1 FROM #AgencySel a WHERE a.Currency = e.ExchangeID)
 
 	-- TODO: filter raw data
 	IF @SettleToDate > @MovebetDay --> get data in bettrans
 	BEGIN
-		SELECT @rptFromDate = IIF(@FromDate > @MovebetDay, @Fromdate, DATEADD(DAY, 1, @MovebetDay))
+		SELECT @rptFromDate = IIF(@SettleFromDate > @MovebetDay, @SettleFromDate, DATEADD(DAY, 1, @MovebetDay))
 			, @rptToDate	= @SettleToDate;
 
 		--select @rptFromDate , @rptToDate
@@ -400,10 +412,10 @@ BEGIN
 			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
 		)
 		SELECT 
-			--ck.SettlementTime,
+			--st.SettlementTime,
 			CASE 
-				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(HOUR, -DATEPART(HOUR, ck.SettlementTime), ck.SettlementTime))
-				WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(HOUR, -DATEPART(HOUR, ck.SettlementTime), DATEADD(DAY, -DATEPART(DAY, ck.SettlementTime) +1, ck.SettlementTime))) 
+				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(HOUR, -DATEPART(HOUR, st.SettlementTime), st.SettlementTime))
+				WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(HOUR, -DATEPART(HOUR, st.SettlementTime), DATEADD(DAY, -DATEPART(DAY, st.SettlementTime) +1, st.SettlementTime))) 
 				WHEN @GroupBy = 3 THEN ck.Product3rdIdMix
 				WHEN @GroupBy = 4 THEN ISNULL(ck.sporttype, @NASporttype) 
 				WHEN @GroupBy = 5 THEN ISNULL(s.GroupTypeId, s.bettype)
@@ -411,12 +423,12 @@ BEGIN
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
 				WHEN @GroupBy = 8 THEN b.custid
 				WHEN @GroupBy = 9 THEN b.recommend
-				WHEN @GroupBy = 10 THEN DATEDIFF(HOUR, @BaseDate, ck.SettlementTime) -- group by Hour of SettlementTime
+				WHEN @GroupBy = 10 THEN DATEDIFF(HOUR, @BaseDate, st.SettlementTime) -- group by Hour of SettlementTime
 			END AS GroupBy, 
 			CASE 
 				WHEN @BreakBy = 1 THEN a.currency 
 				WHEN @BreakBy = 2 THEN ck.Product3rdIdMix
-				--WHEN @BreakBy = 3 THEN b.custid 
+				WHEN @BreakBy = 3 THEN b.custid 
 			END AS BreakBy,
 			CASE WHEN @GroupMode IN (4, 5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END AS ParentKey
 			----------------------
@@ -438,21 +450,20 @@ BEGIN
 			,SUM(b.comm * e.Rate) AS [BaseLicComm]
 			,SUM(ck.AmtDueToBA * e.Rate) AS BaseAmtDueToBA
 			,SUM(ABS(ck.MemWinloss) * e.Rate) AS BaseBetEffective
-		FROM [bodb02].[dbo].[bettrans] b WITH(NOLOCK)
+		FROM [dbo].[bettrans] b WITH(NOLOCK)
 			INNER JOIN #AgencySel a ON a.recommend = b.recommend 
 			INNER JOIN #tmpBettype s ON s.bettype = b.bettype AND s.RefTable NOT IN (1,2)
 			INNER JOIN #tmpExchange e on e.ExchangeID =  a.Currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
-			LEFT JOIN [bodb02].dbo.match m WITH(NOLOCK) ON b.matchid = m.matchid
-			LEFT JOIN [bodb02].[dbo].[Match3rd] m3rd WITH(NOLOCK) ON m3rd.Match3rdId = b.matchid
-			LEFT JOIN [bodb02].dbo.League l WITH(NOLOCK) ON m.leagueid = l.leagueid
-			LEFT JOIN [bodb02].dbo.outright o WITH(NOLOCK) ON b.matchid = o.orid
-			LEFT JOIN [bodb02].dbo.League lo WITH (NOLOCK) ON lo.leagueid = o.leagueid
-			LEFT JOIN [bodb02].dbo.VSRaceInfo vs WITH(NOLOCK) ON b.matchid = vs.EventID
-			LEFT JOIN [bodb_licensee].dbo.LicenseeBATransaction_active AS lba WITH (NOLOCK) ON b.transid = lba.transid
+			LEFT JOIN dbo.[match] m WITH(NOLOCK) ON b.matchid = m.matchid
+			LEFT JOIN [dbo].[Match3rd] m3rd WITH(NOLOCK) ON m3rd.Match3rdId = b.matchid
+			LEFT JOIN dbo.League l WITH(NOLOCK) ON m.leagueid = l.leagueid
+			LEFT JOIN dbo.outright o WITH(NOLOCK) ON b.matchid = o.orid
+			LEFT JOIN dbo.League lo WITH (NOLOCK) ON lo.leagueid = o.leagueid
+			LEFT JOIN dbo.VSRaceInfo vs WITH(NOLOCK) ON b.matchid = vs.EventID
 			LEFT JOIN #tmpSabaSporttype saba ON s.ProductId = 1 AND saba.Sporttype = l.Sporttype AND saba.LeagueGroupID = l.LeagueGroupID
 			OUTER APPLY (
 				SELECT 
-					IIF(lba.TransID IS NOT NULL, 1, 0) AS IsBA,
+					0 AS IsBA, -- ignore BA
 					CASE
 						WHEN s.ProductId = 1 AND s.EventType = 1 AND b.betdaqid = -2 THEN 1 -- Castout
 						ELSE 0
@@ -484,10 +495,8 @@ BEGIN
 						WHEN s.EventType = 0 THEN
 							CASE 
 								WHEN b.matchid = 29 THEN -1 --Parlay Sport
-								WHEN b.matchid = 2799 THEN b.oddsid --VS Sports
-								WHEN b.matchid = 10449 THEN 188 --VS4 
-								WHEN b.matchid = 11049 THEN 147 --VS4 
-								ELSE b.matchid
+								WHEN b.matchid IN (2799,10449,11099) THEN b.oddsid --VS Sports
+								ELSE ISNULL(b.matchid, @NASporttype)
 							END
 						WHEN s.EventType = 1 THEN ISNULL(saba.SabaSportType, m.sporttype)
 						WHEN s.EventType = 2 THEN lo.sporttype
@@ -495,11 +504,10 @@ BEGIN
 						WHEN s.EventType = 5 THEN m3rd.SportType --175-BTC Sport
 						ELSE @NASporttype
 					END AS SportType,
-					ISNULL(CASE WHEN b.bettype IN(29,2799,10449) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator,
-					CAST(FORMAT(b.SettlementTime, 'yyyy-MM-dd HH:00:00') AS SMALLDATETIME) AS SettlementTime
+					ISNULL(CASE WHEN b.bettype IN(29,2799,10449) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 			) AS ck
 			INNER JOIN @PlatformSel bf ON bf.betfrom =  b.BetFrom
-			INNER JOIN #tmpSettleTime st ON st.SettlementTime = ck.SettlementTime
+			INNER JOIN #tmpSettleTime st ON b.SettlementTime >= st.SettlementTime AND b.SettlementTime < st.SettlementTimeEnd
 			LEFT JOIN #playerSel psl ON psl.custid = b.custid
 		WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
 			AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
@@ -509,10 +517,10 @@ BEGIN
 			AND NOT (ck.Product3rdIdMix IN (0, 3) AND ba.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB & BA
 			AND (@checkPlayer = 0 OR psl.custid > 0)
 		
-		GROUP BY --ck.SettlementTime,
+		GROUP BY --st.SettlementTime,
 			CASE 
-				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(HOUR, -DATEPART(HOUR, ck.SettlementTime), ck.SettlementTime))
-				WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(HOUR, -DATEPART(HOUR, ck.SettlementTime), DATEADD(DAY, -DATEPART(DAY, ck.SettlementTime) +1, ck.SettlementTime))) 
+				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(HOUR, -DATEPART(HOUR, st.SettlementTime), st.SettlementTime))
+				WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(HOUR, -DATEPART(HOUR, st.SettlementTime), DATEADD(DAY, -DATEPART(DAY, st.SettlementTime) +1, st.SettlementTime))) 
 				WHEN @GroupBy = 3 THEN ck.Product3rdIdMix
 				WHEN @GroupBy = 4 THEN ISNULL(ck.sporttype, @NASporttype) 
 				WHEN @GroupBy = 5 THEN ISNULL(s.GroupTypeId, s.bettype) 
@@ -520,12 +528,12 @@ BEGIN
 				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId,-1)
 				WHEN @GroupBy = 8 THEN b.custid
 				WHEN @GroupBy = 9 THEN b.recommend
-				WHEN @GroupBy = 10 THEN DATEDIFF(HOUR, @BaseDate, ck.SettlementTime) -- group by Hour of SettlementTime
+				WHEN @GroupBy = 10 THEN DATEDIFF(HOUR, @BaseDate, st.SettlementTime) -- group by Hour of SettlementTime
 			END, 
 			CASE 
 				WHEN @BreakBy = 1 THEN a.currency 
 				WHEN @BreakBy = 2 THEN ck.Product3rdIdMix
-				--WHEN @BreakBy = 3 THEN b.custid 
+				WHEN @BreakBy = 3 THEN b.custid 
 			END,
 			CASE WHEN @GroupMode IN (4, 5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END
 		HAVING 
@@ -533,7 +541,7 @@ BEGIN
 
 	END
 
-	IF @FromDate <= @MovebetDay -- get sum data from @MovebetDay vs backward
+	IF @SettleFromDate <= @MovebetDay -- get sum data from @MovebetDay vs backward
 	BEGIN
 		--SELECT @rptFromDate = @FromDate
 		--	, @rptToDate	= IIF(@SettleToDate >= @MovebetDay, @MovebetDay, @SettleToDate);
@@ -560,7 +568,7 @@ BEGIN
 			CASE 
 				WHEN @BreakBy = 1 THEN a.Currency
 				WHEN @BreakBy = 2 THEN ck.Product3rdId
-				--WHEN @BreakBy = 3 THEN b.custid 
+				WHEN @BreakBy = 3 THEN b.custid 
 				ELSE a.Currency 
 			END AS BreakBy,
 			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdId ELSE -1 END AS ParentKey
@@ -628,7 +636,7 @@ BEGIN
 			CASE 
 				WHEN @BreakBy = 1 THEN a.Currency
 				WHEN @BreakBy = 2 THEN ck.Product3rdId
-				--WHEN @BreakBy = 3 THEN b.custid
+				WHEN @BreakBy = 3 THEN b.custid
 				ELSE a.Currency 
 			END,
 			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdId ELSE -1 END
@@ -730,17 +738,17 @@ BEGIN
 				SELECT DISTINCT CONCAT(ci.username,'#',ck.ExternalID) AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
 					,rpt.GroupBy
 				FROM #rptData rpt
-				INNER JOIN dbo.vw_Customer ci WITH(NOLOCK) ON ci.custid = rpt.GroupBy
+				INNER JOIN dbo.Customer ci WITH(NOLOCK) ON ci.custid = rpt.GroupBy
 				CROSS APPLY (SELECT SUBSTRING(ci.username2,CHARINDEX('$',ci.username2)+1,100) AS ExternalID) AS ck
 				WHERE @GroupBy = 8
 				UNION ALL
 				SELECT DISTINCT ci.username AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
 					,rpt.GroupBy
 				FROM #rptData rpt
-				INNER JOIN dbo.vw_Customer ci WITH(NOLOCK) ON ci.custid = rpt.GroupBy
+				INNER JOIN dbo.Customer ci WITH(NOLOCK) ON ci.custid = rpt.GroupBy
 				WHERE @GroupBy = 9
 				UNION ALL
-				SELECT DISTINCT FORMAT(DATEADD(HOUR, rpt.GroupBy, @BaseDate), 'yyyy-MM-dd HH:00:00') AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
+				SELECT DISTINCT FORMAT(DATEADD(HOUR, rpt.GroupBy, @BaseDate), 'yyyy-MM-dd > HH:00 - HH:59') AS GroupBy, rpt.GroupBy AS GroupKey, 0 AS ParentKey
 					,rpt.GroupBy AS GroupOrder
 				FROM #rptData rpt
 				WHERE @GroupBy = 10
@@ -799,20 +807,20 @@ BEGIN
 		FROM #result rs
 			LEFT JOIN bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK) ON p3.ProductID = rs.BreakBy
 		WHERE @BreakBy = 2
-		/*UNION ALL
+		UNION ALL
 		SELECT rs.rIdx, rs.GroupBy,	rs.GroupKey, CONCAT(ci.username,'#',ck.ExternalID) AS BreakBy, rs.BreakBy AS BreakOrder,
 			BetCount, Turnover,	NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective, Margin
 			,-----BASE
 			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
 		FROM #result rs
-			INNER JOIN dbo.vw_Customer ci WITH(NOLOCK) ON ci.custid = rs.BreakBy
+			INNER JOIN dbo.Customer ci WITH(NOLOCK) ON ci.custid = rs.BreakBy
 			CROSS APPLY (SELECT SUBSTRING(ci.username2,CHARINDEX('$',ci.username2)+1,100) AS ExternalID) AS ck
-		WHERE @BreakBy = 3*/
+		WHERE @BreakBy = 3
 	) AS rs
 	ORDER BY rs.rIdx, rs.GroupKey, 
-		/*CASE 
+		CASE 
 			WHEN @BreakBy = 3 THEN SUBSTRING(rs.BreakBy,CHARINDEX('#',rs.BreakBy)+1,100) 
-			ELSE '' END ASC,*/
+			ELSE '' END ASC,
 		rs.BreakOrder ASC
 
 	SELECT rs.rIdx, rs.GroupBy,	
