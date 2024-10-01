@@ -26,6 +26,7 @@ AS
 		- 20220106@Kos: Support search by username [RedmineID: #165926]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20241701@Evan: Update f_GroupBettype to Lrf_f_GroupBettype [RedmineID: #199523]
+		- 20240830@Lewis: BaseBallAIO - phase 2 [RedmineID: #209344]
 
 	Param's Explanation:
 		- @StatusIdList: status ID list separated by ','
@@ -161,7 +162,7 @@ BEGIN
 
 		IF @MatchSportType IS NOT NULL
 		BEGIN
-			IF @MatchSportType = 50 AND @ParentId IS NULL	-- Cricket, parent match
+			IF @MatchSportType IN (50, 8) AND @ParentId IS NULL	-- Cricket, parent match
 			BEGIN
 				INSERT INTO @Match
 				SELECT

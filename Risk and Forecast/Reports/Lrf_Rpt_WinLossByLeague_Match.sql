@@ -26,6 +26,7 @@ AS
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20241701@Evan: Update f_GroupBettype to Lrf_f_GroupBettype [RedmineID: #199523]
 		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
+		- 20240830@Lewis: BaseBallAIO - phase 2 [RedmineID: #209344]
 
 	Param's Explanation:
 		- @BetTypeList: bettype list separated by ','
@@ -156,7 +157,7 @@ BEGIN
 				BAComm )
 			SELECT
 				CASE
-					WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID
+					WHEN m.ChildMatchType = 200 THEN m.ParentID
 					ELSE b.matchid
 				END AS MatchId,
 				1 AS EventType,
@@ -199,7 +200,7 @@ BEGIN
 				AND m.leagueid = @LeagueId
 			GROUP BY
 				CASE
-					WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID
+					WHEN m.ChildMatchType = 200 THEN m.ParentID
 					ELSE b.matchid
 				END,
 				m.homeid,
@@ -279,7 +280,7 @@ BEGIN
 				BAComm )
 			SELECT
 				CASE
-					WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID
+					WHEN m.ChildMatchType = 200 THEN m.ParentID
 					ELSE b.matchid
 				END AS MatchId,
 				1 AS EventType,
@@ -322,7 +323,7 @@ BEGIN
 				AND m.leagueid = @LeagueId
 			GROUP BY
 				CASE
-					WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID
+					WHEN m.ChildMatchType = 200 THEN m.ParentID
 					ELSE b.matchid
 				END,
 				m.homeid,
@@ -514,7 +515,7 @@ BEGIN
 		BEGIN
 			UPDATE b
 			SET b.MatchId = CASE
-								WHEN b.EventType = 1 AND m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID
+								WHEN b.EventType = 1 AND m.ChildMatchType = 200 THEN m.ParentID
 								ELSE b.matchid
 							END,
 				b.HomeId = CASE
@@ -541,7 +542,7 @@ BEGIN
 		BEGIN
 			UPDATE b
 			SET b.MatchId = CASE
-								WHEN m.sporttype = 50 AND m.ChildMatchType = 200 THEN m.ParentID
+								WHEN m.ChildMatchType = 200 THEN m.ParentID
 								ELSE b.matchid
 							END,
 				b.HomeId = m.homeid,

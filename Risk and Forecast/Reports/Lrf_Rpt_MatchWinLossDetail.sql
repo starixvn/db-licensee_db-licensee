@@ -71,6 +71,7 @@ AS
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20242901@Evan: Integrate VS4 [RedmineID: #199347]
+		- 20240830@Lewis: BaseBallAIO - phase 2 [RedmineID: #209344]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -268,6 +269,7 @@ BEGIN
 
 		UPDATE b
 		SET
+			b.MatchId = CASE WHEN m.ChildMatchType = 200 THEN m.ParentID ELSE m.matchid END,
 			b.MatchCode = m.matchcode,
 			b.HomeId = m.homeid,
 			b.AwayId = m.awayid,
@@ -404,6 +406,7 @@ BEGIN
 		BEGIN
 			UPDATE b
 			SET
+				b.MatchId = CASE WHEN m.ChildMatchType = 200 THEN m.ParentID ELSE m.matchid END,
 				b.MatchCode = m.matchcode,
 				b.HomeId = m.homeid,
 				b.AwayId = m.awayid,
@@ -431,6 +434,8 @@ BEGIN
 		BEGIN
 			CREATE TABLE #TmpMatch (
 				MatchId			INT,
+				ParentId		INT,
+				ChildMatchType	TINYINT,
 				MatchCode		NVARCHAR(50),
 				HomeId			INT,
 				AwayId			INT,
@@ -447,6 +452,8 @@ BEGIN
 
 			UPDATE b
 			SET
+				b.ParentId = m.ParentId,
+				b.ChildMatchType = m.ChildMatchType,
 				b.MatchCode = m.matchcode,
 				b.HomeId = m.homeid,
 				b.AwayId = m.awayid,
@@ -458,6 +465,7 @@ BEGIN
 
 			UPDATE b
 			SET
+				b.MatchId = CASE WHEN m.ChildMatchType = 200 THEN m.ParentId ELSE m.matchid END,
 				b.MatchCode = m.matchcode,
 				b.HomeId = m.homeid,
 				b.AwayId = m.awayid,

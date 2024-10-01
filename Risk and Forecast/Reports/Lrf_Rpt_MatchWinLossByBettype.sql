@@ -55,6 +55,7 @@ AS
 					- Rename output column from MemberWinLost to WinLost
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
+		- 20240830@Lewis: BaseBallAIO - phase 2 [RedmineID: #209344]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -113,6 +114,71 @@ BEGIN
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
 	WHERE EventType IN (1, 3)
 		AND BetType NOT IN (SELECT BetType FROM dbo.Lrf_f_SelExcludedBetType())
+
+	DECLARE
+		@MatchSportType	SMALLINT,
+		@ParentId		INT
+
+	DECLARE @Match TABLE (MatchId INT)
+
+	IF EXISTS (SELECT TOP 1 1 FROM @BetType WHERE EventType = 1)
+	BEGIN
+		SELECT
+			@MatchSportType = sporttype,
+			@ParentId = ParentID
+		FROM dbo.match WITH (NOLOCK)
+		WHERE matchid = @MatchId AND eventdate > @MoveBetsDay
+
+		IF @MatchSportType IS NULL
+		BEGIN
+			SELECT
+				@MatchSportType = sporttype,
+				@ParentId = ParentID
+			FROM dbo.match14 WITH (NOLOCK)
+			WHERE matchid = @MatchId
+				AND eventdate BETWEEN @BalanceUpDay AND @MoveBetsDay
+		END
+
+		IF @MatchSportType IS NULL
+		BEGIN
+			SELECT
+				@MatchSportType = sporttype,
+				@ParentId = ParentID
+			FROM DBARC.bodb_Archive.dbo.match_bk WITH (NOLOCK)
+			WHERE matchid = @MatchId
+		END
+	END
+
+	IF @MatchSportType IS NOT NULL
+		BEGIN
+			IF @MatchSportType IN (50, 8) AND @ParentId IS NULL	-- Cricket, parent match
+			BEGIN
+				INSERT INTO @Match
+				SELECT
+					@MatchId
+				UNION
+				SELECT DISTINCT
+					MatchId
+				FROM dbo.match WITH (NOLOCK)
+				WHERE ParentID = @MatchId
+					AND sporttype = @MatchSportType
+					AND ChildMatchType = 200
+				UNION
+				SELECT DISTINCT
+					MatchId
+				FROM dbo.match14 WITH (NOLOCK)
+				WHERE ParentID = @MatchId
+					AND sporttype = @MatchSportType
+					AND ChildMatchType = 200
+				UNION
+				SELECT DISTINCT
+					MatchId
+				FROM DBARC.bodb_Archive.dbo.match_bk WITH (NOLOCK)
+				WHERE ParentID = @MatchId
+					AND sporttype = @MatchSportType
+					AND ChildMatchType = 200
+			END
+		END
 
 	DECLARE @Data TABLE (
 		MatchId			INT,
@@ -184,7 +250,10 @@ BEGIN
 			INNER JOIN @BetType AS bt ON bt.BetType = b.bettype
 		WHERE b.winlostdate = @_Date
 			AND b.statusID IN (111, 112, 113)
-			AND b.matchid = @MatchId
+			AND (
+					b.matchid = @MatchId
+					OR b.matchid IN (SELECT MatchId FROM @Match)
+				)
 			AND bt.EventType IN (1, 3)
 			AND CASE
 					WHEN @ShowBA = 0 AND bt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
@@ -201,6 +270,7 @@ BEGIN
 
 		UPDATE b
 		SET
+			b.MatchId = CASE WHEN m.ChildMatchType = 200 THEN m.ParentId ELSE m.matchid END,
 			b.MatchCode = m.matchcode,
 			b.HomeId = m.homeid,
 			b.AwayId = m.awayid,
@@ -270,7 +340,10 @@ BEGIN
 			INNER JOIN @BetType AS bt ON bt.BetType = b.bettype
 		WHERE b.winlostdate = @_Date
 			AND b.statusID <> 101
-			AND b.matchid = @MatchId
+			AND (
+					b.matchid = @MatchId
+					OR b.matchid IN (SELECT MatchId FROM @Match)
+				)
 			AND bt.EventType IN (1, 3)
 			AND CASE
 					WHEN @ShowBA = 0 AND bt.ProductCode = 'SB' AND b.isBA = 1 THEN 0
@@ -289,6 +362,7 @@ BEGIN
 		BEGIN
 			UPDATE b
 			SET
+				b.MatchId = CASE WHEN m.ChildMatchType = 200 THEN m.ParentId ELSE m.matchid END,
 				b.MatchCode = m.matchcode,
 				b.HomeId = m.homeid,
 				b.AwayId = m.awayid,
@@ -315,6 +389,8 @@ BEGIN
 		BEGIN
 			CREATE TABLE #TmpMatch (
 				MatchId			INT,
+				ParentId		INT,
+				ChildMatchType	TINYINT,
 				MatchCode		NVARCHAR(50),
 				HomeId			INT,
 				AwayId			INT,
@@ -331,6 +407,8 @@ BEGIN
 
 			UPDATE b
 			SET
+				b.ParentId = m.ParentId,
+				b.ChildMatchType = m.ChildMatchType,
 				b.MatchCode = m.matchcode,
 				b.HomeId = m.homeid,
 				b.AwayId = m.awayid,
@@ -342,6 +420,7 @@ BEGIN
 
 			UPDATE b
 			SET
+				b.MatchId = CASE WHEN m.ChildMatchType = 200 THEN m.ParentId ELSE m.matchid END,
 				b.MatchCode = m.matchcode,
 				b.HomeId = m.homeid,
 				b.AwayId = m.awayid,
