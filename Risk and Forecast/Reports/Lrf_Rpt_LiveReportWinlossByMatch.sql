@@ -162,12 +162,12 @@ BEGIN
 			b.bettype,
 			bt.EventType,
 			CASE
-				WHEN m.ChildMatchType = 200 THEN m.ParentID
-				ELSE m.matchid
+				WHEN bt.EventType = 1 AND m.ChildMatchType = 200 THEN m.ParentID
+				ELSE b.matchid
 			END AS MatchId,
-			ISNULL(m.homeid,0),
-			ISNULL(m.awayid,0),			
-			ISNULL(r.VendorMatchId,''),
+			CASE WHEN bt.EventType = 1 THEN m.homeid ELSE 0 END,
+			CASE WHEN bt.EventType = 1 THEN m.awayid ELSE 0 END,		
+			CASE WHEN bt.EventType = 3 THEN r.VendorMatchId ELSE '' END,
 			COUNT(b.transid) AS BetCount,
 			SUM(b.stake) AS Turnover,
 			SUM(b.winlost - b.actual_stake) AS WinLost,
@@ -180,12 +180,14 @@ BEGIN
 		FROM dbo.bettrans AS b WITH (NOLOCK)
 			INNER JOIN @BetType AS bt ON bt.bettype = b.bettype
 			INNER JOIN @TempAg AS ag ON ag.CustId = b.recommend
-			LEFT JOIN dbo.match AS m WITH (NOLOCK) ON m.matchid = b.matchid AND bt.EventType = 1
-			LEFT JOIN dbo.VSRaceInfo AS r WITH (NOLOCK) ON r.EventID = b.matchid AND bt.EventType = 3
+			LEFT JOIN dbo.match AS m WITH (NOLOCK) ON m.matchid = b.matchid
+			LEFT JOIN dbo.VSRaceInfo AS r WITH (NOLOCK) ON r.EventID = b.matchid
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND b.statusID IN (111, 112, 113)
-			AND m.sporttype = @SportId
+			AND (CASE WHEN bt.EventType = 1 THEN m.sporttype
+			          WHEN bt.EventType = 3 THEN r.SportType
+				 END) = @SportId
 			AND ((@LiveIndicator = 0 AND b.liveindicator = 0)
 				OR (@LiveIndicator = 1 AND b.liveindicator = 1)
 				OR (@LiveIndicator = 2))
@@ -200,12 +202,12 @@ BEGIN
 			b.bettype,
 			bt.EventType,
 			CASE
-				WHEN m.ChildMatchType = 200 THEN m.ParentID
-				ELSE m.matchid
+				WHEN bt.EventType = 1 AND m.ChildMatchType = 200 THEN m.ParentID
+				ELSE b.matchid
 			END,
-			ISNULL(m.homeid,0),
-			ISNULL(m.awayid,0),			
-			ISNULL(r.VendorMatchId,'')
+			CASE WHEN bt.EventType = 1 THEN m.homeid ELSE 0 END,
+			CASE WHEN bt.EventType = 1 THEN m.awayid ELSE 0 END,		
+			CASE WHEN bt.EventType = 3 THEN r.VendorMatchId ELSE '' END
 
 	END
 
@@ -224,12 +226,12 @@ BEGIN
 			b.bettype,
 			bt.EventType,
 			CASE
-				WHEN m.ChildMatchType = 200 THEN m.ParentID
-				ELSE m.matchid
+				WHEN bt.EventType = 1 AND m.ChildMatchType = 200 THEN m.ParentID
+				ELSE b.matchid
 			END AS MatchId,
-			ISNULL(m.homeid,0),
-			ISNULL(m.awayid,0),			
-			ISNULL(r.VendorMatchId,''),
+			CASE WHEN bt.EventType = 1 THEN m.homeid ELSE 0 END,
+			CASE WHEN bt.EventType = 1 THEN m.awayid ELSE 0 END,		
+			CASE WHEN bt.EventType = 3 THEN r.VendorMatchId ELSE '' END,
 			COUNT(b.transid) AS BetCount,
 			SUM(b.stake) AS Turnover,
 			SUM(b.winlost - b.actual_stake) AS WinLost,
@@ -242,12 +244,14 @@ BEGIN
 		FROM dbo.bettrans14 AS b WITH (NOLOCK)
 			INNER JOIN @BetType AS bt ON bt.bettype = b.bettype
 			INNER JOIN @TempAg AS ag ON ag.CustId = b.recommend
-			LEFT JOIN dbo.match14 AS m WITH (NOLOCK) ON m.matchid = b.matchid AND bt.EventType = 1
-			LEFT JOIN dbo.VSRaceInfo14 AS r WITH (NOLOCK) ON r.EventID = b.matchid AND bt.EventType = 3
+			LEFT JOIN dbo.match14 AS m WITH (NOLOCK) ON m.matchid = b.matchid
+			LEFT JOIN dbo.VSRaceInfo14 AS r WITH (NOLOCK) ON r.EventID = b.matchid
 		WHERE
 			b.winlostdate BETWEEN @FDate AND @TempToDate
 			AND b.statusID IN (111, 112, 113)
-			AND m.sporttype = @SportId
+			AND (CASE WHEN bt.EventType = 1 THEN m.sporttype
+			          WHEN bt.EventType = 3 THEN r.SportType
+				 END) = @SportId
 			AND ((@LiveIndicator = 0 AND b.liveindicator = 0)
 				OR (@LiveIndicator = 1 AND b.liveindicator = 1)
 				OR (@LiveIndicator = 2))
@@ -262,12 +266,12 @@ BEGIN
 			b.bettype,
 			bt.EventType,
 			CASE
-				WHEN m.ChildMatchType = 200 THEN m.ParentID
-				ELSE m.matchid
+				WHEN bt.EventType = 1 AND m.ChildMatchType = 200 THEN m.ParentID
+				ELSE b.matchid
 			END,
-			ISNULL(m.homeid,0),
-			ISNULL(m.awayid,0),			
-			ISNULL(r.VendorMatchId,'')
+			CASE WHEN bt.EventType = 1 THEN m.homeid ELSE 0 END,
+			CASE WHEN bt.EventType = 1 THEN m.awayid ELSE 0 END,		
+			CASE WHEN bt.EventType = 3 THEN r.VendorMatchId ELSE '' END
 	END
 
 	DECLARE @ExchangeRate TABLE (

@@ -403,7 +403,7 @@ BEGIN
 		b.LeagueId,
 		b.ProductName,
 		b.SportType,
-		l.LeagueGroupID,
+		CASE WHEN b.EventType NOT IN (3, 5) THEN l.LeagueGroupID ELSE NULL END,
 		SUM(b.BetCount) AS BetCount,
 		CAST(SUM(b.Turnover		* e.Rate) AS MONEY) AS Turnover,
 		CAST(SUM(b.WinLost		* e.Rate) AS MONEY) AS WinLost,
@@ -413,7 +413,7 @@ BEGIN
 		CAST(SUM((b.AmtDueToBA)	* e.Rate) AS MONEY) AS AmtDuetoBA
 	FROM @Data AS b
 		INNER JOIN @ExchangeDaily AS e ON e.ExchangeId = b.Currency
-		LEFT JOIN dbo.League AS l WITH(NOLOCK) ON b.LeagueId = l.LeagueId AND b.EventType NOT IN (3, 5)
+		LEFT JOIN dbo.League AS l WITH(NOLOCK) ON b.LeagueId = l.LeagueId
 	GROUP BY
 		b.MatchId,
 		b.EventType,
@@ -426,7 +426,7 @@ BEGIN
 		b.LeagueId,
 		b.ProductName,
 		b.SportType,
-		l.LeagueGroupID
+		CASE WHEN b.EventType NOT IN (3, 5) THEN l.LeagueGroupID ELSE NULL END
 	ORDER BY CASE ProductName
 				WHEN 'SB' THEN 0
 				WHEN 'NG' THEN 1

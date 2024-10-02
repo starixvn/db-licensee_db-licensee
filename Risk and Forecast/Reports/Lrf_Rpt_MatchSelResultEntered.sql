@@ -77,11 +77,10 @@ BEGIN
 		 , SUM(CASE WHEN m.eventstatus IN ('completed', 'refund') THEN 1 ELSE 0 END) AS Entered
 		 , SUM(CASE WHEN m.eventstatus NOT IN ('completed', 'refund') THEN 1 ELSE 0 END) AS NonEntered
 	FROM Match m 
-	INNER JOIN League l WITH(NOLOCK) 
-		ON m.leagueid = l.leagueid AND l.isTest = ISNULL(@isShowAll, l.isTest)
+		INNER JOIN League l WITH(NOLOCK) 
+			ON m.leagueid = l.leagueid AND l.isTest = ISNULL(@isShowAll, l.isTest)
 	WHERE m.eventdate BETWEEN @FromDate AND @ToDate
-		AND m.eventstatus <> 'closed'
-		AND m.IsDeleted <> 1
+		AND m.eventstatus <> 'closed'		
 		AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType b WHERE b.SportType = l.sporttype)
 	GROUP BY m.eventdate, l.sporttype
 
@@ -96,8 +95,10 @@ BEGIN
 	( 
 		SELECT o.EventDate, r.SportType, MAX(r.EventStatus) AS EventStatus, MAX(r.BetStatus) AS BetStatus  
 		FROM VSRaceInfo r WITH (NOLOCK)
-		INNER JOIN VSOutright o WITH (NOLOCK) 
-			ON r.EventID = o.EventID	
+			INNER JOIN VSOutright o WITH (NOLOCK) 
+				ON r.EventID = o.EventID
+			INNER JOIN League3rd l WITH(NOLOCK) 
+				ON r.LeagueID = l.League3rdId AND l.IsTest = ISNULL(@isShowAll, l.IsTest)
 		WHERE o.EventDate BETWEEN @FromDate AND @ToDate
 			AND r.EventStatus <> 'closed'
 			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType b WHERE b.SportType = r.SportType)
