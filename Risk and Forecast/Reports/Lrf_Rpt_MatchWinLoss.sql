@@ -420,6 +420,7 @@ BEGIN
 		ISNULL(b.MatchCode, ''),
 		b.HomeId,
 		b.AwayId,
+		b.VendorMatchId,
 		ISNULL(b.KickOffTime, 0),
 		b.IsNeutral,
 		b.LeagueId,
