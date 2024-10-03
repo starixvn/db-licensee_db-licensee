@@ -29,6 +29,8 @@ Revisions:
 */
 
 BEGIN
+	SET NOCOUNT ON
+
 	SELECT @isShowAll =
 					   CASE @isShowAll
 						   WHEN 1 THEN NULL

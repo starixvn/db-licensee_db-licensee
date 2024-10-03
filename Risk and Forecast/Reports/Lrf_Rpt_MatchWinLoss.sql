@@ -403,7 +403,7 @@ BEGIN
 		b.LeagueId,
 		b.ProductName,
 		b.SportType,
-		CASE WHEN b.EventType NOT IN (3, 5) THEN l.LeagueGroupID ELSE NULL END,
+		CASE WHEN b.EventType = 1 THEN l.LeagueGroupID ELSE NULL END,
 		SUM(b.BetCount) AS BetCount,
 		CAST(SUM(b.Turnover		* e.Rate) AS MONEY) AS Turnover,
 		CAST(SUM(b.WinLost		* e.Rate) AS MONEY) AS WinLost,
@@ -426,7 +426,7 @@ BEGIN
 		b.LeagueId,
 		b.ProductName,
 		b.SportType,
-		CASE WHEN b.EventType NOT IN (3, 5) THEN l.LeagueGroupID ELSE NULL END
+		CASE WHEN b.EventType = 1 THEN l.LeagueGroupID ELSE NULL END
 	ORDER BY CASE ProductName
 				WHEN 'SB' THEN 0
 				WHEN 'NG' THEN 1

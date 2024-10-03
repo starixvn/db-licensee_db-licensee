@@ -347,8 +347,7 @@ BEGIN
 			AND (
 					b.matchid = @MatchId
 					OR b.matchid IN (SELECT MatchId FROM @Match)
-				)
-			AND bt.EventType IN (1, 3)
+				)			
 			AND CASE
 					WHEN @ShowBA = 0 AND bt.ProductCode = 'SB' AND b.isBA = 1 THEN 0
 					WHEN @ShowSB = 0 AND bt.ProductCode = 'SB' AND b.isBA = 0 THEN 0
