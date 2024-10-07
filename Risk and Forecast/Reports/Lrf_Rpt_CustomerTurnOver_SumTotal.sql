@@ -42,6 +42,7 @@ AS
 		- 20220714@Hogan: Integrate Volleyball AIO [RedmineID: #175143]
 		- 20241701@Evan: Remove VS3 (old) [RedmineID: #199523]
 		- 20242901@Evan: Integrate VS4 [RedmineID: #199347]
+		- 20241007@Kelvin: Remove logic set default SportType = 1 for OutRight (bettype = 10) [RedmineID: #210808]
 */
 
 BEGIN
@@ -109,7 +110,6 @@ BEGIN
 						b.custid, 
 						CASE
 							WHEN b.bettype IN (9, 29, 38) THEN 999
-							WHEN b.bettype IN (10) THEN 1
 							ELSE b.sporttype 
 						END AS sporttype,
 						b.bettype,
@@ -127,7 +127,6 @@ BEGIN
 						b.custid, 
 						CASE
 							WHEN b.bettype IN (9, 29, 38) THEN 999
-							WHEN b.bettype IN (10) THEN 1
 							ELSE b.sporttype 
 						END,
 						b.bettype,
@@ -182,7 +181,6 @@ BEGIN
 						b.custid,
 						CASE
 							WHEN b.bettype IN (9, 29, 38) THEN 999
-							WHEN b.bettype IN (10) THEN 1
 							ELSE b.sporttype 
 						END AS sporttype,
 						b.bettype,
@@ -290,7 +288,6 @@ BEGIN
 				SELECT
 					CASE
 						WHEN b.bettype IN (9, 29, 38) THEN 999
-						WHEN b.bettype IN (10) THEN 1
 						ELSE b.sporttype 
 					END AS sporttype,
 					b.bettype,
@@ -307,7 +304,6 @@ BEGIN
 				GROUP BY
 					CASE
 						WHEN b.bettype IN (9, 29, 38) THEN 999
-						WHEN b.bettype IN (10) THEN 1
 						ELSE b.sporttype
 					END,
 					b.bettype,
@@ -351,7 +347,6 @@ BEGIN
 					SELECT
 						CASE
 							WHEN b.bettype IN (9, 29, 38) THEN 999
-							WHEN b.bettype IN (10) THEN 1
 							ELSE b.sporttype 
 						END AS sporttype,
 						b.bettype,

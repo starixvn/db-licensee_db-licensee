@@ -52,6 +52,7 @@ AS
 		- 20220714@Hogan: Integrate Volleyball AIO [RedmineID: #175143]
 		- 20241701@Evan: Remove VS3 (old) [RedmineID: #199523]
 		- 20242901@Evan: Integrate VS4 [RedmineID: #199347]
+		- 20241007@Kelvin: Remove logic set default SportType = 1 for OutRight (bettype = 10) [RedmineID: #210808]
 */
 
 BEGIN
@@ -124,8 +125,7 @@ BEGIN
 				SELECT
 					DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) AS winlostdate, 
 					CASE
-						WHEN b.bettype IN (9, 29, 38) THEN 999
-						WHEN b.bettype IN (10) THEN 1
+						WHEN b.bettype IN (9, 29, 38) THEN 999						
 						ELSE b.sporttype 
 					END AS sporttype,
 					b.bettype,
@@ -150,8 +150,7 @@ BEGIN
 				SELECT
 					DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) AS winlostdate, 
 					CASE
-						WHEN b.bettype IN (9, 29, 38) THEN 999
-						WHEN b.bettype IN (10) THEN 1
+						WHEN b.bettype IN (9, 29, 38) THEN 999						
 						ELSE b.sporttype 
 					END AS sporttype,
 					b.bettype,
@@ -260,8 +259,7 @@ BEGIN
 				SELECT
 					DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) AS winlostdate, 
 					CASE
-						WHEN b.bettype IN (9, 29, 38) THEN 999
-						WHEN b.bettype IN (10) THEN 1
+						WHEN b.bettype IN (9, 29, 38) THEN 999						
 						ELSE b.sporttype 
 					END AS sporttype,
 					b.bettype,
@@ -281,8 +279,7 @@ BEGIN
 				SELECT
 					DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) AS winlostdate, 
 					CASE
-						WHEN b.bettype IN (9, 29, 38) THEN 999
-						WHEN b.bettype IN (10) THEN 1
+						WHEN b.bettype IN (9, 29, 38) THEN 999						
 						ELSE b.sporttype 
 					END AS sporttype,
 					b.bettype,
