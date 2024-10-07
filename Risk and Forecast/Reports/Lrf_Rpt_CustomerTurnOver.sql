@@ -96,6 +96,7 @@ AS
 		- 20231120@Evan: Support INDO & THAI language on LAP [RedmineID: #196246]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20242901@Evan: Integrate VS4 [RedmineID: #199347]
+		- 20241001@Kelvin: LAP - Integrate BetRadar Virtual Horses & Dogs Racing [RedmineID: #210808]
 		
 	Parameter's Explanation:
 		- @ReportBy: 1: daily, 2: monthly
@@ -340,22 +341,7 @@ BEGIN
 	END
 
 	IF @ToDate > @MoveBetsDay
-	BEGIN
-		SELECT DISTINCT b.transid, s.sporttype
-		INTO #tmpParlay
-		FROM dbo.bettrans b WITH (NOLOCK)
-			INNER JOIN #recommend rec ON b.Recommend = rec.CustID
-			INNER JOIN #Status st ON b.StatusID =  st.StatusID
-			CROSS APPLY (	SELECT TOP 1 m.sporttype
-							FROM dbo.bettransm bm WITH (NOLOCK)
-								INNER JOIN dbo.match m WITH (NOLOCK) ON bm.matchid = m.matchid
-							WHERE b.refno = bm.refno AND b.custid = bm.custid
-					) AS s
-		WHERE b.bettype IN (2799,10449)
-			AND b.winlostdate BETWEEN @tempFromDate AND @ToDate
-			AND b.matchid IN (2799,10449)
-		OPTION(RECOMPILE)
-
+	BEGIN		
 		INSERT INTO #tempBettrans
 		SELECT CASE
 					WHEN @ReportBy =  2 THEN DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) 
@@ -366,7 +352,7 @@ BEGIN
 			, CASE
 				WHEN b.bettype IN (9, 29, 38) THEN 999
 				WHEN bt.EventType = 0 THEN CASE
-												WHEN b.bettype IN (2799,10449) THEN p.sporttype
+												WHEN b.bettype IN (2799,10449) THEN b.oddsid
 												WHEN bt.ProductID = 63 THEN b.matchid
 												ELSE 1
 											END
@@ -389,8 +375,7 @@ BEGIN
 		FROM dbo.bettrans b WITH(NOLOCK)
 			INNER JOIN #recommend rec ON b.Recommend = rec.CustID 
 			INNER JOIN #bettype bt ON b.bettype =  bt.typeid
-			INNER JOIN #Status st ON b.StatusID =  st.StatusID
-			LEFT JOIN #tmpParlay p ON b.transid = p.transid
+			INNER JOIN #Status st ON b.StatusID =  st.StatusID			
 		WHERE b.winlostdate BETWEEN @tempFromDate AND @ToDate
 		OPTION(RECOMPILE)
 
@@ -416,6 +401,7 @@ BEGIN
 			OR bettype = 428 -- 2H Odd/Even
 			OR (bettype BETWEEN 603 AND 607 OR bettype BETWEEN 609 AND 613 OR bettype BETWEEN 615 AND 617) -- Basketball bettypes
 			OR bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
+			OR bettype BETWEEN 2770 AND 2789 -- Virtual Sport 2: Virtual Horses & Dogs Racing
 			OR bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
 			OR bettype BETWEEN 5302 AND 5399 -- Virtual Sport 3 (LG)
 			OR bettype BETWEEN 10400 AND 10448 -- Virtual Sport 4
@@ -484,9 +470,7 @@ BEGIN
 		DELETE b
 		FROM #tempBettrans b
 		WHERE NOT EXISTS (SELECT 1 FROM #ProductID p WHERE p.sportId = b.sporttype)
-
-		DROP TABLE #tmpParlay
-
+		
 	END
 
 	GET_SUMTOTAL:
