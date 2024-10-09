@@ -139,6 +139,7 @@ BEGIN
 		HomeId			INT,
 		AwayId			INT,		
 		VendorMatchId	VARCHAR(50),
+		Distance        VARCHAR(50),
 		BetCount		INT,
 		TurnOver		MONEY,
 		Winlost			MONEY,
@@ -168,6 +169,7 @@ BEGIN
 			CASE WHEN bt.EventType = 1 THEN m.homeid ELSE 0 END,
 			CASE WHEN bt.EventType = 1 THEN m.awayid ELSE 0 END,		
 			CASE WHEN bt.EventType = 3 THEN r.VendorMatchId ELSE '' END,
+			CASE WHEN bt.EventType = 3 THEN r.Distance ELSE '' END,
 			COUNT(b.transid) AS BetCount,
 			SUM(b.stake) AS Turnover,
 			SUM(b.winlost - b.actual_stake) AS WinLost,
@@ -207,7 +209,8 @@ BEGIN
 			END,
 			CASE WHEN bt.EventType = 1 THEN m.homeid ELSE 0 END,
 			CASE WHEN bt.EventType = 1 THEN m.awayid ELSE 0 END,		
-			CASE WHEN bt.EventType = 3 THEN r.VendorMatchId ELSE '' END
+			CASE WHEN bt.EventType = 3 THEN r.VendorMatchId ELSE '' END,
+			CASE WHEN bt.EventType = 3 THEN r.Distance ELSE '' END
 
 	END
 
@@ -232,6 +235,7 @@ BEGIN
 			CASE WHEN bt.EventType = 1 THEN m.homeid ELSE 0 END,
 			CASE WHEN bt.EventType = 1 THEN m.awayid ELSE 0 END,		
 			CASE WHEN bt.EventType = 3 THEN r.VendorMatchId ELSE '' END,
+			CASE WHEN bt.EventType = 3 THEN r.Distance ELSE '' END,
 			COUNT(b.transid) AS BetCount,
 			SUM(b.stake) AS Turnover,
 			SUM(b.winlost - b.actual_stake) AS WinLost,
@@ -271,7 +275,8 @@ BEGIN
 			END,
 			CASE WHEN bt.EventType = 1 THEN m.homeid ELSE 0 END,
 			CASE WHEN bt.EventType = 1 THEN m.awayid ELSE 0 END,		
-			CASE WHEN bt.EventType = 3 THEN r.VendorMatchId ELSE '' END
+			CASE WHEN bt.EventType = 3 THEN r.VendorMatchId ELSE '' END,
+			CASE WHEN bt.EventType = 3 THEN r.Distance ELSE '' END
 	END
 
 	DECLARE @ExchangeRate TABLE (
@@ -294,6 +299,7 @@ BEGIN
 		b.homeid,
 		b.awayid,
 		b.VendorMatchId,
+		b.Distance,
 		SUM(b.BetCount) AS BetCount,
 		CAST(SUM(b.TurnOver		* e.Rate) AS MONEY) AS Turnover,
 		CAST(SUM(b.Winlost		* e.Rate) AS MONEY) AS WinLost,
@@ -307,7 +313,8 @@ BEGIN
 		b.EventType,
 		b.homeid,
 		b.awayid,
-		b.VendorMatchId
+		b.VendorMatchId,
+		b.Distance
 
 	DROP TABLE #Data
 END

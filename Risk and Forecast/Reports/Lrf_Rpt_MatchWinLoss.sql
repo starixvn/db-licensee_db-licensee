@@ -124,6 +124,7 @@ BEGIN
 		HomeId				INT,
 		AwayId				INT,
 		VendorMatchId		VARCHAR(50),
+		Distance            VARCHAR(50),
 		KickOffTime			DATETIME,
 		IsNeutral			BIT,
 		LeagueId			INT,
@@ -211,7 +212,8 @@ BEGIN
 			b.IsNeutral = ISNULL(m.IsNeutral, CONVERT(BIT, 0)),
 			b.LeagueId = m.leagueid,
 			b.SportType = m.sporttype,
-			b.VendorMatchId = ''
+			b.VendorMatchId = '',
+			b.Distance = ''
 		FROM @Data AS b
 			INNER JOIN dbo.match AS m WITH (NOLOCK) ON m.matchid = b.MatchId
 		WHERE b.EventType = 1
@@ -225,7 +227,8 @@ BEGIN
 			b.IsNeutral = 0,
 			b.LeagueId = r.LeagueID,
 			b.SportType = r.SportType,
-			b.VendorMatchId = r.VendorMatchId
+			b.VendorMatchId = r.VendorMatchId,
+			b.Distance = r.Distance
 		FROM @Data AS b
 			INNER JOIN dbo.VSRaceInfo AS r WITH (NOLOCK) ON r.EventID = b.MatchId
 		WHERE b.EventType = 3
@@ -300,7 +303,8 @@ BEGIN
 				b.LeagueId = m.leagueid,
 				b.IsNeutral = ISNULL(m.IsNeutral, CONVERT(BIT, 0)),
 				b.SportType = m.sporttype,
-				b.VendorMatchId = ''
+				b.VendorMatchId = '',
+				b.Distance = ''
 			FROM @Data AS b
 				INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON m.matchid = b.MatchId
 			WHERE b.EventType = 1
@@ -314,7 +318,8 @@ BEGIN
 				b.IsNeutral = 0,
 				b.LeagueId = r.LeagueID,
 				b.SportType = r.SportType,
-				b.VendorMatchId = r.VendorMatchId
+				b.VendorMatchId = r.VendorMatchId,
+				b.Distance = r.Distance
 			FROM @Data AS b
 				INNER JOIN dbo.VSRaceInfo14 AS r WITH (NOLOCK) ON r.EventID = b.MatchId
 			WHERE b.EventType = 3
@@ -361,7 +366,8 @@ BEGIN
 				b.IsNeutral = ISNULL(m.IsNeutral, CONVERT(BIT, 0)),
 				b.LeagueId = m.leagueid,
 				b.SportType = m.sporttype,
-				b.VendorMatchId = ''
+				b.VendorMatchId = '',
+				b.Distance = ''
 			FROM @Data AS b
 				INNER JOIN #TmpMatch AS m ON m.matchid = b.MatchId
 			WHERE b.EventType = 1
@@ -375,7 +381,8 @@ BEGIN
 				b.IsNeutral = 0,
 				b.LeagueId = r.LeagueID,
 				b.SportType = r.SportType,
-				b.VendorMatchId = r.VendorMatchId
+				b.VendorMatchId = r.VendorMatchId,
+				b.Distance = r.Distance
 			FROM @Data AS b
 				INNER JOIN DBARC.bodb_Archive.dbo.VSRaceInfo_bk AS r WITH (NOLOCK) ON r.EventID = b.MatchId
 			WHERE b.EventType = 3
@@ -398,6 +405,7 @@ BEGIN
 		b.HomeId,
 		b.AwayId,
 		b.VendorMatchId,
+		b.Distance,
 		ISNULL(b.KickOffTime, 0) AS KickOffTime,
 		b.IsNeutral,
 		b.LeagueId,
@@ -421,6 +429,7 @@ BEGIN
 		b.HomeId,
 		b.AwayId,
 		b.VendorMatchId,
+		b.Distance,
 		ISNULL(b.KickOffTime, 0),
 		b.IsNeutral,
 		b.LeagueId,
