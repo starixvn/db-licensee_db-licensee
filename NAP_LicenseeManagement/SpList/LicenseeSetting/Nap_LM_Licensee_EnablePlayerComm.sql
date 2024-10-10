@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet,Dot_Member" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-bodb_Licensee" executers="wsv_lap,svc_tig" viewers="" isFunction="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Nap_LM_Licensee_EnablePlayerComm] (@LicenseeName VARCHAR(500))
 AS
@@ -13,6 +13,7 @@ AS
 	Revisions:
 		- 20190418@Amanda: Move code from DBA_Lrf_EnablePlayerComm to this and refactor code [Redmine: #111321]
 		- 20220518@Kos: Change to use STRING_SPLIT [Redmine: #171831]
+		- 20241010@Johnson: HF- restructure LAP Comm [redmine:#212004]
 */
 
 BEGIN
@@ -50,29 +51,17 @@ BEGIN
 		FROM @tblLicensee
 		WHERE ID = @i
 
-		IF NOT EXISTS (SELECT 1 FROM dbo.LicenseeCustComm(NOLOCK) WHERE LicenseeID = @LicenseeID)
+		IF NOT EXISTS (SELECT 1 FROM dbo.LicenseeCustDiscount(NOLOCK) WHERE LicenseeID = @LicenseeID)
 		BEGIN
 			-- initial data
-			INSERT INTO LicenseeCustComm (
+			INSERT INTO LicenseeCustDiscount (
 				LicenseeID
-				, CustID
-				, SBComm
-				, RacingComm
-				, NGComm
-				, GroupCommID
-				, LCComm
-				, RNGComm
-				, Parlaycomm
+				, CustID				
+				, GroupDiscountID				
 				)
 			SELECT t.LicenseeID
-				, lci.CustID
-				, 0 AS SBComm
-				, 0 AS RacingComm
-				, 0 AS NGComm
-				, 0 AS GroupCommID
-				, 0 AS LCComm
-				, 0 AS RNGComm
-				, 0 Parlaycomm
+				, lci.CustID			
+				, 0 AS GroupDiscountID				
 			FROM @tblLicensee t
 				INNER JOIN dbo.LicenseeCust lc WITH (NOLOCK) ON t.LicenseeID = lc.LicenseeID
 				INNER JOIN CUSTDB.dbo.Customer lci WITH (NOLOCK) ON lc.CustID = lci.recommend
@@ -80,7 +69,7 @@ BEGIN
 				AND lci.RoleID = 1
 				AND NOT EXISTS (
 					SELECT 1
-					FROM LicenseeCustComm lcc WITH (NOLOCK)
+					FROM LicenseeCustDiscount lcc WITH (NOLOCK)
 					WHERE lcc.CustID = lci.CustID
 					)
 
