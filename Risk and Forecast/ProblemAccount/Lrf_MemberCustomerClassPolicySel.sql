@@ -14,6 +14,7 @@ AS
 		Revisions:
 			- 20240911@Winfred: LAP - Risk Level - Show policy of Saba Virtual Sports [redmine:#210545]
 			- 20240920@Winfred: Fix all Site all Curency [redmine:#211114]
+			- 20240930@Winfred: LAP - Risk Level - Integrate Top Priority settings [redmine:#211185]
 	*/
 BEGIN
 	SET NOCOUNT ON
@@ -24,7 +25,7 @@ BEGIN
 	FROM CustomerClassSetting s WITH (NOLOCK)
 	WHERE s.custid = @Custid
 	), T as (
-	SELECT r.CustomerClass, r.CustomerClassDetail, r.IsLive AS LiveIndicator, r.SportType, r.RuleID, r.RuleTitle, pm.PolicyTitle, r.BetDelay, r.NextBetInterval, r.MaxBet, r.MaxPerMatch, sm.Site, r.RepeatedBets, sm.Platform, r.MinBet, sm.Currency AS CurrencyID, r.AgentBetInterval, r.DisableParlay,
+	SELECT r.CustomerClass, r.CustomerClassDetail, r.IsLive AS LiveIndicator, r.SportType, r.RuleID, r.RuleTitle, pm.PolicyTitle, r.BetDelay, r.NextBetInterval, r.MaxBet, r.MaxPerMatch, sm.Site, r.RepeatedBets, sm.Platform, r.MinBet, sm.Currency AS CurrencyID, r.AgentBetInterval, r.DisableParlay, r.TopPriority,
 		CASE r.SportType WHEN 1 THEN 10  WHEN 9901 THEN 20 WHEN 2 THEN 30 WHEN 9902 THEN 40 WHEN 43 THEN 50 WHEN 99 THEN 60 ELSE 70 END AS fOrder
 	FROM CustomerClassRule r							WITH (NOLOCK)
 		INNER JOIN CustomerClassPolicyRule pr			WITH (NOLOCK) ON r.RuleID = pr.RuleID
@@ -39,7 +40,7 @@ BEGIN
 		AND NOT EXISTS (SELECT 1 FROM Scc WHERE Scc.SportType = r.SportType)
 		AND r.CustomerClass = @CustomerClass
 	UNION ALL 
-	SELECT r.CustomerClass, r.CustomerClassDetail, r.IsLive AS LiveIndicator, r.SportType, r.RuleID, r.RuleTitle, pm.PolicyTitle, r.BetDelay, r.NextBetInterval, r.MaxBet, r.MaxPerMatch, sm.Site, r.RepeatedBets, sm.Platform, r.MinBet, sm.Currency AS CurrencyID, r.AgentBetInterval, r.DisableParlay,
+	SELECT r.CustomerClass, r.CustomerClassDetail, r.IsLive AS LiveIndicator, r.SportType, r.RuleID, r.RuleTitle, pm.PolicyTitle, r.BetDelay, r.NextBetInterval, r.MaxBet, r.MaxPerMatch, sm.Site, r.RepeatedBets, sm.Platform, r.MinBet, sm.Currency AS CurrencyID, r.AgentBetInterval, r.DisableParlay, r.TopPriority,
 		CASE r.SportType WHEN 1 THEN 10  WHEN 9901 THEN 20 WHEN 2 THEN 30 WHEN 9902 THEN 40 WHEN 43 THEN 50 WHEN 99 THEN 60 ELSE 70 END AS fOrder
 	FROM CustomerClassRule r							WITH (NOLOCK)
 		INNER JOIN CustomerClassPolicyRule pr			WITH (NOLOCK) ON r.RuleID = pr.RuleID
@@ -58,10 +59,10 @@ BEGIN
 	), 
 	T1 AS
 	(
-		SELECT CustomerClass,CustomerClassDetail,Liveindicator,SportType,RuleID,RuleTitle,PolicyTitle,BetDelay,NextBetInterval,MaxBet,MaxPerMatch,Site, RepeatedBets, Platform, MinBet, CurrencyID, AgentBetInterval, DisableParlay , fOrder
+		SELECT CustomerClass,CustomerClassDetail,Liveindicator,SportType,RuleID,RuleTitle,PolicyTitle,BetDelay,NextBetInterval,MaxBet,MaxPerMatch,Site, RepeatedBets, Platform, MinBet, CurrencyID, AgentBetInterval, DisableParlay ,  TopPriority, fOrder
 		FROM T 
 		UNION ALL
-		SELECT r.CustomerClass,r.CustomerClassDetail, r.IsLive AS LiveIndicator, r.SportType, r.RuleID, r.RuleTitle, pm.PolicyTitle, r.BetDelay, r.NextBetInterval, r.MaxBet, r.MaxPerMatch, sm.Site, r.RepeatedBets, sm.Platform, r.MinBet, sm.Currency AS CurrencyID, r.AgentBetInterval, r.DisableParlay, 
+		SELECT r.CustomerClass,r.CustomerClassDetail, r.IsLive AS LiveIndicator, r.SportType, r.RuleID, r.RuleTitle, pm.PolicyTitle, r.BetDelay, r.NextBetInterval, r.MaxBet, r.MaxPerMatch, sm.Site, r.RepeatedBets, sm.Platform, r.MinBet, sm.Currency AS CurrencyID, r.AgentBetInterval, r.DisableParlay, r.TopPriority,
 			CASE r.SportType WHEN 1 THEN 10  WHEN 9901 THEN 20 WHEN 2 THEN 30 WHEN 9902 THEN 40 WHEN 43 THEN 50 WHEN 99 THEN 60 ELSE 70 END AS fOrder
 		FROM CustomerClassRule r							WITH (NOLOCK)
 			INNER JOIN CustomerClassPolicyRule pr			WITH (NOLOCK) ON r.RuleID = pr.RuleID
@@ -81,7 +82,7 @@ BEGIN
 								AND t.Liveindicator = r.IsLive
 							)
 		UNION ALL
-		SELECT r.CustomerClass,r.CustomerClassDetail, r.IsLive AS LiveIndicator, r.SportType, r.RuleID, r.RuleTitle, pm.PolicyTitle, r.BetDelay, r.NextBetInterval, r.MaxBet, r.MaxPerMatch, sm.Site, r.RepeatedBets, sm.Platform, r.MinBet, sm.Currency AS CurrencyID, r.AgentBetInterval, r.DisableParlay, 
+		SELECT r.CustomerClass,r.CustomerClassDetail, r.IsLive AS LiveIndicator, r.SportType, r.RuleID, r.RuleTitle, pm.PolicyTitle, r.BetDelay, r.NextBetInterval, r.MaxBet, r.MaxPerMatch, sm.Site, r.RepeatedBets, sm.Platform, r.MinBet, sm.Currency AS CurrencyID, r.AgentBetInterval, r.DisableParlay, r.TopPriority, 
 			CASE r.SportType WHEN 1 THEN 10  WHEN 9901 THEN 20 WHEN 2 THEN 30 WHEN 9902 THEN 40 WHEN 43 THEN 50 WHEN 99 THEN 60 ELSE 70 END AS fOrder
 		FROM CustomerClassRule r							WITH (NOLOCK)
 			INNER JOIN CustomerClassPolicyRule pr			WITH (NOLOCK) ON r.RuleID = pr.RuleID
@@ -105,12 +106,12 @@ BEGIN
 							)
 	)
 
-	SELECT  CustomerClass, CustomerClassDetail,Liveindicator,SportType,RuleTitle,PolicyTitle,LeagueGroupID,(BetDelay-1)*100 AS BetDelay,NextBetInterval,MaxBet,MaxPerMatch,Site, RepeatedBets, Platform, MinBet, CurrencyID, AgentBetInterval, DisableParlay, fOrder
+	SELECT  CustomerClass, CustomerClassDetail,Liveindicator,SportType,RuleTitle,PolicyTitle,LeagueGroupID,(BetDelay-1)*100 AS BetDelay,NextBetInterval,MaxBet,MaxPerMatch,Site, RepeatedBets, Platform, MinBet, CurrencyID, AgentBetInterval, DisableParlay, TopPriority, fOrder
 	FROM T1
 		CROSS APPLY (
 			SELECT STRING_AGG(LeagueGroupID,',') WITHIN GROUP (ORDER BY LeagueGroupID) AS LeagueGroupID
 			FROM CustomerClassRuleLeagueGroup rlg WITH (NOLOCK)
 			WHERE T1.RuleID = rlg.RuleID
 		) lg
-	ORDER BY fOrder,CustomerClass,SportType,LeagueGroupID,Liveindicator
+	ORDER BY fOrder,TopPriority DESC,CustomerClass,SportType,LeagueGroupID,Liveindicator
 END
