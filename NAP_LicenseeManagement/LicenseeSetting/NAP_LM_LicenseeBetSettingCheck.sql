@@ -23,6 +23,8 @@ AS
 		- 20230722@Winfred: NAP LM - Enhance Bet Setting function for AM to use - New Case [redmine:#178105]
 		- 20230722@Winfred: NAP LM - Enhance performance when adjusting betlimit for big licensees  [redmine:#195079]
 		- 20240912@Tacy: exclude Odds Boost dummy account [Redmine: #210613]
+		- 20241014@Johnson: NAP LM - Licensee Bet Setting - Enhance performance [Redmine: #212074]
+
     Param's Explanation:
 		- @CustID : super ID
 		- @AgentID : 0 for All Subsidiary AND <> 0 for only Specific Subsidiary 
@@ -163,7 +165,7 @@ BEGIN
 		SELECT c.custid
 		FROM custinfo c WITH(NOLOCK)
 			INNER JOIN #Upline a ON c.recommend = a.custid
-			CROSS APPLY (SELECT f.custid FROM dbo.f_Dep_DummyMember_Select(c.srecommend) f
+			CROSS APPLY (SELECT f.custid FROM dbo.f_Dep_DummyMember_Select(@CustID) f
 						 WHERE f.custid=c.custid) dm
 		WHERE c.roleid = 1
 
