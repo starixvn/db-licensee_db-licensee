@@ -55,7 +55,8 @@ BEGIN
 			@tempToDate SMALLDATETIME
 
 	--Set cut off date to convert  bettype 501
-	DECLARE @501CutoffDate SMALLDATETIME = '2021-04-08'
+	DECLARE @501CutoffDate SMALLDATETIME = '2021-04-08',
+	        @OutRight_CutoffDate SMALLDATETIME = '2024-10-12'
 
 	CREATE TABLE #tempCustData (
 		winlostdate		SMALLDATETIME,
@@ -139,6 +140,7 @@ BEGIN
 				rec.currency,
 				CASE
 					WHEN b.bettype IN (9, 29, 38) THEN 999
+					WHEN b.bettype = 10 AND b.winlostdate < @OutRight_CutoffDate THEN 1
 					ELSE b.sporttype 
 				END AS sporttype,
 				b.bettype,
@@ -161,6 +163,7 @@ BEGIN
 				rec.currency,
 				CASE
 					WHEN b.bettype IN (9, 29, 38) THEN 999
+					WHEN b.bettype = 10 AND b.winlostdate < @OutRight_CutoffDate THEN 1
 					ELSE b.sporttype 
 				END,
 				b.bettype,
@@ -193,6 +196,7 @@ BEGIN
 				rec.currency,
 				CASE
 					WHEN b.bettype IN (9, 29, 38) THEN 999
+					WHEN b.bettype = 10 AND b.winlostdate < @OutRight_CutoffDate THEN 1
 					ELSE b.sporttype 
 				END AS sporttype,
 				b.bettype,
@@ -252,6 +256,7 @@ BEGIN
 				rec.currency,
 				CASE
 					WHEN b.bettype IN (9, 29, 38) THEN 999
+					WHEN b.bettype = 10 AND b.winlostdate < @OutRight_CutoffDate THEN 1
 					ELSE b.sporttype 
 				END,
 				b.bettype,
