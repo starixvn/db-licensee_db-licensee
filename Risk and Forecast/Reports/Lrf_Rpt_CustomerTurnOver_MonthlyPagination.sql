@@ -88,7 +88,11 @@ BEGIN
 
 	--Set cut off date to convert  bettype 501
 	DECLARE @501CutoffDate SMALLDATETIME = '2021-04-08',
-			@OutRight_CutoffDate SMALLDATETIME = '2024-10-12'
+			@CutoffDate_BetType10 SMALLDATETIME
+
+	SELECT @CutoffDate_BetType10 = CutoffDate
+    FROM dbo.Lrf_f_GetCutoffDate()
+    WHERE TypeName = 'BetType10_CustomerTurnOver'
 
 	-- VIEW specific members
 	IF @searchCust = 1
@@ -127,7 +131,7 @@ BEGIN
 					DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) AS winlostdate, 
 					CASE
 						WHEN b.bettype IN (9, 29, 38) THEN 999
-						WHEN b.bettype = 10 AND b.winlostdate < @OutRight_CutoffDate THEN 1
+						WHEN b.bettype = 10 AND b.winlostdate < @CutoffDate_BetType10 THEN 1
 						ELSE b.sporttype 
 					END AS sporttype,
 					b.bettype,
@@ -153,7 +157,7 @@ BEGIN
 					DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) AS winlostdate, 
 					CASE
 						WHEN b.bettype IN (9, 29, 38) THEN 999
-						WHEN b.bettype = 10 AND b.winlostdate < @OutRight_CutoffDate THEN 1
+						WHEN b.bettype = 10 AND b.winlostdate < @CutoffDate_BetType10 THEN 1
 						ELSE b.sporttype 
 					END AS sporttype,
 					b.bettype,
@@ -264,7 +268,7 @@ BEGIN
 					DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) AS winlostdate, 
 					CASE
 						WHEN b.bettype IN (9, 29, 38) THEN 999
-						WHEN b.bettype = 10 AND b.winlostdate < @OutRight_CutoffDate THEN 1
+						WHEN b.bettype = 10 AND b.winlostdate < @CutoffDate_BetType10 THEN 1
 						ELSE b.sporttype 
 					END AS sporttype,
 					b.bettype,
@@ -285,7 +289,7 @@ BEGIN
 					DATEADD(M, DATEDIFF(M, 0, b.winlostdate), 0) AS winlostdate, 
 					CASE
 						WHEN b.bettype IN (9, 29, 38) THEN 999
-						WHEN b.bettype = 10 AND b.winlostdate < @OutRight_CutoffDate THEN 1
+						WHEN b.bettype = 10 AND b.winlostdate < @CutoffDate_BetType10 THEN 1
 						ELSE b.sporttype 
 					END AS sporttype,
 					b.bettype,
