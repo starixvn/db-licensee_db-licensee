@@ -17,6 +17,7 @@ AS
 		- 20180509@Joseph: Remove cheat currency name for special currencies [RedmineID: #94845]
 		- 20190618@Amanda: Add Base currency param [RedmineID: #112531]
 		- 20220914@Evan: Expand length of @BaseCurrency, @DefaultBaseCurrency [Redmine #177481]
+		- 20241011@Kelvin: AG Casino Win Loss - Enhance consistency check [RedmineID: #211837]
 */  
 
 BEGIN
@@ -102,7 +103,7 @@ BEGIN
 		   ,SUM(c.BetCount) AS TotalTrans
 		   ,SUM(c.Winlost)  AS Winlost
 		   ,-SUM(c.Winlost) AS LicenseeWinlost
-	FROM  DBRPT.bodb_report.dbo.rptDepWinlost_AGCasino c  WITH (NOLOCK)
+	FROM  bodb_LicenseeReport.dbo.rptDepWinlost_AGCasino c  WITH (NOLOCK)
 		  INNER JOIN #tmpCust ag ON c.CustID = ag.CustID AND c.Currency = ag.Currency
 	WHERE c.Winlostdate BETWEEN @FromDate AND @ToDate 
 	GROUP BY ag.recommend			
