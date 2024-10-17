@@ -119,6 +119,7 @@ AS
 		- 20240308@Eddie: Integrate UU Slots and change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
 		- 20242503@Evan: Enhance code to avoid hardcode  [RedmineID: #199843]
 		- 20240509@Evan: Integrate VS4 [RedmineID: #199347]
+		- 20241001@Kelvin: LAP - Integrate BetRadar Virtual Horses & Dogs Racing [RedmineID: #210808]
 
 	Param's Explanation:
 		@Liveindicator : indicate that whether the report will get live data or not
@@ -311,7 +312,7 @@ BEGIN
 		SET b.SportType = sbm.SportType
 		FROM #tmpBettype b 
 			INNER JOIN dbo.SportBettypeMatrix sbm (NOLOCK) ON b.Bettype = sbm.BetType
-		WHERE b.EventType IN (0,5)
+		WHERE b.EventType = 0
 		
 		--BA
 		IF ',' + @ProductCodes + ',' LIKE '%,BA,%'
@@ -389,7 +390,8 @@ BEGIN
 			 , b.CurrencyID
 			 , CASE
 				   WHEN b.bettype = 10 THEN 103
-				   WHEN bt.EventType IN (0,5) THEN  bt.SportType 
+				   WHEN bt.EventType = 0 THEN  bt.SportType
+				   WHEN bt.EventType IN (3, 5) THEN ISNULL(l3rd.SportType, 0)
 				   ELSE ISNULL(l.sporttype, 0)
 			   END AS SportType
 			 , SUM(b.turnover) turnover
@@ -403,6 +405,7 @@ BEGIN
 			INNER JOIN #LicenseeList ll ON b.SiteID = ll.LicenseeID AND b.CurrencyID = ll.Currency
 			INNER JOIN #tmpBettype bt ON b.Bettype = bt.Bettype
 			LEFT JOIN League l WITH (NOLOCK) ON b.LeagueID = l.LeagueID
+			LEFT JOIN League3rd l3rd WITH (NOLOCK) ON b.LeagueID = l3rd.League3rdId
 		WHERE b.rptDate BETWEEN @FDate AND @TempToDate
 			AND b.status NOT IN (-1, 103)
 			AND (b.IsLive = @Liveindicator OR @Liveindicator = 2)
@@ -415,10 +418,11 @@ BEGIN
 		GROUP BY b.rptDate
 			   , b.CurrencyID
 			   , CASE
-					 WHEN b.bettype = 10 THEN 103
-					 WHEN bt.EventType IN (0,5) THEN  bt.SportType 
-					 ELSE ISNULL(l.sporttype, 0)
-				 END
+				   WHEN b.bettype = 10 THEN 103
+				   WHEN bt.EventType = 0 THEN  bt.SportType
+				   WHEN bt.EventType IN (3, 5) THEN ISNULL(l3rd.SportType, 0)
+				   ELSE ISNULL(l.sporttype, 0)
+			     END
 				 
 		-- Get Tikect Parlay
 		INSERT INTO #tmpWinloss (winlostdate, Currency, SportType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)

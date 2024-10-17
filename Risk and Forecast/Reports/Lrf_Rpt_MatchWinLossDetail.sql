@@ -72,6 +72,7 @@ AS
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20242901@Evan: Integrate VS4 [RedmineID: #199347]
 		- 20240830@Lewis: BaseBallAIO - phase 2 [RedmineID: #209344]
+		- 20241001@Kelvin: LAP - Integrate BetRadar Virtual Horses & Dogs Racing [RedmineID: #210808]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -136,6 +137,8 @@ BEGIN
 		MatchCode		NVARCHAR(50),
 		HomeId			INT,
 		AwayId			INT,
+		VendorMatchId	VARCHAR(50),
+		Distance        VARCHAR(50),
 		KickOffTime		DATETIME,
 		IsNeutral		BIT,
 		LeagueId		INT,
@@ -275,7 +278,9 @@ BEGIN
 			b.AwayId = m.awayid,
 			b.IsNeutral = ISNULL(m.IsNeutral, CONVERT(BIT, 0)),
 			b.LeagueId = m.leagueid,
-			b.SportType = m.sporttype
+			b.SportType = m.sporttype,
+			b.VendorMatchId = '',
+			b.Distance = ''
 		FROM @Data AS b
 			INNER JOIN dbo.match AS m WITH (NOLOCK) ON m.matchid = b.MatchId
 		WHERE b.EventType = 1
@@ -288,7 +293,9 @@ BEGIN
 			b.KickOffTime = r.EventTime,
 			b.IsNeutral = 0,
 			b.LeagueId = r.LeagueID,
-			b.SportType = r.SportType
+			b.SportType = r.SportType,
+			b.VendorMatchId = r.VendorMatchId,
+			b.Distance = r.Distance
 		FROM @Data AS b
 			INNER JOIN dbo.VSRaceInfo AS r WITH (NOLOCK) ON r.EventID = b.MatchId
 		WHERE b.EventType = 3
@@ -412,7 +419,9 @@ BEGIN
 				b.AwayId = m.awayid,
 				b.IsNeutral = ISNULL(m.IsNeutral, CONVERT(BIT, 0)),
 				b.LeagueId = m.leagueid,
-				b.SportType = m.sporttype
+				b.SportType = m.sporttype,
+				b.VendorMatchId = '',
+				b.Distance = ''
 			FROM @Data AS b
 				INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON m.matchid = b.MatchId
 			WHERE b.EventType = 1
@@ -425,7 +434,9 @@ BEGIN
 				b.KickOffTime = r.EventTime,
 				b.IsNeutral = 0,
 				b.LeagueId = r.LeagueID,
-				b.SportType = r.SportType
+				b.SportType = r.SportType,
+				b.VendorMatchId = r.VendorMatchId,
+				b.Distance = r.Distance
 			FROM @Data AS b
 				INNER JOIN dbo.VSRaceInfo14 AS r WITH (NOLOCK) ON r.EventID = b.MatchId
 			WHERE b.EventType = 3
@@ -471,7 +482,9 @@ BEGIN
 				b.AwayId = m.awayid,
 				b.IsNeutral = ISNULL(m.IsNeutral, CONVERT(BIT, 0)),
 				b.LeagueId = m.leagueid,
-				b.SportType = m.sporttype
+				b.SportType = m.sporttype,
+				b.VendorMatchId = '',
+				b.Distance = ''
 			FROM @Data AS b
 				INNER JOIN #TmpMatch AS m ON m.matchid = b.MatchId
 			WHERE b.EventType = 1
@@ -484,7 +497,9 @@ BEGIN
 				b.KickOffTime = r.EventTime,
 				b.IsNeutral = 0,
 				b.LeagueId = r.LeagueID,
-				b.SportType = r.SportType
+				b.SportType = r.SportType,
+				b.VendorMatchId = r.VendorMatchId,
+				b.Distance = r.Distance
 			FROM @Data AS b
 				INNER JOIN DBARC.bodb_Archive.dbo.VSRaceInfo_bk AS r WITH (NOLOCK) ON r.EventID = b.MatchId
 			WHERE b.EventType = 3
@@ -520,6 +535,8 @@ BEGIN
 				MatchCode,
 				HomeId,
 				AwayId,
+				VendorMatchId,
+				Distance,
 				KickOffTime,
 				IsNeutral,
 				LeagueId,
@@ -545,6 +562,8 @@ BEGIN
 				ISNULL(b.MatchCode, '') AS MatchCode,
 				b.HomeId,
 				b.AwayId,
+				b.VendorMatchId,
+				b.Distance,
 				ISNULL(b.KickOffTime, 0) AS KickOffTime,
 				b.IsNeutral,
 				b.LeagueId,
@@ -573,6 +592,8 @@ BEGIN
 				ISNULL(b.MatchCode, ''),
 				b.HomeId,
 				b.AwayId,
+				b.VendorMatchId,
+				b.Distance,
 				ISNULL(b.KickOffTime, 0),
 				b.IsNeutral,
 				b.LeagueId,

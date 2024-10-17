@@ -48,6 +48,7 @@ AS
 		- 20220714@Hogan: Integrate Volleyball AIO [RedmineID: #175143]
 		- 20241701@Evan: Remove VS3 (old) [RedmineID: #199523]
 		- 20242901@Evan: Integrate VS4 [RedmineID: #199347]
+		- 20241001@Kelvin: LAP - Integrate BetRadar Virtual Horses & Dogs Racing [RedmineID: #210808]
 
 */
 
@@ -87,7 +88,12 @@ BEGIN
 	SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()
 
 	--Set cut off date to convert  bettype 501
-	DECLARE @501CutoffDate SMALLDATETIME = '2021-04-08'
+	DECLARE @501CutoffDate SMALLDATETIME = '2021-04-08',
+	        @CutoffDate_BetType10 SMALLDATETIME
+
+	SELECT @CutoffDate_BetType10 = CutoffDate
+    FROM dbo.Lrf_f_GetCutoffDate()
+    WHERE TypeName = 'BetType10_CustomerTurnOver'
 
 	-- VIEW specific members
 	IF @searchCust = 1
@@ -123,7 +129,7 @@ BEGIN
 						winlostdate, 
 						CASE
 							WHEN b.bettype IN (9, 29, 38) THEN 999
-							WHEN b.bettype IN (10) THEN 1
+							WHEN b.bettype = 10 AND b.winlostdate < @CutoffDate_BetType10 THEN 1
 							ELSE b.sporttype 
 						END AS sporttype,
 						bettype,
@@ -148,7 +154,7 @@ BEGIN
 						b.winlostdate, 
 						CASE
 							WHEN b.bettype IN (9, 29, 38) THEN 999
-							WHEN b.bettype IN (10) THEN 1
+							WHEN b.bettype = 10 AND b.winlostdate < @CutoffDate_BetType10 THEN 1
 							ELSE b.sporttype 
 						END AS sporttype,
 						b.bettype,
@@ -168,6 +174,7 @@ BEGIN
 										OR b.bettype = 428 -- 2H Odd/Even
 										OR (b.bettype BETWEEN 603 AND 607 OR b.bettype BETWEEN 609 AND 613 OR b.bettype BETWEEN 615 AND 617) -- Basketball bettypes
 										OR b.bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
+										OR b.bettype BETWEEN 2770 AND 2789 -- Virtual Sport 2: Virtual Horses & Dogs Racing
 										OR b.bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
 										OR b.bettype BETWEEN 5302 AND 5399 -- Virtual Sport 3 (LG)
 										OR b.bettype BETWEEN 10400 AND 10448 -- Virtual Sport 4
@@ -274,7 +281,7 @@ BEGIN
 						b.winlostdate,
 						CASE
 							WHEN b.bettype IN (9, 29, 38) THEN 999
-							WHEN b.bettype IN (10) THEN 1
+							WHEN b.bettype = 10 AND b.winlostdate < @CutoffDate_BetType10 THEN 1
 							ELSE b.sporttype 
 						END AS sporttype,
 						b.bettype,
@@ -299,7 +306,7 @@ BEGIN
 						b.winlostdate,
 						CASE
 							WHEN b.bettype IN (9, 29, 38) THEN 999
-							WHEN b.bettype IN (10) THEN 1
+							WHEN b.bettype = 10 AND b.winlostdate < @CutoffDate_BetType10 THEN 1
 							ELSE b.sporttype 
 						END AS sporttype,
 						b.bettype,
@@ -319,6 +326,7 @@ BEGIN
 										OR b.bettype = 428 -- 2H Odd/Even
 										OR (b.bettype BETWEEN 603 AND 607 OR b.bettype BETWEEN 609 AND 613 OR b.bettype BETWEEN 615 AND 617) -- Basketball bettypes
 										OR b.bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
+										OR b.bettype BETWEEN 2770 AND 2789 -- Virtual Sport 2: Virtual Horses & Dogs Racing
 										OR b.bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
 										OR b.bettype BETWEEN 5302 AND 5399 -- Virtual Sport 3 (LG)
 										OR b.bettype BETWEEN 10400 AND 10448 -- Virtual Sport 4

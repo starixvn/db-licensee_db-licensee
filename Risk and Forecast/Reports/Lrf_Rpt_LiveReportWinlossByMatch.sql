@@ -54,6 +54,7 @@ AS
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20241701@Evan: Merge VS1, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240830@Lewis: BaseBallAIO - phase 2 [RedmineID: #209344]
+		- 20241001@Kelvin: LAP - Integrate BetRadar Virtual Horses & Dogs Racing [RedmineID: #210808]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -117,7 +118,7 @@ BEGIN
 	INSERT INTO @BetType (BetType, ProductCode, EventType)
 	SELECT DISTINCT BetType, ProductPrefix, EventType
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
-	WHERE EventType = 1
+	WHERE EventType IN (1, 3)
 		AND BetType NOT IN (SELECT BetType FROM dbo.Lrf_f_SelExcludedBetType())
 
 	DECLARE @TempFromDate	SMALLDATETIME,
@@ -130,18 +131,21 @@ BEGIN
 		@TDate = @ToDate
 
 	CREATE TABLE #Data (
-		WinLostDate	SMALLDATETIME,
-		Currency	TINYINT,
-		Bettype		INT,
-		MatchId		INT,
-		HomeId		INT,
-		AwayId		INT,
-		BetCount	INT,
-		TurnOver	MONEY,
-		Winlost		MONEY,
-		LicenseeWL	MONEY,
-		Comm		MONEY,
-		PlayerComm	MONEY
+		WinLostDate		SMALLDATETIME,
+		Currency		TINYINT,
+		Bettype			INT,
+		EventType		TINYINT,
+		MatchId			INT,
+		HomeId			INT,
+		AwayId			INT,		
+		VendorMatchId	VARCHAR(50),
+		Distance        VARCHAR(50),
+		BetCount		INT,
+		TurnOver		MONEY,
+		Winlost			MONEY,
+		LicenseeWL		MONEY,
+		Comm			MONEY,
+		PlayerComm		MONEY
 	)
 
 	-- bettrans range
@@ -157,12 +161,15 @@ BEGIN
 			b.winlostdate,
 			b.currency,
 			b.bettype,
+			bt.EventType,
 			CASE
-				WHEN m.ChildMatchType = 200 THEN m.ParentID
-				ELSE m.matchid
+				WHEN bt.EventType = 1 AND m.ChildMatchType = 200 THEN m.ParentID
+				ELSE b.matchid
 			END AS MatchId,
-			m.homeid,
-			m.awayid,
+			CASE WHEN bt.EventType = 1 THEN m.homeid ELSE 0 END,
+			CASE WHEN bt.EventType = 1 THEN m.awayid ELSE 0 END,		
+			CASE WHEN bt.EventType = 3 THEN r.VendorMatchId ELSE '' END,
+			CASE WHEN bt.EventType = 3 THEN r.Distance ELSE '' END,
 			COUNT(b.transid) AS BetCount,
 			SUM(b.stake) AS Turnover,
 			SUM(b.winlost - b.actual_stake) AS WinLost,
@@ -175,11 +182,14 @@ BEGIN
 		FROM dbo.bettrans AS b WITH (NOLOCK)
 			INNER JOIN @BetType AS bt ON bt.bettype = b.bettype
 			INNER JOIN @TempAg AS ag ON ag.CustId = b.recommend
-			INNER JOIN dbo.match AS m WITH (NOLOCK) ON m.matchid = b.matchid
+			LEFT JOIN dbo.match AS m WITH (NOLOCK) ON m.matchid = b.matchid
+			LEFT JOIN dbo.VSRaceInfo AS r WITH (NOLOCK) ON r.EventID = b.matchid
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND b.statusID IN (111, 112, 113)
-			AND m.sporttype = @SportId
+			AND (CASE WHEN bt.EventType = 1 THEN m.sporttype
+			          WHEN bt.EventType = 3 THEN r.SportType
+				 END) = @SportId
 			AND ((@LiveIndicator = 0 AND b.liveindicator = 0)
 				OR (@LiveIndicator = 1 AND b.liveindicator = 1)
 				OR (@LiveIndicator = 2))
@@ -192,12 +202,16 @@ BEGIN
 			b.winlostdate,
 			b.currency,
 			b.bettype,
+			bt.EventType,
 			CASE
-				WHEN m.ChildMatchType = 200 THEN m.ParentID
-				ELSE m.matchid
+				WHEN bt.EventType = 1 AND m.ChildMatchType = 200 THEN m.ParentID
+				ELSE b.matchid
 			END,
-			m.homeid,
-			m.awayid
+			CASE WHEN bt.EventType = 1 THEN m.homeid ELSE 0 END,
+			CASE WHEN bt.EventType = 1 THEN m.awayid ELSE 0 END,		
+			CASE WHEN bt.EventType = 3 THEN r.VendorMatchId ELSE '' END,
+			CASE WHEN bt.EventType = 3 THEN r.Distance ELSE '' END
+
 	END
 
 	-- bettrans14 range
@@ -213,12 +227,15 @@ BEGIN
 			b.winlostdate,
 			b.currency,
 			b.bettype,
+			bt.EventType,
 			CASE
-				WHEN m.ChildMatchType = 200 THEN m.ParentID
-				ELSE m.matchid
+				WHEN bt.EventType = 1 AND m.ChildMatchType = 200 THEN m.ParentID
+				ELSE b.matchid
 			END AS MatchId,
-			m.homeid,
-			m.awayid,
+			CASE WHEN bt.EventType = 1 THEN m.homeid ELSE 0 END,
+			CASE WHEN bt.EventType = 1 THEN m.awayid ELSE 0 END,		
+			CASE WHEN bt.EventType = 3 THEN r.VendorMatchId ELSE '' END,
+			CASE WHEN bt.EventType = 3 THEN r.Distance ELSE '' END,
 			COUNT(b.transid) AS BetCount,
 			SUM(b.stake) AS Turnover,
 			SUM(b.winlost - b.actual_stake) AS WinLost,
@@ -231,11 +248,14 @@ BEGIN
 		FROM dbo.bettrans14 AS b WITH (NOLOCK)
 			INNER JOIN @BetType AS bt ON bt.bettype = b.bettype
 			INNER JOIN @TempAg AS ag ON ag.CustId = b.recommend
-			INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON m.matchid = b.matchid
+			LEFT JOIN dbo.match14 AS m WITH (NOLOCK) ON m.matchid = b.matchid
+			LEFT JOIN dbo.VSRaceInfo14 AS r WITH (NOLOCK) ON r.EventID = b.matchid
 		WHERE
 			b.winlostdate BETWEEN @FDate AND @TempToDate
 			AND b.statusID IN (111, 112, 113)
-			AND m.sporttype = @SportId
+			AND (CASE WHEN bt.EventType = 1 THEN m.sporttype
+			          WHEN bt.EventType = 3 THEN r.SportType
+				 END) = @SportId
 			AND ((@LiveIndicator = 0 AND b.liveindicator = 0)
 				OR (@LiveIndicator = 1 AND b.liveindicator = 1)
 				OR (@LiveIndicator = 2))
@@ -248,12 +268,15 @@ BEGIN
 			b.winlostdate,
 			b.currency,
 			b.bettype,
+			bt.EventType,
 			CASE
-				WHEN m.ChildMatchType = 200 THEN m.ParentID
-				ELSE m.matchid
+				WHEN bt.EventType = 1 AND m.ChildMatchType = 200 THEN m.ParentID
+				ELSE b.matchid
 			END,
-			m.homeid,
-			m.awayid
+			CASE WHEN bt.EventType = 1 THEN m.homeid ELSE 0 END,
+			CASE WHEN bt.EventType = 1 THEN m.awayid ELSE 0 END,		
+			CASE WHEN bt.EventType = 3 THEN r.VendorMatchId ELSE '' END,
+			CASE WHEN bt.EventType = 3 THEN r.Distance ELSE '' END
 	END
 
 	DECLARE @ExchangeRate TABLE (
@@ -272,8 +295,11 @@ BEGIN
 
 	SELECT
 		b.matchid,
+		b.EventType,
 		b.homeid,
 		b.awayid,
+		b.VendorMatchId,
+		b.Distance,
 		SUM(b.BetCount) AS BetCount,
 		CAST(SUM(b.TurnOver		* e.Rate) AS MONEY) AS Turnover,
 		CAST(SUM(b.Winlost		* e.Rate) AS MONEY) AS WinLost,
@@ -284,8 +310,11 @@ BEGIN
 		INNER JOIN @ExchangeRate AS e ON b.WinLostDate BETWEEN e.FromDate AND e.ToDate AND e.ExchangeId = b.Currency
 	GROUP BY
 		b.matchid,
+		b.EventType,
 		b.homeid,
-		b.awayid
+		b.awayid,
+		b.VendorMatchId,
+		b.Distance
 
 	DROP TABLE #Data
 END
