@@ -64,6 +64,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20240723@Kelvin: Integrate Nextspin [RedmineID: #207884]
 		- 20240916@Kelvin: Integrate ON Casino [RedmineID: #210601]
 		- 20241018@Kelvin: LAP - Integrate Playtech [RedmineID: #210659]
+		- 20241018@Kelvin: LAP - Integrate GPI [RedmineID: #209082]
 
 */
 RETURNS TABLE
@@ -124,7 +125,8 @@ RETURN
 					(89, 'FAC', 146, 0),	-- FA CHAI
 					(85, 'NS', 229, 0),		-- Nextspin
 					(96, 'ON', 138, 0),		-- ON Casino
-					(100, 'PTRNG', 148, 0)	-- Playtech 
+					(100, 'PTRNG', 148, 0),	-- Playtech 
+					(48, 'GPIRNG', 145, 0)	-- GPI
 			) d(ProductID, ProductCode, SportType, BetType)
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'
 GO
