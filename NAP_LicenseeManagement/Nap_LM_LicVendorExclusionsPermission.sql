@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-SiteConfig" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-SiteConfig" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 
 CREATE PROCEDURE [dbo].[Nap_LM_LicVendorExclusionsPermission]
 	@SiteName VARCHAR(50)
@@ -13,6 +13,8 @@ AS
 	 
 	 Revisions:
 		- 20230605@Winfred: NAP LM - New function to create agent subsidiary for TM team [redmine:#185123]
+		- 20240705@Helios  : Scale out DBCUST - Licensee Customer in GlobCustDB - modified bodbLicenseeNet [redmine: #207474]
+
 */
 BEGIN
 	SET NOCOUNT ON;

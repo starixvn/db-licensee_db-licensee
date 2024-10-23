@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbLicenseeNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 
 CREATE PROCEDURE [dbo].[NAP_LM_LicenseeSelSourceAgent]
 	@SRecommend INT,
@@ -7,9 +7,11 @@ AS
 /*
 	Created: 20230605@Winfred
 	Task: Get agent source for new function to create agent subsidiary
-	DB: DBCUST.CustDB	
+	DB: DBACC.bodb02
 	Revisions:
 		- 20230605@Winfred: NAP LM - New function to create agent subsidiary for TM team [redmine:#185123]
+		- 20240812@Helios: Scale out DBCUST - Licensee Customer in GlobCustDB [redmine: #207474] 
+
 	Parameter's Explanation:
 */
 
