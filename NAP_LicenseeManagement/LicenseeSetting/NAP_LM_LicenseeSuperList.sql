@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap,wsv_lap" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="wsv_nap,wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_LM_LicenseeSuperList] 
 	@Site		 NVARCHAR(50)
 	,@DeniedList NVARCHAR(MAX)=NULL
@@ -7,7 +7,7 @@ AS
 	Created: Elodie
 	Date: 20150129
 	Task : Licensee Setting Configuration - Get a list of Licensee super  [#6304]
-	DB: DBCUST.CustDB
+	DB: DBACC-bodb02
 	Original:
 
 	Revisions:
@@ -16,7 +16,7 @@ AS
 		- 20230629@Winfred: NAP LM - PRO - Licensee Bet Setting - Currency filter has not taken data according to Currency Code [redmine:#190436]
 		- 20240522@Tacy: NAP - Permission controls on real currency [redmineID: #202523]
 		- 20240805@Tacy: Remove linked-server/cross-db on NAP_UserControl [redmineID: #208402]
-
+		- 20240812@Helios: Scale out DBCUST - Licensee Customer in GlobCustDB - move from DBCUST to DBACC [redmine: #207474]       
 	Param's Explanation:
 	Example:
 		EXEC NAP_LM_LicenseeSuperList @Site = '12BET'
