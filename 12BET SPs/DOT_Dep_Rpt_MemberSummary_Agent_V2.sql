@@ -331,7 +331,7 @@ BEGIN
             SUM(CASE PartnerId WHEN 33 THEN TransferAmount ELSE 0 END), -- BT1
             SUM(CASE PartnerId WHEN 34 THEN TransferAmount ELSE 0 END), -- JILISlot
             SUM(CASE PartnerId WHEN 35 THEN TransferAmount ELSE 0 END),  -- PGSoft
-            SUM(CASE PartnerId WHEN 50 THEN TransferAmount ELSE 0 END)  -- Spribe
+            SUM(CASE PartnerId WHEN 14 THEN TransferAmount ELSE 0 END)  -- Spribe
         FROM bodb_Report.dbo.rptDepWinlost_Transfer3rdOthers_bk  WITH (NOLOCK) 
         WHERE  (winlostdate BETWEEN @fromDate AND @toDate) AND custid = @Custid AND recommend IN (SELECT value FROM STRING_SPLIT(@agentid,','))  
         GROUP BY winlostdate,CustId
@@ -491,7 +491,7 @@ BEGIN
             SUM(CASE PartnerId WHEN 33 THEN TransferAmount ELSE 0 END), -- BT1
             SUM(CASE PartnerId WHEN 34 THEN TransferAmount ELSE 0 END), -- JILISlot
             SUM(CASE PartnerId WHEN 35 THEN TransferAmount ELSE 0 END), -- PGSoft
-            SUM(CASE PartnerId WHEN 50 THEN TransferAmount ELSE 0 END)  -- Spribe
+            SUM(CASE PartnerId WHEN 14 THEN TransferAmount ELSE 0 END)  -- Spribe
         FROM bodb_Report.dbo.rptDepWinlost_Transfer3rdOthers  WITH(NOLOCK) 
         WHERE  (winlostdate BETWEEN @fromDate AND @toDate) AND winlostdate <> @dbtodaydate AND custid = @Custid AND recommend IN (SELECT value FROM STRING_SPLIT(@agentid,','))  
         GROUP BY winlostdate,CustId
