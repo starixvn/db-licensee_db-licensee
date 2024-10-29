@@ -33,6 +33,7 @@ AS
 		- 20230801@Evan: Integrate Virtual Sports 3 (Leap Gaming New) [RedmineID: #190908]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only  + Remove VS3 (old) [RedmineID: #199523]
 		- 20242901@Evan: Integrate VS4 [RedmineID: #199347]
+		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]
 		
 	Param's Explanation:
 		- @ProductCodes = '' - Get all
@@ -109,6 +110,9 @@ BEGIN
 		UNION ALL
 		SELECT Id, NULL, 999
 		FROM dbo.Lrf_f_GetSportTypeByProduct('VS4')
+		UNION ALL
+		SELECT Id, NULL, 999
+		FROM dbo.Lrf_f_GetSportTypeByProduct('VS6')
 	END
 
 	-- NG --

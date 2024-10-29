@@ -55,6 +55,7 @@ AS
 		- 20241701@Evan: Merge VS1, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240830@Lewis: BaseBallAIO - phase 2 [RedmineID: #209344]
 		- 20241001@Kelvin: LAP - Integrate BetRadar Virtual Horses & Dogs Racing [RedmineID: #210808]
+		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -118,7 +119,7 @@ BEGIN
 	INSERT INTO @BetType (BetType, ProductCode, EventType)
 	SELECT DISTINCT BetType, ProductPrefix, EventType
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
-	WHERE EventType IN (1, 3)
+	WHERE EventType IN (1, 3, 5)
 		AND BetType NOT IN (SELECT BetType FROM dbo.Lrf_f_SelExcludedBetType())
 
 	DECLARE @TempFromDate	SMALLDATETIME,
@@ -163,11 +164,19 @@ BEGIN
 			b.bettype,
 			bt.EventType,
 			CASE
-				WHEN bt.EventType = 1 AND m.ChildMatchType = 200 THEN m.ParentID
+				WHEN bt.EventType = 1 AND m.ChildMatchType = 200 THEN m.ParentID				
 				ELSE b.matchid
 			END AS MatchId,
-			CASE WHEN bt.EventType = 1 THEN m.homeid ELSE 0 END,
-			CASE WHEN bt.EventType = 1 THEN m.awayid ELSE 0 END,		
+			CASE 
+				WHEN bt.EventType = 1 THEN m.homeid
+				WHEN bt.EventType = 5 THEN m3rd.HomeId 
+				ELSE 0
+			END,
+			CASE 
+				WHEN bt.EventType = 1 THEN m.awayid
+				WHEN bt.EventType = 5 THEN m3rd.AwayId 
+				ELSE 0 
+			END,		
 			CASE WHEN bt.EventType = 3 THEN r.VendorMatchId ELSE '' END,
 			CASE WHEN bt.EventType = 3 THEN r.Distance ELSE '' END,
 			COUNT(b.transid) AS BetCount,
@@ -184,11 +193,13 @@ BEGIN
 			INNER JOIN @TempAg AS ag ON ag.CustId = b.recommend
 			LEFT JOIN dbo.match AS m WITH (NOLOCK) ON m.matchid = b.matchid
 			LEFT JOIN dbo.VSRaceInfo AS r WITH (NOLOCK) ON r.EventID = b.matchid
+			LEFT JOIN dbo.Match3rd m3rd WITH(NOLOCK) ON m3rd.Match3rdId = b.matchid
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND b.statusID IN (111, 112, 113)
 			AND (CASE WHEN bt.EventType = 1 THEN m.sporttype
 			          WHEN bt.EventType = 3 THEN r.SportType
+					  WHEN bt.EventType = 5 THEN m3rd.SportType
 				 END) = @SportId
 			AND ((@LiveIndicator = 0 AND b.liveindicator = 0)
 				OR (@LiveIndicator = 1 AND b.liveindicator = 1)
@@ -207,8 +218,16 @@ BEGIN
 				WHEN bt.EventType = 1 AND m.ChildMatchType = 200 THEN m.ParentID
 				ELSE b.matchid
 			END,
-			CASE WHEN bt.EventType = 1 THEN m.homeid ELSE 0 END,
-			CASE WHEN bt.EventType = 1 THEN m.awayid ELSE 0 END,		
+			CASE 
+				WHEN bt.EventType = 1 THEN m.homeid
+				WHEN bt.EventType = 5 THEN m3rd.HomeId 
+				ELSE 0
+			END,
+			CASE 
+				WHEN bt.EventType = 1 THEN m.awayid
+				WHEN bt.EventType = 5 THEN m3rd.AwayId 
+				ELSE 0 
+			END,		
 			CASE WHEN bt.EventType = 3 THEN r.VendorMatchId ELSE '' END,
 			CASE WHEN bt.EventType = 3 THEN r.Distance ELSE '' END
 
@@ -232,8 +251,16 @@ BEGIN
 				WHEN bt.EventType = 1 AND m.ChildMatchType = 200 THEN m.ParentID
 				ELSE b.matchid
 			END AS MatchId,
-			CASE WHEN bt.EventType = 1 THEN m.homeid ELSE 0 END,
-			CASE WHEN bt.EventType = 1 THEN m.awayid ELSE 0 END,		
+			CASE 
+				WHEN bt.EventType = 1 THEN m.homeid
+				WHEN bt.EventType = 5 THEN m3rd.HomeId 
+				ELSE 0
+			END,
+			CASE 
+				WHEN bt.EventType = 1 THEN m.awayid
+				WHEN bt.EventType = 5 THEN m3rd.AwayId 
+				ELSE 0 
+			END,		
 			CASE WHEN bt.EventType = 3 THEN r.VendorMatchId ELSE '' END,
 			CASE WHEN bt.EventType = 3 THEN r.Distance ELSE '' END,
 			COUNT(b.transid) AS BetCount,
@@ -250,11 +277,13 @@ BEGIN
 			INNER JOIN @TempAg AS ag ON ag.CustId = b.recommend
 			LEFT JOIN dbo.match14 AS m WITH (NOLOCK) ON m.matchid = b.matchid
 			LEFT JOIN dbo.VSRaceInfo14 AS r WITH (NOLOCK) ON r.EventID = b.matchid
+			LEFT JOIN dbo.Match3rd14 m3rd WITH(NOLOCK) ON m3rd.Match3rdId = b.matchid
 		WHERE
 			b.winlostdate BETWEEN @FDate AND @TempToDate
 			AND b.statusID IN (111, 112, 113)
 			AND (CASE WHEN bt.EventType = 1 THEN m.sporttype
 			          WHEN bt.EventType = 3 THEN r.SportType
+					  WHEN bt.EventType = 5 THEN m3rd.SportType
 				 END) = @SportId
 			AND ((@LiveIndicator = 0 AND b.liveindicator = 0)
 				OR (@LiveIndicator = 1 AND b.liveindicator = 1)
@@ -273,8 +302,16 @@ BEGIN
 				WHEN bt.EventType = 1 AND m.ChildMatchType = 200 THEN m.ParentID
 				ELSE b.matchid
 			END,
-			CASE WHEN bt.EventType = 1 THEN m.homeid ELSE 0 END,
-			CASE WHEN bt.EventType = 1 THEN m.awayid ELSE 0 END,		
+			CASE 
+				WHEN bt.EventType = 1 THEN m.homeid
+				WHEN bt.EventType = 5 THEN m3rd.HomeId 
+				ELSE 0
+			END,
+			CASE 
+				WHEN bt.EventType = 1 THEN m.awayid
+				WHEN bt.EventType = 5 THEN m3rd.AwayId 
+				ELSE 0 
+			END,		
 			CASE WHEN bt.EventType = 3 THEN r.VendorMatchId ELSE '' END,
 			CASE WHEN bt.EventType = 3 THEN r.Distance ELSE '' END
 	END
