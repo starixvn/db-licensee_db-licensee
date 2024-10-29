@@ -626,7 +626,8 @@ BEGIN
 				SportType,
 				BetType,
 				ProductCode,
-				LiveIndicator
+				LiveIndicator,
+				EventType
 			FROM @Data
 		) AS Temp
 
@@ -641,7 +642,7 @@ BEGIN
 	SELECT wl.*
 	FROM ( SELECT
 				b.BetGroup,
-				b.MatchId,
+				b.MatchId,				
 				ISNULL(b.MatchCode, '') AS MatchCode,
 				b.HomeId,
 				b.AwayId,
@@ -656,6 +657,7 @@ BEGIN
 				END AS BetType,
 				ISNULL(f.GroupProductPrefix,b.ProductCode) ProductCode,
 				b.LiveIndicator,
+				b.EventType,
 				SUM(b.BetCount) AS BetCount,
 				CAST(SUM(b.Turnover		* e.Rate) AS MONEY) AS Turnover,
 				CAST(SUM(b.WinLost		* e.Rate) AS MONEY) AS WinLost,
@@ -671,7 +673,7 @@ BEGIN
 				LEFT JOIN dbo.Lrf_f_GroupProduct() f ON f.ProductPrefix = b.ProductCode
 			GROUP BY
 				b.BetGroup,
-				b.MatchId,
+				b.MatchId,				
 				ISNULL(b.MatchCode, ''),
 				b.HomeId,
 				b.AwayId,
@@ -685,7 +687,8 @@ BEGIN
 					WHEN ISNULL(ss.bettype, 0) <> 0 THEN ss.GroupTypeId ELSE b.BetType
 				END,
 				ISNULL(f.GroupProductPrefix,b.ProductCode),
-				b.LiveIndicator
+				b.LiveIndicator,
+				b.EventType
 			) wl
 	WHERE wl.RowNum BETWEEN @RowStart AND @RowEnd
 
