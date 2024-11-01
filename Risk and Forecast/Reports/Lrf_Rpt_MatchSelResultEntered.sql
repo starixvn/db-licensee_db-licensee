@@ -117,6 +117,8 @@ BEGIN
 		 , SUM(CASE WHEN EventStatus IN ('completed') THEN 1 ELSE 0 END) AS Entered
 		 , SUM(CASE WHEN EventStatus NOT IN ('completed') THEN 1 ELSE 0 END) AS NonEntered
 	FROM dbo.Match3rd m WITH (NOLOCK)
+	INNER JOIN dbo.League3rd l WITH(NOLOCK) 
+				ON m.League3rdId = l.League3rdId AND l.IsTest = ISNULL(@isShowAll, l.IsTest)
 	WHERE m.EventDate BETWEEN @FromDate AND @ToDate
 		AND m.EventStatus <> 'closed'
 		AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType b WHERE b.SportType = m.SportType)
