@@ -51,6 +51,8 @@ Revisions:
 --20240104@Benson: Add Saba Reward Risk free Rebate (bettype: 17007) in the promotion
 --20240410@Eddie: Change metadata 'Dot_Admin,Dot_Member' to 'ow_12bet' - [Redmine: #202118]
 --20240620@Benson: Add Saba Coins Cash Exchange (bettype: 17008) in the promotion 
+--20241011@KenYang(DB06): 1.Add Spribe Report Data. 
+                          2.Remove IMone, VRLottery, Moonstone, EA, N2Live, BG, SGWin, PMSports, PMLive transfer columns
 */
 SET @agentid = [dbo].[f_StrRtrimLastSeparator] (@agentid,',')
 
@@ -68,11 +70,11 @@ DECLARE @TodayData TABLE (
 	actualrate float, Promotion money, Transfer3rd_AG money default(0),
 	Transfer3rd_CRYSTAL money default(0),
 	Transfer3rd_Opal money default(0), Transfer3rd_BetSoft money default(0), Transfer3rd_CitiBet money default(0),
-	Transfer3rd_Topaz money default(0), Transfer3rd_IMone money default(0), Transfer3rd_BTi money default(0), Transfer3rd_VRLottery money default(0),
-	Transfer3rd_Sapphire money default(0), Transfer3rd_KYGaming money default(0), Transfer3rd_Moonstone money default(0), Transfer3rd_EA money default(0),
-	Transfer3rd_N2Live money default(0), Transfer3rd_BG money default(0), Transfer3rd_AVPMini money default(0), Transfer3rd_AVPSlot money default(0),
-	Transfer3rd_EVO money default(0), Transfer3rd_Betradar money default(0), Transfer3rd_PP money default(0), Transfer3rd_SGWin money default(0),
-	Transfer3rd_PMSports money default(0), Transfer3rd_PMLive money default(0), Transfer3rd_BT1 money default(0), Transfer3rd_JILISlot money default(0), Transfer3rd_PGSoft money default(0))
+	Transfer3rd_Topaz money default(0), Transfer3rd_BTi money default(0),
+	Transfer3rd_Sapphire money default(0), Transfer3rd_KYGaming money default(0),
+	Transfer3rd_AVPMini money default(0), Transfer3rd_AVPSlot money default(0),
+	Transfer3rd_EVO money default(0), Transfer3rd_Betradar money default(0), Transfer3rd_PP money default(0),
+	Transfer3rd_BT1 money default(0), Transfer3rd_JILISlot money default(0), Transfer3rd_PGSoft money default(0), Transfer3rd_Spribe money default(0))
 
 DECLARE @WinlostTmp TABLE (
 	winlostdate datetime, custid int, currency int, OpeningBalance money default(0), Deposit money default(0), 
@@ -88,10 +90,10 @@ DECLARE @WinlostTmp_CastOutTurnover TABLE (
 DECLARE @WinlostTransfer3rd TABLE(
 	CustId int , winlostdate datetime, Transfer3rd_AG money,
 	Transfer3rd_CRYSTAL money, Transfer3rd_Opal money, Transfer3rd_BetSoft money,
-	Transfer3rd_CitiBet money, Transfer3rd_Topaz money, Transfer3rd_IMone money, Transfer3rd_BTi money, Transfer3rd_VRLottery money,
-	Transfer3rd_Sapphire money, Transfer3rd_KYGaming money, Transfer3rd_Moonstone money, Transfer3rd_EA money, Transfer3rd_N2Live money,
-	Transfer3rd_BG money, Transfer3rd_AVPMini money, Transfer3rd_AVPSlot money, Transfer3rd_EVO money, Transfer3rd_Betradar money, Transfer3rd_PP money,
-	Transfer3rd_SGWin money, Transfer3rd_PMSports money, Transfer3rd_PMLive money, Transfer3rd_BT1 money, Transfer3rd_JILISlot money, Transfer3rd_PGSoft money)
+	Transfer3rd_CitiBet money, Transfer3rd_Topaz money, Transfer3rd_BTi money,
+	Transfer3rd_Sapphire money, Transfer3rd_KYGaming money,
+	Transfer3rd_AVPMini money, Transfer3rd_AVPSlot money, Transfer3rd_EVO money, Transfer3rd_Betradar money, Transfer3rd_PP money,
+	Transfer3rd_BT1 money, Transfer3rd_JILISlot money, Transfer3rd_PGSoft money, Transfer3rd_Spribe money)
 
 IF (@fromDate < @CutDate) OR (@toDate < @CutDate)
 BEGIN
@@ -111,35 +113,27 @@ BEGIN
 
 	INSERT INTO @WinlostTransfer3rd (CustId, winlostdate, Transfer3rd_AG,
 	Transfer3rd_CRYSTAL, Transfer3rd_Opal, Transfer3rd_BetSoft, Transfer3rd_CitiBet, Transfer3rd_Topaz,
-	Transfer3rd_IMone, Transfer3rd_BTi, Transfer3rd_VRLottery, Transfer3rd_Sapphire, Transfer3rd_KYGaming, Transfer3rd_Moonstone, Transfer3rd_EA,
-	Transfer3rd_N2Live, Transfer3rd_BG, Transfer3rd_AVPMini, Transfer3rd_AVPSlot, Transfer3rd_EVO, Transfer3rd_Betradar, Transfer3rd_PP,
-	Transfer3rd_SGWin, Transfer3rd_PMSports, Transfer3rd_PMLive, Transfer3rd_BT1, Transfer3rd_JILISlot, Transfer3rd_PGSoft)
+	Transfer3rd_BTi, Transfer3rd_Sapphire, Transfer3rd_KYGaming,
+	Transfer3rd_AVPMini, Transfer3rd_AVPSlot, Transfer3rd_EVO, Transfer3rd_Betradar, Transfer3rd_PP,
+	Transfer3rd_BT1, Transfer3rd_JILISlot, Transfer3rd_PGSoft, Transfer3rd_Spribe)
 	SELECT custid, winlostdate, SUM(CASE PartnerId WHEN 3 THEN TransferAmount ELSE 0 END), --AG
 								SUM(CASE PartnerId WHEN 7 THEN TransferAmount ELSE 0 END), --CRYSTAL
 								SUM(CASE PartnerId WHEN 9 THEN TransferAmount ELSE 0 END), --Opal
 								SUM(CASE PartnerId WHEN 10 THEN TransferAmount ELSE 0 END), --BetSoft(Amber)
 								SUM(CASE PartnerId WHEN 12 THEN TransferAmount ELSE 0 END), --CitiBet(Exchange)
 								SUM(CASE WHEN PartnerId IN (13,18) THEN TransferAmount ELSE 0 END), --Topaz(FG)
-								SUM(CASE PartnerId WHEN 14 THEN TransferAmount ELSE 0 END), --IMone
 								SUM(CASE PartnerId WHEN 15 THEN TransferAmount ELSE 0 END), --BTi
-								SUM(CASE PartnerId WHEN 16 THEN TransferAmount ELSE 0 END), --VRLottery
 								SUM(CASE PartnerId WHEN 17 THEN TransferAmount ELSE 0 END), --Sapphire
 								SUM(CASE PartnerId WHEN 19 THEN TransferAmount ELSE 0 END), --KYGaming
-								SUM(CASE PartnerId WHEN 20 THEN TransferAmount ELSE 0 END), --Moonstone
-								SUM(CASE PartnerId WHEN 21 THEN TransferAmount ELSE 0 END), --EA
-								SUM(CASE PartnerId WHEN 22 THEN TransferAmount ELSE 0 END), --N2Live
-								SUM(CASE PartnerId WHEN 24 THEN TransferAmount ELSE 0 END), --BG
 								SUM(CASE PartnerId WHEN 25 THEN TransferAmount ELSE 0 END), --AVPMini
 								SUM(CASE PartnerId WHEN 26 THEN TransferAmount ELSE 0 END), --AVPSlot
 								SUM(CASE PartnerId WHEN 27 THEN TransferAmount ELSE 0 END), --EVO
 								SUM(CASE PartnerId WHEN 28 THEN TransferAmount ELSE 0 END), --Betradar
 								SUM(CASE PartnerId WHEN 29 THEN TransferAmount ELSE 0 END), --PP
-								SUM(CASE PartnerId WHEN 30 THEN TransferAmount ELSE 0 END), --SGWin
-								SUM(CASE PartnerId WHEN 31 THEN TransferAmount ELSE 0 END), --PMSports
-								SUM(CASE PartnerId WHEN 32 THEN TransferAmount ELSE 0 END), --PMLive
 								SUM(CASE PartnerId WHEN 33 THEN TransferAmount ELSE 0 END), --BT1
 								SUM(CASE PartnerId WHEN 34 THEN TransferAmount ELSE 0 END), --JILISlot
-								SUM(CASE PartnerId WHEN 35 THEN TransferAmount ELSE 0 END)  --PGSoft
+								SUM(CASE PartnerId WHEN 35 THEN TransferAmount ELSE 0 END), --PGSoft
+								SUM(CASE PartnerId WHEN 14 THEN TransferAmount ELSE 0 END)  --Spribe
 	FROM bodb_Report.dbo.rptDepWinlost_Transfer3rdOthers_bk  WITH (NOLOCK) 
 	WHERE  (winlostdate BETWEEN @fromDate AND @toDate)	
 		AND custid = @Custid AND recommend IN (SELECT value FROM STRING_SPLIT(@agentid,','))  
@@ -167,35 +161,27 @@ BEGIN
 
 	INSERT INTO @WinlostTransfer3rd (CustId, winlostdate, Transfer3rd_AG,
 	Transfer3rd_CRYSTAL, Transfer3rd_Opal, Transfer3rd_BetSoft, Transfer3rd_CitiBet, Transfer3rd_Topaz,
-	Transfer3rd_IMone, Transfer3rd_BTi, Transfer3rd_VRLottery, Transfer3rd_Sapphire, Transfer3rd_KYGaming, Transfer3rd_Moonstone, Transfer3rd_EA,
-	Transfer3rd_N2Live, Transfer3rd_BG, Transfer3rd_AVPMini, Transfer3rd_AVPSlot, Transfer3rd_EVO, Transfer3rd_Betradar, Transfer3rd_PP,
-	Transfer3rd_SGWin, Transfer3rd_PMSports, Transfer3rd_PMLive, Transfer3rd_BT1, Transfer3rd_JILISlot, Transfer3rd_PGSoft)
+	Transfer3rd_BTi, Transfer3rd_Sapphire, Transfer3rd_KYGaming,
+	Transfer3rd_AVPMini, Transfer3rd_AVPSlot, Transfer3rd_EVO, Transfer3rd_Betradar, Transfer3rd_PP,
+	Transfer3rd_BT1, Transfer3rd_JILISlot, Transfer3rd_PGSoft, Transfer3rd_Spribe)
 	SELECT custid, winlostdate, SUM(CASE PartnerId WHEN 3 THEN TransferAmount ELSE 0 END) , --AG
 								SUM(CASE PartnerId WHEN 7 THEN TransferAmount ELSE 0 END),  --CRYSTAL
 								SUM(CASE PartnerId WHEN 9 THEN TransferAmount ELSE 0 END),  --Opal
 								SUM(CASE PartnerId WHEN 10 THEN TransferAmount ELSE 0 END),  --BetSoft(Amber)
 								SUM(CASE PartnerId WHEN 12 THEN TransferAmount ELSE 0 END),  --CitiBet(Exchange)
 								SUM(CASE WHEN PartnerId IN (13,18) THEN TransferAmount ELSE 0 END),  --Topaz(FG)
-								SUM(CASE PartnerId WHEN 14 THEN TransferAmount ELSE 0 END),  --IMone
 								SUM(CASE PartnerId WHEN 15 THEN TransferAmount ELSE 0 END),  --BTi
-								SUM(CASE PartnerId WHEN 16 THEN TransferAmount ELSE 0 END),  --VRLottery
 								SUM(CASE PartnerId WHEN 17 THEN TransferAmount ELSE 0 END),  --Sapphire
 								SUM(CASE PartnerId WHEN 19 THEN TransferAmount ELSE 0 END),  --KYGaming
-								SUM(CASE PartnerId WHEN 20 THEN TransferAmount ELSE 0 END),  --Moonstone
-								SUM(CASE PartnerId WHEN 21 THEN TransferAmount ELSE 0 END),  --EA
-								SUM(CASE PartnerId WHEN 22 THEN TransferAmount ELSE 0 END),  --N2Live
-								SUM(CASE PartnerId WHEN 24 THEN TransferAmount ELSE 0 END),  --BG
 								SUM(CASE PartnerId WHEN 25 THEN TransferAmount ELSE 0 END),  --AVPMini
 								SUM(CASE PartnerId WHEN 26 THEN TransferAmount ELSE 0 END),  --AVPSlot
 								SUM(CASE PartnerId WHEN 27 THEN TransferAmount ELSE 0 END),  --EVO
 								SUM(CASE PartnerId WHEN 28 THEN TransferAmount ELSE 0 END),  --Betradar
 								SUM(CASE PartnerId WHEN 29 THEN TransferAmount ELSE 0 END),  --PP
-								SUM(CASE PartnerId WHEN 30 THEN TransferAmount ELSE 0 END),  --SGWin
-								SUM(CASE PartnerId WHEN 31 THEN TransferAmount ELSE 0 END),  --PMSports
-								SUM(CASE PartnerId WHEN 32 THEN TransferAmount ELSE 0 END),  --PMLive
 								SUM(CASE PartnerId WHEN 33 THEN TransferAmount ELSE 0 END),  --BT1
 								SUM(CASE PartnerId WHEN 34 THEN TransferAmount ELSE 0 END),  --JILISlot
-								SUM(CASE PartnerId WHEN 35 THEN TransferAmount ELSE 0 END)   --PGSoft
+								SUM(CASE PartnerId WHEN 35 THEN TransferAmount ELSE 0 END),  --PGSoft
+								SUM(CASE PartnerId WHEN 14 THEN TransferAmount ELSE 0 END)   --Spribe
 	FROM bodb_Report.dbo.rptDepWinlost_Transfer3rdOthers WITH (NOLOCK) 
 	WHERE  (winlostdate BETWEEN @fromDate AND @toDate) AND winlostdate <> @dbtodaydate
 		AND custid = @Custid AND recommend IN (SELECT value FROM STRING_SPLIT(@agentid,','))  
@@ -208,12 +194,12 @@ BEGIN
 	SELECT @TodayOpeningBalance = d.ClosingBalance
 	FROM bodb_report.dbo.rptdepwinlost d WITH(NOLOCK)
 	WHERE d.custid = @CustId AND d.winlostdate = DATEADD(dd, -1, @dbtodaydate)
-	
+
 	INSERT INTO @TodayData (custid, currency, recommend, mrecommend, srecommend, OpeningBalance, Deposit, Aff2MemTransfer, Withdrawal, Bonus, Adjustment,
 							Transfer3rd, Turnover, DrawGame, Outstanding, Winloss, Transfer3rd_AG, Transfer3rd_CRYSTAL, Transfer3rd_Opal,
-							Transfer3rd_BetSoft, Transfer3rd_CitiBet, Transfer3rd_Topaz, Transfer3rd_IMone, Transfer3rd_BTi, Transfer3rd_VRLottery, Transfer3rd_Sapphire, Transfer3rd_KYGaming, Transfer3rd_Moonstone,
-							Transfer3rd_EA, Transfer3rd_N2Live, Transfer3rd_BG, Transfer3rd_AVPMini, Transfer3rd_AVPSlot, Transfer3rd_EVO, Transfer3rd_Betradar, Transfer3rd_PP, Transfer3rd_SGWin,
-							Transfer3rd_PMSports, Transfer3rd_PMLive, Transfer3rd_BT1, Transfer3rd_JILISlot, Transfer3rd_PGSoft, Promotion)
+							Transfer3rd_BetSoft, Transfer3rd_CitiBet, Transfer3rd_Topaz, Transfer3rd_BTi, Transfer3rd_Sapphire, Transfer3rd_KYGaming,
+							Transfer3rd_AVPMini, Transfer3rd_AVPSlot, Transfer3rd_EVO, Transfer3rd_Betradar, Transfer3rd_PP,
+							Transfer3rd_BT1, Transfer3rd_JILISlot, Transfer3rd_PGSoft, Transfer3rd_Spribe, Promotion)
 	SELECT 
 		ISNULL(B.custid, T.CustId) AS custid,
 		ISNULL(B.currency, T.Currency) AS Currency, 
@@ -225,11 +211,10 @@ BEGIN
 		ISNULL(Transfer3rd, 0), ISNULL(Turnover, 0), ISNULL(DrawGame, 0), ISNULL(Outstanding, 0), ISNULL(Winloss, 0),
 		ISNULL(Transfer3rd_AG, 0),
 		ISNULL(Transfer3rd_CRYSTAL, 0), ISNULL(Transfer3rd_Opal, 0), ISNULL(Transfer3rd_BetSoft, 0),
-		ISNULL(Transfer3rd_CitiBet, 0), ISNULL(Transfer3rd_Topaz, 0), ISNULL(Transfer3rd_IMone, 0),
-		ISNULL(Transfer3rd_BTi, 0), ISNULL(Transfer3rd_VRLottery, 0), ISNULL(Transfer3rd_Sapphire, 0), ISNULL(Transfer3rd_KYGaming, 0),
-		ISNULL(Transfer3rd_Moonstone, 0), ISNULL(Transfer3rd_EA, 0), ISNULL(Transfer3rd_N2Live, 0), 
-		ISNULL(Transfer3rd_BG, 0), ISNULL(Transfer3rd_AVPMini, 0), ISNULL(Transfer3rd_AVPSlot, 0), ISNULL(Transfer3rd_EVO, 0), ISNULL(Transfer3rd_Betradar, 0), ISNULL(Transfer3rd_PP, 0),
-		ISNULL(Transfer3rd_SGWin, 0), ISNULL(Transfer3rd_PMSports, 0), ISNULL(Transfer3rd_PMLive, 0), ISNULL(Transfer3rd_BT1, 0), ISNULL(Transfer3rd_JILISlot, 0), ISNULL(Transfer3rd_PGSoft, 0),  ISNULL(Promotion, 0)
+		ISNULL(Transfer3rd_CitiBet, 0), ISNULL(Transfer3rd_Topaz, 0),
+		ISNULL(Transfer3rd_BTi, 0), ISNULL(Transfer3rd_Sapphire, 0), ISNULL(Transfer3rd_KYGaming, 0),
+		ISNULL(Transfer3rd_AVPMini, 0), ISNULL(Transfer3rd_AVPSlot, 0), ISNULL(Transfer3rd_EVO, 0), ISNULL(Transfer3rd_Betradar, 0), ISNULL(Transfer3rd_PP, 0),
+		ISNULL(Transfer3rd_BT1, 0), ISNULL(Transfer3rd_JILISlot, 0), ISNULL(Transfer3rd_PGSoft, 0), ISNULL(Transfer3rd_Spribe, 0),  ISNULL(Promotion, 0)
 	FROM
 	(
 		SELECT custid, currency, recommend, mrecommend, srecommend,
@@ -258,26 +243,18 @@ BEGIN
 		   SUM(CASE WHEN bettype IN (22026,22027) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_BetSoft',
 		   SUM(CASE WHEN bettype IN (22030,22031) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_CitiBet',
 		   SUM(CASE WHEN bettype IN (22032,22033,22042,22043) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_Topaz',
-		   SUM(CASE WHEN bettype IN (22034,22035) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_IMone',
 		   SUM(CASE WHEN bettype IN (22036,22037) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_BTi',
-		   SUM(CASE WHEN bettype IN (22038,22039) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_VRLottery',
 		   SUM(CASE WHEN bettype IN (22040,22041) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_Sapphire',
 		   SUM(CASE WHEN bettype IN (22044,22045) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_KYGaming',
-		   SUM(CASE WHEN bettype IN (22046,22047) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_Moonstone',
-		   SUM(CASE WHEN bettype IN (22048,22049) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_EA',
-		   SUM(CASE WHEN bettype IN (22050,22051) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_N2Live',
-		   SUM(CASE WHEN bettype IN (22054,22055) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_BG',
 		   SUM(CASE WHEN bettype IN (22056,22057) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_AVPMini',
 		   SUM(CASE WHEN bettype IN (22058,22059) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_AVPSlot',
 		   SUM(CASE WHEN bettype IN (22060,22061) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_EVO',
 		   SUM(CASE WHEN bettype IN (22062,22063) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_Betradar',
 		   SUM(CASE WHEN bettype IN (22064,22065) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_PP',
-		   SUM(CASE WHEN bettype IN (22066,22067) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_SGWin',
-		   SUM(CASE WHEN bettype IN (22068,22069) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_PMSports',
-		   SUM(CASE WHEN bettype IN (22070,22071) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_PMLive',
 		   SUM(CASE WHEN bettype IN (22072,22073) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_BT1',
 		   SUM(CASE WHEN bettype IN (22074,22075) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_JILISlot',
-		   SUM(CASE WHEN bettype IN (22076,22077) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_PGSoft'
+		   SUM(CASE WHEN bettype IN (22076,22077) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_PGSoft',
+		   SUM(CASE WHEN bettype IN (22034,22035) THEN winlost-actual_stake ELSE 0 END) AS 'Transfer3rd_Spribe'
 		FROM bodb02.dbo.Transfer WITH(NOLOCK)
 		WHERE custid = @CustId AND recommend in (SELECT value FROM STRING_SPLIT(@agentid,','))
 			AND winlostdate = @dbtodaydate
@@ -288,9 +265,9 @@ BEGIN
 	UPDATE d
 	SET ClosingBalance = OpeningBalance + Deposit + Aff2MemTransfer - Withdrawal + Bonus + Adjustment - Outstanding + Winloss + 
 		Transfer3rd_AG + Transfer3rd_CRYSTAL +Transfer3rd_Opal + Transfer3rd_BetSoft +
-		Transfer3rd_CitiBet + Transfer3rd_Topaz + Transfer3rd_IMone + Transfer3rd_BTi + Transfer3rd_VRLottery + Transfer3rd_Sapphire + Transfer3rd_KYGaming + Transfer3rd_Moonstone +
-		Transfer3rd_EA + Transfer3rd_N2Live + Transfer3rd_BG + Transfer3rd_AVPMini + Transfer3rd_AVPSlot + Transfer3rd_EVO + Transfer3rd_Betradar + Transfer3rd_PP + Transfer3rd_SGwin +
-		Transfer3rd_PMSports + Transfer3rd_PMLive + Transfer3rd_BT1 + Transfer3rd_JILISlot + Transfer3rd_PGSoft + Promotion,
+		Transfer3rd_CitiBet + Transfer3rd_Topaz + Transfer3rd_BTi + Transfer3rd_Sapphire + Transfer3rd_KYGaming + 
+		Transfer3rd_AVPMini + Transfer3rd_AVPSlot + Transfer3rd_EVO + Transfer3rd_Betradar + Transfer3rd_PP +
+		Transfer3rd_BT1 + Transfer3rd_JILISlot + Transfer3rd_PGSoft + Transfer3rd_Spribe + Promotion,
 		actualrate = e.ActualRate
 	FROM @TodayData d 
 		INNER JOIN exchangedailyoanda e WITH(NOLOCK) ON d.currency = e.ExchangeId
@@ -305,13 +282,11 @@ SELECT b.*, ISNULL(o.Transfer3rd_AG,0) AS Transfer3rd_AG,
 	   ISNULL(o.Transfer3rd_CRYSTAL, 0) AS Transfer3rd_CRYSTAL,
 	   ISNULL(o.Transfer3rd_Opal, 0) AS Transfer3rd_Opal, ISNULL(o.Transfer3rd_BetSoft, 0) AS Transfer3rd_BetSoft,
 	   ISNULL(o.Transfer3rd_CitiBet, 0) AS Transfer3rd_CitiBet, ISNULL(o.Transfer3rd_Topaz, 0) AS Transfer3rd_Topaz,
-	   ISNULL(o.Transfer3rd_IMone, 0) AS Transfer3rd_IMone, ISNULL(o.Transfer3rd_BTi, 0) AS Transfer3rd_BTi, ISNULL(o.Transfer3rd_VRLottery, 0) AS Transfer3rd_VRLottery,
-	   ISNULL(o.Transfer3rd_Sapphire, 0) AS Transfer3rd_Sapphire, ISNULL(o.Transfer3rd_KYGaming, 0) AS Transfer3rd_KYGaming, ISNULL(o.Transfer3rd_Moonstone, 0) AS Transfer3rd_Moonstone,
-	   ISNULL(o.Transfer3rd_EA, 0) AS Transfer3rd_EA, ISNULL(o.Transfer3rd_N2Live, 0) AS Transfer3rd_N2Live,
-	   ISNULL(o.Transfer3rd_BG, 0) AS Transfer3rd_BG, ISNULL(o.Transfer3rd_AVPMini, 0) AS Transfer3rd_AVPMini, ISNULL(o.Transfer3rd_AVPSlot, 0) AS Transfer3rd_AVPSlot, 
+	   ISNULL(o.Transfer3rd_BTi, 0) AS Transfer3rd_BTi,
+	   ISNULL(o.Transfer3rd_Sapphire, 0) AS Transfer3rd_Sapphire, ISNULL(o.Transfer3rd_KYGaming, 0) AS Transfer3rd_KYGaming,
+	   ISNULL(o.Transfer3rd_AVPMini, 0) AS Transfer3rd_AVPMini, ISNULL(o.Transfer3rd_AVPSlot, 0) AS Transfer3rd_AVPSlot, 
 	   ISNULL(o.Transfer3rd_EVO, 0) AS Transfer3rd_EVO, ISNULL(o.Transfer3rd_Betradar, 0) AS Transfer3rd_Betradar, ISNULL(o.Transfer3rd_PP, 0) AS Transfer3rd_PP,
-	   ISNULL(o.Transfer3rd_SGWin, 0) AS Transfer3rd_SGWin, ISNULL(o.Transfer3rd_PMSports, 0) AS Transfer3rd_PMSports, ISNULL(o.Transfer3rd_PMLive, 0) AS Transfer3rd_PMLive,
-	   ISNULL(o.Transfer3rd_BT1, 0) AS Transfer3rd_BT1, ISNULL(o.Transfer3rd_JILISlot, 0) AS Transfer3rd_JILISlot, ISNULL(o.Transfer3rd_PGSoft, 0) AS Transfer3rd_PGSoft
+	   ISNULL(o.Transfer3rd_BT1, 0) AS Transfer3rd_BT1, ISNULL(o.Transfer3rd_JILISlot, 0) AS Transfer3rd_JILISlot, ISNULL(o.Transfer3rd_PGSoft, 0) AS Transfer3rd_PGSoft, ISNULL(o.Transfer3rd_Spribe, 0) AS Transfer3rd_Spribe
 FROM @WinlostTmp b
 	LEFT JOIN @WinlostTransfer3rd o ON b.winlostdate = o.winlostdate
 UNION
