@@ -48,6 +48,7 @@ AS
 		- 20230814@Luke: LAP - SEA Localization [Redmine: #187132]
 		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 		- 20240202@Johnson: Restructure Commission [redmine:#179088]
+		- 20241024@Johnson: Fix Log Comm [redmine:#212155]
 	Param's Explanation:
 
 */
@@ -86,6 +87,14 @@ BEGIN
 		t.c.value('@Discount[1]','DECIMAL(9,8)')
 	FROM @xmlDiscountSettings.nodes('/Root/r') as T(c)
 	
+	INSERT INTO @tblSettings (SportType,BetType,Discount)
+	SELECT s.SportType,s.BetType,Discount
+	FROM @tblSettings t
+		CROSS APPLY (SELECT 1 Sporttype, 4 AS Bettype
+					UNION SELECT 1,5
+					UNION SELECT 2,2) s
+	WHERE t.Sporttype = 1 AND t.Bettype = 1
+	
 	UPDATE t
 	SET t.Discount_Old = l.Discount
 	FROM @tblSettings t
@@ -94,8 +103,8 @@ BEGIN
 	WHERE GroupDiscountID = @GroupDiscountID
 		AND LicenseeID = @LicenseeID
 	
-	DELETE @tblSettings 
-	WHERE Discount = Discount_Old
+	--DELETE @tblSettings 
+	--WHERE Discount = Discount_Old
 	
 	--Validate data
 	IF EXISTS (SELECT TOP 1 1 FROM @tblSettings WHERE Discount > 0.15)	
@@ -105,19 +114,7 @@ BEGIN
 										END +' 0.15', @ErrCode = 100
 		RETURN
 	END
-	
-	
-	IF EXISTS (SELECT 1 FROM @tblSettings WHERE SportType =1 AND Bettype = 1)
-	BEGIN
-		INSERT INTO @tblSettings (SportType,BetType,Discount)
-		SELECT s.SportType,s.BetType,Discount
-		FROM @tblSettings t
-			CROSS APPLY (SELECT 1 Sporttype, 4 AS Bettype
-						UNION SELECT 1,5
-						UNION SELECT 2,2) s
-		WHERE t.Sporttype = 1 AND t.Bettype = 1
-	END
-		
+			
 	SET @custID_cnt = (SELECT COUNT(1) FROM LicenseeCustDiscount WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND GroupDiscountID = @GroupDiscountID)
 	
 	IF @custID_cnt >= 100000
@@ -216,6 +213,7 @@ BEGIN
 											AND l.BetType = t.BetType
 			WHERE GroupDiscountID = @GroupDiscountID
 				AND LicenseeID = @LicenseeID
+				AND t.Discount <> t.Discount_Old
 							
 			SET @IsexistMember = (SELECT TOP (1) 1 
 						FROM LicenseeCustDiscount ls WITH (NOLOCK)
