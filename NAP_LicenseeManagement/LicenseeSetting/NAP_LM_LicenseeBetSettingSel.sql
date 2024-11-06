@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap,wsv_lap" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap,wsv_lap,svc_tig" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_LM_LicenseeBetSettingSel] 
 	@CustID INT
 	,@Product INT
@@ -23,6 +23,7 @@ AS
 		- 20220921@Winfred: Licensee DCS setting - HF Get multiple bet limit . [Feature #178013]
 		- 20231022@Winfred: NAP LM - Enhance Licensee Bet Setting function [Feature #194623]
 		- 20240429@Tacy: Apply @SettingStatus [RedmineID: #201239]
+		- 20241106@Johnson: grant permission for svc_tig [RedmineID: #213373]
 
 	Param's Explanation:
 		@Product:	1: Sportbook
