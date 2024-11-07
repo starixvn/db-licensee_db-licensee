@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_AGCasinoWinloss]
 	@FromDate				SMALLDATETIME
@@ -33,6 +33,8 @@ AS
 		- 20210622@Mark: Change on MoveBet - Add param MoveBetsDay [RedmineID: #154866]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20240226@Evan: Integrate AG promotion + remove un-use code [Redmine #201067]
+		- 20241011@Kelvin: AG Casino Win Loss - Enhance consistency check [RedmineID: #211837]
+
 
 	Param's Explanation:
 		+ @ReportType : 1 Daily, 2 Monthly
@@ -95,7 +97,7 @@ BEGIN
 		SUM(c.Winlost)  AS Winlost,
 		-SUM(c.Winlost) AS LicenseeWinlost,
 		ISNULL(-SUM(c.JpContribution),0) AS JpContribution
-	FROM bodb_report.dbo.rptDepWinlost_AGCasino AS c WITH (NOLOCK)
+	FROM bodb_LicenseeReport.dbo.rptDepWinlost_AGCasino AS c WITH (NOLOCK)
 		INNER JOIN #tmpCust AS ct ON c.Custid = ct.CustId
 	WHERE c.Winlostdate BETWEEN @TempFromDate AND @TempToDate 
 	GROUP BY c.Winlostdate, c.Bettype, ct.Currency
