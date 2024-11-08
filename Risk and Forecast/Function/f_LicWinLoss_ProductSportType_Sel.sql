@@ -69,6 +69,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20241202@Kelvin: Integrate GPI Live Casino [RedmineID: #214458]
 		- 20241230@Kelvin: Integrate PLAY STAR RNG [RedmineID: #216058]
 		- 20250213@Kelvin: Integrate ASKMESLOT [RedmineID: #217785]
+		- 20241107@Kelvin: Integrate VS5 [RedmineID: #207582]
 
 */
 RETURNS TABLE
@@ -134,7 +135,8 @@ RETURN
 					(71, 'VS6', 134, 0),	-- VS6
 					(90, 'GPILC', 144, 0),  -- GPI Live Casino
 					(91, 'PS', 143, 0),		-- PLAY STAR
-					(103, 'ASK', 130, 0)	-- ASKMESLOT
+					(103, 'ASK', 130, 0),	-- ASKMESLOT
+					(88, 'VS5', 147, 0)		-- Virtually Soccer (VS5)
 			) d(ProductID, ProductCode, SportType, BetType)
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'
 GO

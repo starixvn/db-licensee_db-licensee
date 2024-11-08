@@ -122,6 +122,7 @@ AS
 		- 20242503@Evan: Enhance code to avoid hardcode  [RedmineID: #199843]
 		- 20240509@Evan: Integrate VS4 [RedmineID: #199347]
 		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
+		- 20241107@Kelvin: Integrate VS5 [RedmineID: #207582]
 
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -250,7 +251,7 @@ BEGIN
 			INNER JOIN #tmpBettype bt ON b.bettype = bt.Bettype
 			OUTER APPLY
 			(
-				SELECT ISNULL(CASE WHEN b.bettype IN (9,29,2799,10449) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
+				SELECT ISNULL(CASE WHEN b.bettype IN (9,29,2799,10449,11099) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 			) s
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @TDate
@@ -297,7 +298,7 @@ BEGIN
 			AND b.status NOT IN (-1,103)
 			AND (b.IsLive = @Liveindicator OR @Liveindicator = 2) 
 			AND b.CustomerCategory IN (-1, 1001, 1003)
-			AND b.bettype NOT IN (9,29,2799,10449) 
+			AND b.bettype NOT IN (9,29,2799,10449,11099) 
 			AND 1 = CASE WHEN b.bettype BETWEEN 1611 AND 1697 AND b.TicketType = 2 THEN 0
 						WHEN b.bettype BETWEEN 3801 AND 3899 AND b.TicketType = 2 THEN 0
 					ELSE 1 END
@@ -326,7 +327,7 @@ BEGIN
 		WHERE
 			b.rptDate BETWEEN @FDate AND @TempToDate
 			AND b.status NOT IN (-1,103)
-			AND b.Bettype IN (9,29,2799,10449)
+			AND b.Bettype IN (9,29,2799,10449,11099)
 			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			AND (b.IsLive = @Liveindicator OR @Liveindicator = 2) 
 		GROUP BY

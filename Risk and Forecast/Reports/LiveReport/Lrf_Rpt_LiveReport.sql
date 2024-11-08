@@ -19,6 +19,7 @@ AS
 		- 20240325@Evan: Initial SP  [RedmineID: #199843]
 		- 20240509@Evan: Integrate VS4 [RedmineID: #199347]
 		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
+		- 20241107@Kelvin: Integrate VS5 [RedmineID: #207582]
 
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -136,7 +137,7 @@ BEGIN
 			INNER JOIN #tmpBettype bt ON b.bettype = bt.Bettype AND bt.RefTable NOT IN (1,2)
 			OUTER APPLY
 			(
-				SELECT ISNULL(CASE WHEN b.bettype IN (9,29,2799,10449) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
+				SELECT ISNULL(CASE WHEN b.bettype IN (9,29,2799,10449,11099) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 			) s
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @TDate

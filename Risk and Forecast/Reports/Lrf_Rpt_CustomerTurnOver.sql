@@ -99,6 +99,7 @@ AS
 		- 20241001@Kelvin: LAP - Integrate BetRadar Virtual Horses & Dogs Racing [RedmineID: #210808]
 		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]
 		- 20250117@Kelvin: BetBy - Change from Multiple Odds to Decimal Odds (VS6) [RedmineID: #216783]
+		- 20241107@Kelvin: Integrate VS5 [RedmineID: #207582]
 		
 	Parameter's Explanation:
 		- @ReportBy: 1: daily, 2: monthly
@@ -354,7 +355,7 @@ BEGIN
 			, CASE
 				WHEN b.bettype IN (9, 29, 38) THEN 999
 				WHEN bt.EventType = 0 THEN CASE
-												WHEN b.bettype IN (2799,10449) THEN b.oddsid
+												WHEN b.bettype IN (2799,10449,11099) THEN b.oddsid
 												WHEN bt.ProductID = 63 THEN b.matchid
 												ELSE 1
 											END
@@ -407,6 +408,7 @@ BEGIN
 			OR bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
 			OR bettype BETWEEN 5302 AND 5399 -- Virtual Sport 3 (LG)
 			OR bettype BETWEEN 10400 AND 10448 -- Virtual Sport 4
+			OR bettype BETWEEN 11050 AND 11098 -- Virtual Sport 5
 			OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 			OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 			OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)

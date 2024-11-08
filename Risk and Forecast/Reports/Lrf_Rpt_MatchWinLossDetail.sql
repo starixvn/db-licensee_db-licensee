@@ -74,6 +74,7 @@ AS
 		- 20241001@Kelvin: LAP - Integrate BetRadar Virtual Horses & Dogs Racing [RedmineID: #210808]
 		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]
 		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
+		- 20241107@Kelvin: Integrate VS5 [RedmineID: #207582]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -179,8 +180,7 @@ BEGIN
 			CASE
 				WHEN b.bettype = 10 THEN 2
 				WHEN b.bettype = 29 THEN 4
-				WHEN b.bettype = 2799 THEN 3
-				WHEN b.bettype = 10449 THEN 3
+				WHEN b.bettype IN (2799,10449,11099) THEN 3
 				WHEN bt.EventType = 0 THEN 5
 				ELSE 0
 			END AS BetGroup,
@@ -201,7 +201,7 @@ BEGIN
 			CASE
 				WHEN b.bettype = 10 THEN 103
 				WHEN b.bettype = 29 THEN 102
-				WHEN b.bettype IN (2799,10449) THEN 104
+				WHEN b.bettype IN (2799,10449,11099) THEN 104
 				WHEN bt.EventType = 0 THEN b.matchid
 				ELSE 0
 			END AS SportType,
@@ -233,7 +233,7 @@ BEGIN
 			CASE
 				WHEN b.bettype = 10 THEN 103
 				WHEN b.bettype = 29 THEN 102
-				WHEN b.bettype IN (2799,10449) THEN 104
+				WHEN b.bettype IN (2799,10449,11099) THEN 104
 				WHEN bt.EventType = 0 THEN b.matchid
 				ELSE 0
 			END,
@@ -327,6 +327,7 @@ BEGIN
 				WHEN 29 THEN 4
 				WHEN 2799 THEN 3
 				WHEN 10449 THEN 3
+				WHEN 11099 THEN 3
 				ELSE 0
 			END AS BetGroup,
 			CASE
@@ -346,7 +347,7 @@ BEGIN
 			CASE
 				WHEN b.bettype = 10 THEN 103
 				WHEN b.bettype = 29 THEN 102
-				WHEN b.bettype IN (2799,10449) THEN 104
+				WHEN b.bettype IN (2799,10449,11099) THEN 104
 				WHEN bt.EventType = 0 THEN b.matchid
 				ELSE 0
 			END AS SportType,
@@ -378,7 +379,7 @@ BEGIN
 			CASE
 				WHEN b.bettype = 10 THEN 103
 				WHEN b.bettype = 29 THEN 102
-				WHEN b.bettype IN (2799,10449) THEN 104
+				WHEN b.bettype IN (2799,10449,11099) THEN 104
 				WHEN bt.EventType = 0 THEN b.matchid
 				ELSE 0
 			END,
