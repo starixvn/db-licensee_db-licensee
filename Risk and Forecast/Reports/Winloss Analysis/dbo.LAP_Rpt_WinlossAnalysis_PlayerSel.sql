@@ -1,5 +1,5 @@
 /*<info serverAlias="DBEXT-bodb02" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
-ALTER PROCEDURE dbo.LAP_Rpt_WinlossAnalysis_PlayerSel
+ALTER PROCEDURE [dbo].[LAP_Rpt_WinlossAnalysis_PlayerSel]
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
 	@MovebetDay		SMALLDATETIME,
@@ -56,6 +56,7 @@ AS
 		- 20242901@Evan: Integrate VS4 (Parlay Sport) [RedmineID: #199347]
 		- 20240731@Kelvin: Sorting by Bet Count is not properly when Grouping by Bettype [RedmineID: #208657]
 		- 20240725@Kelvin: Comment out redundant code  [RedmineID: #208144]
+		- 20241113@Kelvin: Fix issue show VS tickets although only select all bettypes of Sportsbook  [RedmineID: #213614]
 
 	Param's Explanation:
 		- @SortKey: 0:GroupBy, 1:BetCount, 2:Turnover, 3:NetTurnover, 4:MemWinloss, 5:MemComm, 6:LicWinloss, 7:LicComm, 8:AmtDueToBA, 9:BetEffective, 10:Margin
@@ -277,7 +278,7 @@ BEGIN
 		IsPriceBettype,
 		GroupTypeId
 	FROM bodb02.dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductCheck, @SportCheck, @BettypeIdsCheck, @SBBACheck) AS bm
-	WHERE @BettypeIdsCheck IS NULL OR EXISTS (SELECT 1 FROM #BetTypeSel bts WHERE bts.ProductId = bm.ProductId)
+	WHERE @BettypeIdsCheck IS NULL OR EXISTS (SELECT 1 FROM #BetTypeSel bts WHERE bts.ProductId = bm.ProductId AND bts.Bettype = ISNULL(bm.GroupTypeId,bm.Bettype))
 	
 	;WITH CTE_ProductMap AS (
 		SELECT DISTINCT ISNULL(lf.ProductId,t.ProductId) AS ProductId
