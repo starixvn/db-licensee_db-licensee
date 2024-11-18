@@ -81,7 +81,8 @@ BEGIN
 		@NASporttype		SMALLINT = 0,
 		@SettleToDate		SMALLDATETIME,
 		@SettleFromDate		SMALLDATETIME,
-		@SettleToTime		DATETIME
+		@SettleToTime		DATETIME,
+		@SettleFromTime		SMALLDATETIME -- SUM data range
 		;
 
 	DECLARE @IsVIPOnlyCheck		BIT,
@@ -100,9 +101,8 @@ BEGIN
 		@startTime		= CURRENT_TIMESTAMP,
 		@today			= CAST(@startTime AS DATE),
 		@yesterday		= DATEADD(DAY, -1, @today),
-		@FromDate		= IIF(@FromDate IS NULL, @yesterday, @FromDate),
-		@ToDate			= IIF(@ToDate IS NULL, @today, @ToDate),
-		@SettleFromDate	= IIF(@FromDate >= @MovebetDay, DATEADD(DAY, -1, @FromDate), @FromDate),
+		@FromDate		= ISNULL(@FromDate, @yesterday),
+		@ToDate			= ISNULL(@ToDate, @today),
 
 		----------------Default values 
 		@ProductCodes	= IIF(@ProductCodes='ALL', NULL, @ProductCodes),
@@ -192,15 +192,29 @@ BEGIN
 	FROM AgencySel a;
 
 	--TODO: Check max winlostdate in bettrans
-	SELECT @SettleToTime = DATEADD(DAY, 1, @ToDate);
-	SELECT @SettleToDate = MAX(b.winlostdate)
-	FROM dbo.bettrans b (NOLOCK)
-		INNER JOIN #AgencySel a ON a.recommend = b.recommend
-	WHERE b.statusID in (111,112,113)
-		AND b.SettlementTime < @SettleToTime
-	;
-	SET @SettleToDate = ISNULL(@SettleToDate, @ToDate)
+	IF @ToDate >= @MovebetDay
+	BEGIN
+		SELECT @SettleToTime	= DATEADD(DAY, 1, @ToDate); -- full day of 24 h
+		SELECT @SettleToDate	= MAX(b.winlostdate)
+		FROM dbo.bettrans b (NOLOCK)
+			INNER JOIN #AgencySel a ON a.recommend = b.recommend
+		WHERE b.statusID in (111,112,113)
+			AND b.SettlementTime < @SettleToTime
+		;
+	END
+	SET @SettleToDate = ISNULL(@SettleToDate, DATEADD(DAY, 1, @ToDate));
 
+	--TODO: Check min winlostdate in rptLicenseeSumWinloss
+	IF @FromDate <= @MovebetDay
+	BEGIN
+		SELECT @SettleFromTime = @FromDate; -- from beginning of a day
+		SELECT @SettleFromDate = MIN(b.winlostdate)
+		FROM bodb_LicenseeSummary.dbo.rptLicenseeSumWinloss b (NOLOCK)
+			INNER JOIN #AgencySel a ON a.recommend = b.recommend
+		WHERE b.SettlementTime >= @SettleFromTime
+	END
+	SET @SettleFromDate = ISNULL(@SettleFromDate, DATEADD(DAY, -1, @FromDate)); 
+		
 	--TODO: Settle Time
 	DROP TABLE IF EXISTS #tmpSettleTime;
 	CREATE TABLE #tmpSettleTime (SettlementTime DATETIME PRIMARY KEY, SettlementTimeEnd DATETIME);
@@ -231,8 +245,9 @@ BEGIN
 	INSERT INTO #tmpSettleTime(SettlementTime, SettlementTimeEnd)
 	SELECT st.SettlementTime, DATEADD(HOUR, 1, st.SettlementTime) AS SettlementTimeEnd
 	FROM CTE_SettleDate ft
-	CROSS JOIN CTE_SettleTime a
-	CROSS APPLY (SELECT CAST(CONCAT(FORMAT(ft.SettleDate, 'yyyy-MM-dd'), ' ', a.HourPart, ':00:00') AS DATETIME)) AS st (SettlementTime)
+		CROSS JOIN CTE_SettleTime a
+		CROSS APPLY (SELECT CAST(CONCAT(FORMAT(ft.SettleDate, 'yyyy-MM-dd'), ' ', a.HourPart, ':00:00') AS DATETIME)) AS st (SettlementTime)
+	WHERE @ToDate >= @FromDate
 
 	--TODO: Player selection
 	DECLARE @checkPlayer BIT = 0;
@@ -391,7 +406,7 @@ BEGIN
 	CREATE CLUSTERED INDEX CIX_tmpExchange ON #tmpExchange(ExchangeID);
 
 	INSERT INTO #tmpExchange
-	SELECT FromDate, ToDate, ExchangeID, Rate
+	SELECT FromDate, DATEADD(DAY, 1,ToDate) AS ToDate, ExchangeID, Rate
 	FROM dbo.Lrf_f_GetExchangeRate(@SettleFromDate, @SettleToDate, @BaseCurrency, '') AS e
 	WHERE EXISTS (SELECT TOP 1 1 FROM #AgencySel a WHERE a.Currency = e.ExchangeID)
 
@@ -453,7 +468,7 @@ BEGIN
 		FROM [dbo].[bettrans] b WITH(NOLOCK)
 			INNER JOIN #AgencySel a ON a.recommend = b.recommend 
 			INNER JOIN #tmpBettype s ON s.bettype = b.bettype AND s.RefTable NOT IN (1,2)
-			INNER JOIN #tmpExchange e on e.ExchangeID =  a.Currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
+			INNER JOIN #tmpExchange e on e.ExchangeID =  a.Currency AND b.SettlementTime BETWEEN e.FromDate AND e.ToDate
 			LEFT JOIN dbo.[match] m WITH(NOLOCK) ON b.matchid = m.matchid
 			LEFT JOIN [dbo].[Match3rd] m3rd WITH(NOLOCK) ON m3rd.Match3rdId = b.matchid
 			LEFT JOIN dbo.League l WITH(NOLOCK) ON m.leagueid = l.leagueid
@@ -594,7 +609,7 @@ BEGIN
 		 FROM bodb_LicenseeSummary.dbo.rptLicenseeSumWinloss b WITH(NOLOCK)
 			INNER JOIN #AgencySel a ON a.recommend = b.recommend
 			INNER JOIN #tmpBettype bt ON bt.Bettype = b.Bettype
-			INNER JOIN #tmpExchange e on e.ExchangeID =  a.Currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
+			INNER JOIN #tmpExchange e on e.ExchangeID =  a.Currency AND b.SettlementTime BETWEEN e.FromDate AND e.ToDate
 			LEFT JOIN #tmpSabaSporttype saba ON saba.Sporttype = b.Sporttype AND saba.LeagueGroupID = b.LeagueGroupId AND b.winlostdate >= ISNULL(saba.CutOffDate,b.winlostdate)
 			CROSS APPLY (
 				SELECT CASE 
