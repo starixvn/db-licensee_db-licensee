@@ -47,6 +47,7 @@ AS
 		- 20242901@Evan: Integrate VS4 (Parlay Sport) [RedmineID: #199347]
 		- 20240731@Kelvin: Sorting by Bet Count is not properly when Grouping by Bettype [RedmineID: #208657]
 		- 20240725@Kelvin: Comment out redundant code  [RedmineID: #208144]
+		- 20241113@Kelvin: Fix issue show VS tickets although only select all bettypes of Sportsbook  [RedmineID: #213614]
 		
 
 	Param's Explanation:
@@ -251,9 +252,9 @@ BEGIN
 		IsPriceBettype,
 		GroupTypeId
 	FROM bodb02.dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductCheck, @SportCheck, @BettypeIdsCheck, @SBBACheck) AS bm
-	WHERE @BettypeIdsCheck IS NULL OR EXISTS (SELECT 1 FROM #BetTypeSel bts WHERE bts.ProductId = bm.ProductId)
+	WHERE @BettypeIdsCheck IS NULL OR EXISTS (SELECT 1 FROM #BetTypeSel bts WHERE bts.ProductId = bm.ProductId AND bts.Bettype = ISNULL(bm.GroupTypeId,bm.Bettype))
 
-	;WITH CTE_ProductMap AS (
+	;WITH CTE_ProductMap AS ( 
 		SELECT DISTINCT ISNULL(lf.ProductId,t.ProductId) AS ProductId
 					  , ISNULL(lf.ProductId,t.Product3rdId) AS Product3rdId
 		FROM #tmpBettype t	LEFT JOIN bodb02.dbo.Lrf_f_GroupProduct() lf ON t.ProductId = lf.GroupProductId
