@@ -4,7 +4,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_Audit_DailyBets_Total]
 	@Date			DATE,
 	@ProductCodes	VARCHAR(100),
 	@GameCodes		VARCHAR(MAX),
-	@CurrencyList   VARCHAR(500),
+	@CurrencyList   VARCHAR(MAX),
 	@BaseCurrency	VARCHAR(12) = '',
 	@SearchRefNo	BIGINT = NULL
 AS 
@@ -26,6 +26,7 @@ AS
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20231123@Bobby: Daily Bets - Ivory search RefNo [redmine: #197277]
 		- 20240109@Bobby: Daily Bets - 12B add Payout column [redmine: #198014]
+		- 20241121@Kelvin: LAP - Support BRL base currency, extend length @CurrencyList [RedmineID: #208662]
 
 	Developer's Notes:
 		

@@ -4,7 +4,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LicWinloss_FromAPI]
 	@FromDate		DATE,
 	@ToDate			DATE,
 	@ProductCodes	VARCHAR(100)='',
-	@CurrencyList   VARCHAR(500)='',
+	@CurrencyList   VARCHAR(MAX)='',
 	@ReportType		TINYINT = 1,
 	@BaseCurrency	VARCHAR(12) = '',
     @DefaultBaseCurrency	VARCHAR(12) = ''
@@ -30,6 +30,7 @@ AS
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20230814@Evan: Ivory - Adjust rate show real figures for currency cut off 000 [Redmine #192602]
 		- 20231109@Evan: 12B - Adjust rate show real figures for currency cut off 000 [Redmine #196557]
+		- 20241121@Kelvin: LAP - Support BRL base currency, extend length @CurrencyList [RedmineID: #208662]
 
 	Developer's Notes:
 		- Notes: If product is NG, search tickets with GameType is RNG
