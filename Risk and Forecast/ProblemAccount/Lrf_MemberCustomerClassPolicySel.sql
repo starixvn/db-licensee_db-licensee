@@ -15,6 +15,7 @@ AS
 			- 20240911@Winfred: LAP - Risk Level - Show policy of Saba Virtual Sports [redmine:#210545]
 			- 20240920@Winfred: Fix all Site all Curency [redmine:#211114]
 			- 20240930@Winfred: LAP - Risk Level - Integrate Top Priority settings [redmine:#211185]
+			- 20241017@Winfred: LAP - Risk Level Bet Setting - Show league group info [redmine:#211952]
 	*/
 BEGIN
 	SET NOCOUNT ON
@@ -106,11 +107,14 @@ BEGIN
 							)
 	)
 
-	SELECT  CustomerClass, CustomerClassDetail,Liveindicator,SportType,RuleTitle,PolicyTitle,LeagueGroupID,(BetDelay-1)*100 AS BetDelay,NextBetInterval,MaxBet,MaxPerMatch,Site, RepeatedBets, Platform, MinBet, CurrencyID, AgentBetInterval, DisableParlay, TopPriority, fOrder
+	SELECT  CustomerClass, CustomerClassDetail,Liveindicator,SportType,RuleTitle,PolicyTitle,LeagueGroupID,
+CASE WHEN LeagueGroupID = '-1' THEN '-' ELSE LeagueGroupGroupName END AS LeagueGroupGroupName, (BetDelay-1)*100 AS BetDelay,NextBetInterval,MaxBet,MaxPerMatch,Site, RepeatedBets, Platform, MinBet, CurrencyID, AgentBetInterval, DisableParlay, TopPriority, fOrder
 	FROM T1
 		CROSS APPLY (
-			SELECT STRING_AGG(LeagueGroupID,',') WITHIN GROUP (ORDER BY LeagueGroupID) AS LeagueGroupID
+			SELECT STRING_AGG(LeagueGroupID,',') WITHIN GROUP (ORDER BY LeagueGroupID) AS LeagueGroupID,
+				   STRING_AGG(GroupName,',') WITHIN GROUP (ORDER BY LeagueGroupID) AS LeagueGroupGroupName
 			FROM CustomerClassRuleLeagueGroup rlg WITH (NOLOCK)
+			LEFT JOIN LeagueGroup l WITH (NOLOCK) ON rlg.LeagueGroupID = l.GroupID
 			WHERE T1.RuleID = rlg.RuleID
 		) lg
 	ORDER BY fOrder,TopPriority DESC,CustomerClass,SportType,LeagueGroupID,Liveindicator
