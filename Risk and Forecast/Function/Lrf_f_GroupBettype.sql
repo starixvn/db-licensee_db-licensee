@@ -12,7 +12,7 @@ RETURN
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20242901@Evan: Integrate VS4 [RedmineID: #199347]
 		- 20241024@Kelvin: LAP - Integrate Betby (VS6), add DBBOF-bodb02,DBSID-bodb02 [RedmineID: #212446]
-		- 20241107@Kelvin: Integrate VS5 [RedmineID: #207582]
+		- 20241107@Kelvin: Integrate VS5, add DBBOF-bodb02,DBSID-bodb02 [RedmineID: #207582]
 
 	Remark: Sportsbook + VS sport
 */
