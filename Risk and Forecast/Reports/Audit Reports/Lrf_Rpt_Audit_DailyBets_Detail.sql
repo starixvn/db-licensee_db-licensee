@@ -2,7 +2,7 @@
 ALTER PROCEDURE [dbo].[Lrf_Rpt_Audit_DailyBets_Detail]  	
 	@SiteName		VARCHAR(50),
 	@Date			DATE,
-	@CurrencyList   VARCHAR(500),
+	@CurrencyList   VARCHAR(MAX),
 	@PageIndex		INT = 1,
 	@PageSize		INT = 50,
 	@SearchRefNo	BIGINT = NULL,
@@ -14,6 +14,7 @@ AS
    
     Revisions:  
 		- 20240108@Bobby: LAP - AuditIvory daily bets detail [RedmineID: #194883]
+		- 20241121@Kelvin: LAP - Support BRL base currency, extend length @CurrencyList [RedmineID: #208662]
 		
     Param's Explanation:  
 	  + @CurrencyList: xml structure
