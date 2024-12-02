@@ -16,6 +16,7 @@ AS
 	
 	Revisions: 
 		- 20240705@Eden  : Scale out DBCUST - Licensee Customer in GlobCustDB [redmine: #207474]
+		- 20241128@Eden  : Enhance performance [redmine: #214375]
 
 	Param's Explanation: 
 		Sample Format:
@@ -58,14 +59,14 @@ BEGIN
 	BEGIN
 		INSERT INTO @super (CustID, CurrencyId)
 		SELECT custid, currency
-		FROM GlobCustDB.dbo.custinfomini WITH (NOLOCK)
+		FROM GlobCustDB.dbo.custinfomini WITH (NOLOCK,INDEX(UQ_CustInfoMini_username))
 		WHERE roleid = 4 AND username LIKE @SuperWildCardText
 	END
 	ELSE
 	BEGIN
 		INSERT INTO @super (CustID, CurrencyId)
 		SELECT custid, currency
-		FROM GlobCustDB.dbo.custinfomini WITH (NOLOCK)
+		FROM GlobCustDB.dbo.custinfomini WITH (NOLOCK,INDEX(UQ_CustInfoMini_username))
 		WHERE roleid = 4 AND username LIKE @SuperWildCardText AND currency = @Currency
 	END
 	
