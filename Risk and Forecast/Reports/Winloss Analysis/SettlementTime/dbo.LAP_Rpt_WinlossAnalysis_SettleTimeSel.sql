@@ -45,7 +45,7 @@ AS
 
 	Revisions:
 		- 20240915@Bobby: Created [RedmineID: #209631]
-		
+		- 20241206@Kelvin: LAP - Enhance reports showing betfrom data [Redmine: #214849]
 
 	Param's Explanation:
 		- @SortKey: 0:GroupBy, 1:BetCount, 2:Turnover, 3:NetTurnover, 4:MemWinloss, 5:MemComm, 6:LicWinloss, 7:LicComm, 8:AmtDueToBA, 9:BetEffective, 10:Margin
@@ -316,6 +316,13 @@ BEGIN
 		@StatusCheck	= CONCAT(@StatusCheck, IIF(CHARINDEX('113', @StatusCheck) > 0, ',115',''))
 	WHERE @StatusCheck <> 'ALL';
 
+	DECLARE @OthersPlatformType		INT
+		  , @IsOthersPlatformCheck INT
+
+	-- Set default Others PlatformType, 88: (Normal licensee), 99: (Jollysports licensee), -1: N/A	
+	SELECT @OthersPlatformType	   = IIF(@SpecialPlatform = 0, 88, IIF(@SpecialPlatform = 2, 99, -1))
+	      ,@IsOthersPlatformCheck  = CASE WHEN @PlatformCheck = 'ALL' OR (',' + @PlatformCheck + ',' LIKE '%,' + CAST(@OthersPlatformType AS VARCHAR(5)) + ',%') THEN 1 ELSE 0 END
+
 	--TODO: Platform Check
 	DECLARE @PlatformSel TABLE(PlatformId INT, BetFrom VARCHAR(5));
 
@@ -435,7 +442,7 @@ BEGIN
 				WHEN @GroupBy = 4 THEN ISNULL(ck.sporttype, @NASporttype) 
 				WHEN @GroupBy = 5 THEN ISNULL(s.GroupTypeId, s.bettype)
 				WHEN @GroupBy = 6 THEN a.currency
-				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
+				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, @OthersPlatformType)
 				WHEN @GroupBy = 8 THEN b.custid
 				WHEN @GroupBy = 9 THEN b.recommend
 				WHEN @GroupBy = 10 THEN DATEDIFF(HOUR, @BaseDate, st.SettlementTime) -- group by Hour of SettlementTime
@@ -521,7 +528,7 @@ BEGIN
 					END AS SportType,
 					ISNULL(CASE WHEN b.bettype IN(29,2799,10449) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 			) AS ck
-			INNER JOIN @PlatformSel bf ON bf.betfrom =  b.BetFrom
+			LEFT JOIN @PlatformSel bf ON bf.betfrom =  b.BetFrom
 			INNER JOIN #tmpSettleTime st ON b.SettlementTime >= st.SettlementTime AND b.SettlementTime < st.SettlementTimeEnd
 			LEFT JOIN #playerSel psl ON psl.custid = b.custid
 		WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
@@ -531,7 +538,7 @@ BEGIN
 			AND (',' + @strProduct3rd + ',' LIKE '%,' + CAST(ck.Product3rdIdMix AS VARCHAR(3)) + ',%')
 			AND NOT (ck.Product3rdIdMix IN (0, 3) AND ba.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB & BA
 			AND (@checkPlayer = 0 OR psl.custid > 0)
-		
+			AND (bf.PlatformId IS NOT NULL OR @IsOthersPlatformCheck = 1)
 		GROUP BY --st.SettlementTime,
 			CASE 
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(HOUR, -DATEPART(HOUR, st.SettlementTime), st.SettlementTime))
@@ -540,7 +547,7 @@ BEGIN
 				WHEN @GroupBy = 4 THEN ISNULL(ck.sporttype, @NASporttype) 
 				WHEN @GroupBy = 5 THEN ISNULL(s.GroupTypeId, s.bettype) 
 				WHEN @GroupBy = 6 THEN a.currency
-				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId,-1)
+				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, @OthersPlatformType)
 				WHEN @GroupBy = 8 THEN b.custid
 				WHEN @GroupBy = 9 THEN b.recommend
 				WHEN @GroupBy = 10 THEN DATEDIFF(HOUR, @BaseDate, st.SettlementTime) -- group by Hour of SettlementTime
@@ -574,7 +581,7 @@ BEGIN
 				WHEN @GroupBy = 4 THEN ISNULL(ISNULL(saba.SabaSportType, b.Sporttype), @NASporttype)
 				WHEN @GroupBy = 5 THEN ISNULL(bt.GroupTypeId, bt.bettype) 
 				WHEN @GroupBy = 6 THEN a.Currency
-				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
+				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, @OthersPlatformType)
 				WHEN @GroupBy = 8 THEN b.custid
 				WHEN @GroupBy = 9 THEN b.recommend
 				WHEN @GroupBy = 10 THEN DATEDIFF(HOUR, @BaseDate, b.SettlementTime) -- group by Hour of SettlementTime
@@ -620,7 +627,7 @@ BEGIN
 					ELSE bt.Product3rdId 
 				END AS Product3rdId
 			) AS ck
-			INNER JOIN @PlatformSel bf ON bf.betfrom =  b.BetFrom
+			LEFT JOIN @PlatformSel bf ON bf.betfrom =  b.BetFrom
 			INNER JOIN (
 				SELECT DISTINCT Product3rdId FROM #ProductSel
 			) AS ps ON ps.Product3rdId = ck.Product3rdId
@@ -633,7 +640,7 @@ BEGIN
 			AND (b.sporttype <> 0 AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ISNULL(saba.SabaSportType, b.Sporttype) AS VARCHAR(10)) + ',%'))
 			AND NOT (b.Product3rdId IN (0, 3) AND b.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB & BA
 			AND (@checkPlayer = 0 OR psl.custid > 0)
-
+			AND (bf.PlatformId IS NOT NULL OR @IsOthersPlatformCheck = 1)
 		GROUP BY 
 			CASE 
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(HOUR, -DATEPART(HOUR, b.SettlementTime), b.SettlementTime))
@@ -642,7 +649,7 @@ BEGIN
 				WHEN @GroupBy = 4 THEN ISNULL(ISNULL(saba.SabaSportType, b.Sporttype), @NASporttype)
 				WHEN @GroupBy = 5 THEN ISNULL(bt.GroupTypeId, bt.bettype) 
 				WHEN @GroupBy = 6 THEN a.Currency
-				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
+				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, @OthersPlatformType)
 				WHEN @GroupBy = 8 THEN b.custid
 				WHEN @GroupBy = 9 THEN b.recommend
 				WHEN @GroupBy = 10 THEN DATEDIFF(HOUR, @BaseDate, b.SettlementTime) -- group by Hour of SettlementTime

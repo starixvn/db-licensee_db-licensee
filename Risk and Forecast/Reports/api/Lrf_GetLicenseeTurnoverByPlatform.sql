@@ -44,6 +44,7 @@ AS
 		- 20231122@Evan: Handle betfrom for Jollysports [Redmine: #197192]	
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240311@Eddie: Change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
+		- 20241206@Kelvin: LAP - Enhance reports showing betfrom data [Redmine: #214849]
 		
 	Param explanation:
 		- @ProductList: SB and all products grouped under SB (SB,SLT,...)
@@ -105,7 +106,11 @@ BEGIN
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
 	WHERE BetType NOT IN (901, 902, 903, 904)
 
-	-- Get platform list
+	-- Set default Others PlatformType, 88: (Normal licensee), 99: (Jollysports licensee), -1: N/A
+	DECLARE @OthersPlatformType INT
+	SELECT @OthersPlatformType = IIF(@SpecialPlatform = 0, 88, IIF(@SpecialPlatform = 2, 99, -1))
+
+	-- Get platform list	
 	CREATE TABLE #PlatformList (betfrom NVARCHAR(4) PRIMARY KEY, PlatformType TINYINT);
 
 	INSERT INTO #PlatformList (betfrom, PlatformType)
@@ -144,12 +149,12 @@ BEGIN
 		SELECT
 			b.winlostdate,
 			tma.currency,
-			pl.PlatformType,
+			ISNULL(pl.PlatformType, @OthersPlatformType) AS PlatformType,
 			SUM(b.stake) AS Turnover
 		FROM dbo.bettrans AS b WITH (NOLOCK)
 			INNER JOIN #TempAg AS tma ON tma.CustID = b.recommend
 			INNER JOIN @BetType AS bt ON bt.BetType = b.bettype
-			INNER JOIN #PlatformList AS pl ON pl.betfrom = b.betfrom
+			LEFT JOIN #PlatformList AS pl ON pl.betfrom = b.betfrom
 		WHERE b.statusID IN (111, 112, 113)
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND b.tpositiontaking <> 0
@@ -175,12 +180,12 @@ BEGIN
 		SELECT
 			b.winlostdate,
 			b.currency,
-			pl.PlatformType,
+			ISNULL(pl.PlatformType, @OthersPlatformType) AS PlatformType,
 			SUM(b.turnover) AS Turnover
 		FROM bodb_LicenseeReport.dbo.rptLicWinloss2 AS b WITH (NOLOCK)
 			INNER JOIN #TempAg AS ag ON ag.CustId = b.recommend
 			INNER JOIN @SportType AS s ON s.SportType = b.sporttype
-			INNER JOIN #PlatformList AS pl ON pl.betfrom = b.betfrom
+			LEFT JOIN #PlatformList AS pl ON pl.betfrom = b.betfrom
 		WHERE b.winlostdate BETWEEN @FDate AND @TempToDate
 			AND b.roleid = 1
 			AND b.statusID <> 101 --exclude REJECT bets

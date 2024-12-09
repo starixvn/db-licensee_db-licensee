@@ -57,6 +57,7 @@ AS
 		- 20240731@Kelvin: Sorting by Bet Count is not properly when Grouping by Bettype [RedmineID: #208657]
 		- 20240725@Kelvin: Comment out redundant code  [RedmineID: #208144]
 		- 20241113@Kelvin: Fix issue show VS tickets although only select all bettypes of Sportsbook  [RedmineID: #213614]
+		- 20241206@Kelvin: LAP - Enhance reports showing betfrom data [Redmine: #214849]
 
 	Param's Explanation:
 		- @SortKey: 0:GroupBy, 1:BetCount, 2:Turnover, 3:NetTurnover, 4:MemWinloss, 5:MemComm, 6:LicWinloss, 7:LicComm, 8:AmtDueToBA, 9:BetEffective, 10:Margin
@@ -221,6 +222,13 @@ BEGIN
 		@StatusCheck = CONCAT(@StatusCheck, IIF(CHARINDEX('113', @StatusCheck) > 0, ',115',''))
 	WHERE @StatusCheck <> 'ALL';
 
+	DECLARE @OthersPlatformType		INT
+		  , @IsOthersPlatformCheck INT
+
+	-- Set default Others PlatformType, 88: (Normal licensee), 99: (Jollysports licensee), -1: N/A	
+	SELECT @OthersPlatformType	   = IIF(@SpecialPlatform = 0, 88, IIF(@SpecialPlatform = 2, 99, -1))
+	      ,@IsOthersPlatformCheck  = CASE WHEN @PlatformCheck = 'ALL' OR (',' + @PlatformCheck + ',' LIKE '%,' + CAST(@OthersPlatformType AS VARCHAR(5)) + ',%') THEN 1 ELSE 0 END
+
 	--TODO: Platform Check
 	DECLARE @PlatformSel TABLE(PlatformId INT, BetFrom VARCHAR(5));
 
@@ -369,7 +377,7 @@ BEGIN
 				WHEN @GroupBy = 4 THEN ISNULL(ck.sporttype, @NASporttype) 
 				WHEN @GroupBy = 5 THEN ISNULL(s.GroupTypeId, s.bettype) 
 				WHEN @GroupBy = 6 THEN a.currency
-				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
+				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, @OthersPlatformType)
 				WHEN @GroupBy = 8 THEN b.custid
 				WHEN @GroupBy = 9 THEN b.recommend
 				ELSE 0
@@ -458,15 +466,14 @@ BEGIN
 					END AS SportType,
 					ISNULL(CASE WHEN b.bettype IN(29,2799,10449) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 			) AS ck
-			INNER JOIN @PlatformSel bf ON b.betfrom =  bf.BetFrom
-			
+			LEFT JOIN @PlatformSel bf ON b.betfrom =  bf.BetFrom			
 		WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
 			AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 			AND (',' + @LiveIds + ',' LIKE '%,' + CAST(ck.liveindicator AS VARCHAR(3)) + ',%')
 			AND (ck.sporttype <> 0 AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ck.sporttype AS VARCHAR(10)) + ',%'))
 			AND (',' + @strProduct3rd + ',' LIKE '%,' + CAST(ck.Product3rdIdMix AS VARCHAR(3)) + ',%')
 			AND NOT (ck.Product3rdIdMix IN (0, 3) AND ba.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB & BA
-		
+			AND (bf.PlatformId IS NOT NULL OR @IsOthersPlatformCheck = 1)
 		GROUP BY CASE 
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
 				WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(DAY, -DATEPART(DAY, b.Winlostdate) +1, b.Winlostdate)) 
@@ -474,7 +481,7 @@ BEGIN
 				WHEN @GroupBy = 4 THEN ISNULL(ck.sporttype, @NASporttype) 
 				WHEN @GroupBy = 5 THEN ISNULL(s.GroupTypeId, s.bettype) 
 				WHEN @GroupBy = 6 THEN a.currency
-				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId,-1)
+				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, @OthersPlatformType)
 				WHEN @GroupBy = 8 THEN b.custid
 				WHEN @GroupBy = 9 THEN b.recommend
 				ELSE 0
@@ -505,7 +512,7 @@ BEGIN
 				WHEN @GroupBy = 4 THEN ISNULL(b.sporttype, @NASporttype) 
 				WHEN @GroupBy = 5 THEN b.bettype 
 				WHEN @GroupBy = 6 THEN b.currency
-				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId,-1)
+				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, @OthersPlatformType)
 				WHEN @GroupBy = 8 THEN b.custid
 				WHEN @GroupBy = 9 THEN b.recommend
 				ELSE 0
@@ -577,10 +584,10 @@ BEGIN
 				
 		) AS b
 		INNER JOIN #tmpExchange e on e.ExchangeID =  b.Currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
-		CROSS APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf
+		OUTER APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf
 		WHERE 
 			(@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(b.sporttype AS VARCHAR(10)) + ',%')
-
+			AND (bf.PlatformId IS NOT NULL OR @IsOthersPlatformCheck = 1)
 		GROUP BY
 			CASE 
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
@@ -589,7 +596,7 @@ BEGIN
 				WHEN @GroupBy = 4 THEN ISNULL(b.sporttype, @NASporttype) 
 				WHEN @GroupBy = 5 THEN b.bettype 
 				WHEN @GroupBy = 6 THEN b.currency
-				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId,-1)
+				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, @OthersPlatformType)
 				WHEN @GroupBy = 8 THEN b.custid
 				WHEN @GroupBy = 9 THEN b.recommend
 				ELSE 0
@@ -621,7 +628,7 @@ BEGIN
 				WHEN @GroupBy = 4 THEN ISNULL(ck.Sporttype, @NASporttype) 
 				WHEN @GroupBy = 5 THEN ISNULL(bt.GroupTypeId, bt.bettype) 
 				WHEN @GroupBy = 6 THEN a.Currency
-				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
+				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, @OthersPlatformType)
 				WHEN @GroupBy = 8 THEN b.custid
 				WHEN @GroupBy = 9 THEN b.recommend
 				ELSE 0
@@ -673,7 +680,7 @@ BEGIN
 						ELSE bt.Product3rdId
 					END AS Product3rdIdMix
 			) AS ck
-			CROSS APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf
+			OUTER APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf
 			CROSS APPLY (SELECT TOP 1 ps.Product3rdId FROM #ProductSel ps WHERE ck.Product3rdIdMix = ps.Product3rdId) AS ps
 		WHERE
 			b.WinlostDate BETWEEN @rptFromDate AND @rptToDate
@@ -687,7 +694,7 @@ BEGIN
 			--			ELSE 1
 			--		END
 			AND NOT (b.Product3rdId IN (0, 3) AND b.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB & BA
-
+			AND (bf.PlatformId IS NOT NULL OR @IsOthersPlatformCheck = 1)
 		GROUP BY 
 			CASE 
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
@@ -696,7 +703,7 @@ BEGIN
 				WHEN @GroupBy = 4 THEN ISNULL(ck.Sporttype, @NASporttype) 
 				WHEN @GroupBy = 5 THEN ISNULL(bt.GroupTypeId, bt.bettype) 
 				WHEN @GroupBy = 6 THEN a.Currency
-				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, -1)
+				WHEN @GroupBy = 7 THEN ISNULL(bf.platformId, @OthersPlatformType)
 				WHEN @GroupBy = 8 THEN b.custid
 				WHEN @GroupBy = 9 THEN b.recommend
 				ELSE 0
