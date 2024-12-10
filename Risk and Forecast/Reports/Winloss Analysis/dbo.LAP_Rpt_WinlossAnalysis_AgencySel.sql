@@ -204,12 +204,14 @@ BEGIN
 	      ,@IsSelectOthersPlatform  = CASE WHEN @PlatformCheck = 'ALL' OR (',' + @PlatformCheck + ',' LIKE '%,' + CAST(@OthersPlatformType AS VARCHAR(5)) + ',%') THEN 1 ELSE 0 END
 
 	--TODO: Platform Check	
-	DECLARE @PlatformSel TABLE(PlatformId INT, BetFrom VARCHAR(5));
+	DECLARE @PlatformSel TABLE(PlatformId INT, BetFrom VARCHAR(5), IsSelect INT);
 
 	INSERT INTO @PlatformSel
-	SELECT DISTINCT f.PlatformType, f.betfrom
-	FROM bodb02.[dbo].[Lrf_f_BetFromType_Sel](@PlatformCheck) AS f
-	WHERE SpecialPlatform = @SpecialPlatform
+	SELECT DISTINCT f_all.PlatformType, f_all.betfrom, IIF(f_select IS NOT NULL, 1 ,0)
+	FROM bodb02.[dbo].[Lrf_f_BetFromType_Sel]('ALL') AS f_all
+		LEFT JOIN bodb02.[dbo].[Lrf_f_BetFromType_Sel](@PlatformCheck) AS f_select
+			ON f_select.SpecialPlatform = @SpecialPlatform AND f_select.betfrom = f_all.betfrom
+	WHERE f_all.SpecialPlatform = @SpecialPlatform
 	
 
 	--TODO: Event Products, Sports, Bettypes selection
@@ -392,7 +394,7 @@ BEGIN
 				,SUM(0 * b.Rate) AS BaseAmtDueToBA
 				,SUM(ABS(b.winlost) * b.Rate) AS BaseBetEffective
 			FROM CTE_bettrans AS b
-				OUTER APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf
+				LEFT JOIN @PlatformSel bf ON b.betfrom = bf.BetFrom
 				OUTER APPLY (
 					SELECT 
 						CASE 
@@ -400,7 +402,10 @@ BEGIN
 							ELSE b.Product3rdID END AS Product3rdIdMix
 				) AS ck
 			WHERE NOT (b.ProductId = 1 AND b.TicketType = 1 AND @CashoutModeCheck = 1) -- exclude CO from SB
-				AND (bf.PlatformId IS NOT NULL OR @IsSelectOthersPlatform = 1)
+				AND (
+						(bf.IsSelect = 1 AND bf.PlatformId IS NOT NULL)
+					 OR (bf.IsSelect IS NULL AND @IsSelectOthersPlatform = 1)
+					)
 			GROUP BY 
 				CASE 
 					WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
@@ -525,14 +530,17 @@ BEGIN
 						END AS SportType,
 						ISNULL(CASE WHEN b.bettype IN(29,2799,10449) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 				) AS ck
-				LEFT JOIN @PlatformSel bf ON bf.betfrom =  b.BetFrom
+				LEFT JOIN @PlatformSel bf ON bf.betfrom = b.BetFrom
 			WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
 				AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 				AND (',' + @LiveIds + ',' LIKE '%,' + CAST(ck.liveindicator AS VARCHAR(3)) + ',%')
 				AND (ck.sporttype <> 0 AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ck.sporttype AS VARCHAR(10)) + ',%'))
 				AND (',' + @strProduct3rd + ',' LIKE '%,' + CAST(ck.Product3rdIdMix AS VARCHAR(3)) + ',%')
 				AND NOT (ck.Product3rdIdMix IN (0, 3) AND ba.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB & BA
-				AND (bf.PlatformId IS NOT NULL OR @IsSelectOthersPlatform = 1)
+				AND (
+						(bf.IsSelect = 1 AND bf.PlatformId IS NOT NULL)
+					 OR (bf.IsSelect IS NULL AND @IsSelectOthersPlatform = 1)
+					)
 			GROUP BY CASE 
 					WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
 					WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(DAY, -DATEPART(DAY, b.Winlostdate) +1, b.Winlostdate)) 
@@ -640,10 +648,13 @@ BEGIN
 				
 		) AS b
 		INNER JOIN #tmpExchange e on e.ExchangeID =  b.Currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
-		LEFT JOIN @PlatformSel bf ON bf.betfrom =  b.BetFrom
+		LEFT JOIN @PlatformSel bf ON bf.betfrom = b.BetFrom
 		WHERE 
 			(@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(b.sporttype AS VARCHAR(10)) + ',%')
-			AND (bf.PlatformId IS NOT NULL OR @IsSelectOthersPlatform = 1)
+			AND (
+					(bf.IsSelect = 1 AND bf.PlatformId IS NOT NULL)
+				 OR (bf.IsSelect IS NULL AND @IsSelectOthersPlatform = 1)
+				)
 		GROUP BY
 			CASE 
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
@@ -731,7 +742,7 @@ BEGIN
 					ELSE bt.Product3rdId 
 				END AS Product3rdId
 			) AS ck
-			LEFT JOIN @PlatformSel bf ON bf.betfrom =  b.BetFrom
+			LEFT JOIN @PlatformSel bf ON bf.betfrom = b.BetFrom
 			INNER JOIN (
 				SELECT DISTINCT Product3rdId FROM #ProductSel
 			) AS ps ON ps.Product3rdId = ck.Product3rdId
@@ -748,7 +759,10 @@ BEGIN
 			--			ELSE 1
 			--		END
 			AND NOT (b.Product3rdId IN (0, 3) AND b.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB & BA
-			AND (bf.PlatformId IS NOT NULL OR @IsSelectOthersPlatform = 1)
+			AND (
+					(bf.IsSelect = 1 AND bf.PlatformId IS NOT NULL)
+				 OR (bf.IsSelect IS NULL AND @IsSelectOthersPlatform = 1)
+				)
 		GROUP BY 
 			CASE 
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
