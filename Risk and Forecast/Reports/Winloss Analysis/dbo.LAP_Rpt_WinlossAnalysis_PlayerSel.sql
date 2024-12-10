@@ -223,11 +223,11 @@ BEGIN
 	WHERE @StatusCheck <> 'ALL';
 
 	DECLARE @OthersPlatformType		INT
-		  , @IsOthersPlatformCheck INT
+		  , @IsSelectOthersPlatform INT
 
 	-- Set default Others PlatformType, 88: (Normal licensee), 99: (Jollysports licensee), -1: N/A	
 	SELECT @OthersPlatformType	   = IIF(@SpecialPlatform = 0, 88, IIF(@SpecialPlatform = 2, 99, -1))
-	      ,@IsOthersPlatformCheck  = CASE WHEN @PlatformCheck = 'ALL' OR (',' + @PlatformCheck + ',' LIKE '%,' + CAST(@OthersPlatformType AS VARCHAR(5)) + ',%') THEN 1 ELSE 0 END
+	      ,@IsSelectOthersPlatform  = CASE WHEN @PlatformCheck = 'ALL' OR (',' + @PlatformCheck + ',' LIKE '%,' + CAST(@OthersPlatformType AS VARCHAR(5)) + ',%') THEN 1 ELSE 0 END
 
 	--TODO: Platform Check
 	DECLARE @PlatformSel TABLE(PlatformId INT, BetFrom VARCHAR(5));
@@ -473,7 +473,7 @@ BEGIN
 			AND (ck.sporttype <> 0 AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ck.sporttype AS VARCHAR(10)) + ',%'))
 			AND (',' + @strProduct3rd + ',' LIKE '%,' + CAST(ck.Product3rdIdMix AS VARCHAR(3)) + ',%')
 			AND NOT (ck.Product3rdIdMix IN (0, 3) AND ba.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB & BA
-			AND (bf.PlatformId IS NOT NULL OR @IsOthersPlatformCheck = 1)
+			AND (bf.PlatformId IS NOT NULL OR @IsSelectOthersPlatform = 1)
 		GROUP BY CASE 
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
 				WHEN @GroupBy = 2 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(DAY, -DATEPART(DAY, b.Winlostdate) +1, b.Winlostdate)) 
@@ -587,7 +587,7 @@ BEGIN
 		OUTER APPLY (SELECT TOP 1 bf.PlatformId FROM @PlatformSel bf WHERE b.betfrom =  bf.BetFrom) AS bf
 		WHERE 
 			(@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(b.sporttype AS VARCHAR(10)) + ',%')
-			AND (bf.PlatformId IS NOT NULL OR @IsOthersPlatformCheck = 1)
+			AND (bf.PlatformId IS NOT NULL OR @IsSelectOthersPlatform = 1)
 		GROUP BY
 			CASE 
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
@@ -694,7 +694,7 @@ BEGIN
 			--			ELSE 1
 			--		END
 			AND NOT (b.Product3rdId IN (0, 3) AND b.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB & BA
-			AND (bf.PlatformId IS NOT NULL OR @IsOthersPlatformCheck = 1)
+			AND (bf.PlatformId IS NOT NULL OR @IsSelectOthersPlatform = 1)
 		GROUP BY 
 			CASE 
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
