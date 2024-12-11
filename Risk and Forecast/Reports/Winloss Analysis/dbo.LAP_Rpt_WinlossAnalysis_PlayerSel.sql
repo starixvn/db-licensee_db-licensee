@@ -238,7 +238,7 @@ BEGIN
 		LEFT JOIN bodb02.[dbo].[Lrf_f_BetFromType_Sel](@PlatformCheck) AS fs
 			ON fs.SpecialPlatform = @SpecialPlatform AND fs.betfrom = fa.betfrom
 	WHERE fa.SpecialPlatform = @SpecialPlatform
-		AND 1 = CASE WHEN @IsSelectOthersPlatform = 1 THEN 1 ELSE IIF(f.betfrom IS NOT NULL,1,0) END
+		AND 1 = CASE WHEN @IsSelectOthersPlatform = 1 THEN 1 ELSE IIF(fs.betfrom IS NOT NULL,1,0) END
 	
 	--TODO: Event Products, Sports, Bettypes selection
 	INSERT INTO #tmpSabaSporttype
