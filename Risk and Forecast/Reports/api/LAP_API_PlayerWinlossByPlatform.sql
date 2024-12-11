@@ -77,17 +77,24 @@ BEGIN
 		AND cont.Bettype IS NULL
 		AND tbl.ProductID NOT IN (11, 31, 37) -- NOT Support Saba Promotion, AG-Casino & Exchange
 	
-	-- Set default Others PlatformType, 88: (Normal licensee), 99: (Jollysports licensee), -1: N/A
-	DECLARE @OthersPlatformType INT
-	SELECT @OthersPlatformType = IIF(@SpecialPlatform = 0, 88, IIF(@SpecialPlatform = 2, 99, -1))
+	DECLARE @OthersPlatformType		INT
+		  , @IsSelectOthersPlatform INT
+
+	-- Set default Others PlatformType, 88: (Normal licensee), 99: (Jollysports licensee), -1: N/A	
+	SELECT @OthersPlatformType	    = IIF(@SpecialPlatform = 0, 88, IIF(@SpecialPlatform = 2, 99, -1))
+	      ,@IsSelectOthersPlatform  = CASE WHEN @PlatformCheck = 'ALL' OR (',' + @PlatformCheck + ',' LIKE '%,' + CAST(@OthersPlatformType AS VARCHAR(5)) + ',%') THEN 1 ELSE 0 END
 
 	--TODO: platform filtering		
 	DROP TABLE IF EXISTS #rptPlatform;
-	CREATE TABLE #rptPlatform (PlatformType INT, betfrom VARCHAR(5));
+	CREATE TABLE #rptPlatform (PlatformType INT, betfrom VARCHAR(5), IsSelect INT);
+
 	INSERT INTO #rptPlatform
-	SELECT DISTINCT f.PlatformType, f.betfrom
-	FROM bodb02.[dbo].[Lrf_f_BetFromType_Sel](@PlatformCheck) AS f
-	WHERE SpecialPlatform = @SpecialPlatform
+	SELECT DISTINCT fa.PlatformType, fa.betfrom, IIF(fs.betfrom IS NOT NULL, 1 ,0)
+	FROM [bodb02].[dbo].[Lrf_f_BetFromType_Sel]('ALL') AS fa
+		LEFT JOIN [bodb02].[dbo].[Lrf_f_BetFromType_Sel](@PlatformCheck) AS fs
+			ON fs.SpecialPlatform = @SpecialPlatform AND fs.betfrom = fa.betfrom
+	WHERE fa.SpecialPlatform = @SpecialPlatform 
+		AND 1 = CASE WHEN @IsSelectOthersPlatform = 1 THEN 1 ELSE IIF(f.betfrom IS NOT NULL,1,0) END
 
 	--TODO: Get exchange rate
 	DECLARE @Exchange TABLE (ExchangeId	INT, Rate FLOAT);
@@ -119,6 +126,7 @@ BEGIN
 				LEFT JOIN #rptPlatform AS pl ON pl.betfrom = rpt.betfrom 
 			WHERE rpt.winlostdate = @apiDate
 				AND rpt.statusid IN (111, 112, 113)
+				AND (pl.IsSelect = 1 OR (pl.IsSelect IS NULL AND @IsSelectOthersPlatform = 1))
 			GROUP BY pl.PlatformType, rpt.custid
 
 			UNION ALL
@@ -134,6 +142,7 @@ BEGIN
 				LEFT JOIN #rptPlatform AS pl ON pl.betfrom = rpt.betfrom
 			WHERE rpt.winlostdate = @apiDate
 				AND rpt.statusid IN (111, 112, 113)
+				AND (pl.IsSelect = 1 OR (pl.IsSelect IS NULL AND @IsSelectOthersPlatform = 1))
 			GROUP BY pl.PlatformType, rpt.custid
 
 			UNION ALL
@@ -149,6 +158,7 @@ BEGIN
 				LEFT JOIN #rptPlatform AS pl ON pl.betfrom = rpt.betfrom
 			WHERE rpt.winlostdate = @apiDate
 				AND rpt.statusid IN (111, 112, 113)
+				AND (pl.IsSelect = 1 OR (pl.IsSelect IS NULL AND @IsSelectOthersPlatform = 1))
 			GROUP BY pl.PlatformType, rpt.custid
 		) AS rpt
 		INNER JOIN bodb02.dbo.Customer c ON c.custid = rpt.custid
@@ -182,6 +192,7 @@ BEGIN
 				LEFT JOIN #rptPlatform AS pl ON pl.betfrom = rpt.betfrom 
 			WHERE rpt.winlostdate = @apiDate
 				AND rpt.statusid IN (111, 112, 113)
+				AND (pl.IsSelect = 1 OR (pl.IsSelect IS NULL AND @IsSelectOthersPlatform = 1))
 			GROUP BY pl.PlatformType, rpt.custid
 
 			UNION ALL
@@ -197,6 +208,7 @@ BEGIN
 				LEFT JOIN #rptPlatform AS pl ON pl.betfrom = rpt.betfrom
 			WHERE rpt.winlostdate = @apiDate
 				AND rpt.statusid IN (111, 112, 113)
+				AND (pl.IsSelect = 1 OR (pl.IsSelect IS NULL AND @IsSelectOthersPlatform = 1))
 			GROUP BY pl.PlatformType, rpt.custid
 
 			UNION ALL
@@ -212,6 +224,7 @@ BEGIN
 				LEFT JOIN #rptPlatform AS pl ON pl.betfrom = rpt.betfrom
 			WHERE rpt.winlostdate = @apiDate
 				AND rpt.statusid IN (111, 112, 113)
+				AND (pl.IsSelect = 1 OR (pl.IsSelect IS NULL AND @IsSelectOthersPlatform = 1))
 			GROUP BY pl.PlatformType, rpt.custid
 		) AS rpt
 		INNER JOIN bodb02.dbo.Customer c ON c.custid = rpt.custid

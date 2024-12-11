@@ -320,18 +320,19 @@ BEGIN
 		  , @IsSelectOthersPlatform INT
 
 	-- Set default Others PlatformType, 88: (Normal licensee), 99: (Jollysports licensee), -1: N/A	
-	SELECT @OthersPlatformType	   = IIF(@SpecialPlatform = 0, 88, IIF(@SpecialPlatform = 2, 99, -1))
+	SELECT @OthersPlatformType	    = IIF(@SpecialPlatform = 0, 88, IIF(@SpecialPlatform = 2, 99, -1))
 	      ,@IsSelectOthersPlatform  = CASE WHEN @PlatformCheck = 'ALL' OR (',' + @PlatformCheck + ',' LIKE '%,' + CAST(@OthersPlatformType AS VARCHAR(5)) + ',%') THEN 1 ELSE 0 END
 
 	--TODO: Platform Check
 	DECLARE @PlatformSel TABLE(PlatformId INT, BetFrom VARCHAR(5), IsSelect INT);
 
 	INSERT INTO @PlatformSel
-	SELECT DISTINCT f_all.PlatformType, f_all.betfrom, IIF(f_select IS NOT NULL, 1 ,0)
-	FROM bodb02.[dbo].[Lrf_f_BetFromType_Sel]('ALL') AS f_all
-		LEFT JOIN bodb02.[dbo].[Lrf_f_BetFromType_Sel](@PlatformCheck) AS f_select
-			ON f_select.SpecialPlatform = @SpecialPlatform AND f_select.betfrom = f_all.betfrom
-	WHERE f_all.SpecialPlatform = @SpecialPlatform
+	SELECT DISTINCT fa.PlatformType, fa.betfrom, IIF(fs.betfrom IS NOT NULL, 1 ,0)
+	FROM bodb02.[dbo].[Lrf_f_BetFromType_Sel]('ALL') AS fa
+		LEFT JOIN bodb02.[dbo].[Lrf_f_BetFromType_Sel](@PlatformCheck) AS fs
+			ON fs.SpecialPlatform = @SpecialPlatform AND fs.betfrom = fa.betfrom
+	WHERE fa.SpecialPlatform = @SpecialPlatform
+		AND 1 = CASE WHEN @IsSelectOthersPlatform = 1 THEN 1 ELSE IIF(f.betfrom IS NOT NULL,1,0) END
 	
 	--TODO: Event Products, Sports, Bettypes selection
 	INSERT INTO #tmpSabaSporttype
@@ -540,10 +541,7 @@ BEGIN
 			AND (',' + @strProduct3rd + ',' LIKE '%,' + CAST(ck.Product3rdIdMix AS VARCHAR(3)) + ',%')
 			AND NOT (ck.Product3rdIdMix IN (0, 3) AND ba.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB & BA
 			AND (@checkPlayer = 0 OR psl.custid > 0)
-			AND (
-					(bf.IsSelect = 1 AND bf.PlatformId IS NOT NULL)
-				 OR (bf.IsSelect IS NULL AND @IsSelectOthersPlatform = 1)
-				)
+			AND (bf.IsSelect = 1 OR (bf.IsSelect IS NULL AND @IsSelectOthersPlatform = 1))
 		GROUP BY --st.SettlementTime,
 			CASE 
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(HOUR, -DATEPART(HOUR, st.SettlementTime), st.SettlementTime))
@@ -645,10 +643,7 @@ BEGIN
 			AND (b.sporttype <> 0 AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ISNULL(saba.SabaSportType, b.Sporttype) AS VARCHAR(10)) + ',%'))
 			AND NOT (b.Product3rdId IN (0, 3) AND b.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB & BA
 			AND (@checkPlayer = 0 OR psl.custid > 0)
-			AND (
-					(bf.IsSelect = 1 AND bf.PlatformId IS NOT NULL)
-				 OR (bf.IsSelect IS NULL AND @IsSelectOthersPlatform = 1)
-				)
+			AND (bf.IsSelect = 1 OR (bf.IsSelect IS NULL AND @IsSelectOthersPlatform = 1))
 		GROUP BY 
 			CASE 
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, DATEADD(HOUR, -DATEPART(HOUR, b.SettlementTime), b.SettlementTime))
