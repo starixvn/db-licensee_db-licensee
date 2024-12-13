@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_lap" viewers="vnteam" isFunction="0"></info>*/
 USE CustDB 
 GO
  
@@ -19,7 +19,7 @@ AS
 	Revisions:
 		- 20150211@Jim: check isBA condition
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
-
+		- 20241213@Johnson: Apply In-house replication for Credit Setting [RedmineID: #212684]		
 	Param's Explanation:
 		--@ErrCode = 100: Wrong odds group,please have a check'
 		--@ErrCode = 101: Could not update odds group for this member 
@@ -57,7 +57,8 @@ BEGIN
 	SET @OddsGroup ='hk'+ @OddsGroup 
 	
 	UPDATE dbo.Customer WITH(ROWLOCK, UPDLOCK)
-	SET ugroup  = @OddsGroup
+	SET ugroup  = @OddsGroup,
+		RepUpdateTime = dbo.f_GetDateTime2()
 	WHERE custid = @custid 
 	
 	IF (@@ERROR <> 0)
