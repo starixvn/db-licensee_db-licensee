@@ -73,6 +73,7 @@ AS
 		- 20242901@Evan: Integrate VS4 [RedmineID: #199347]
 		- 20240830@Lewis: BaseBallAIO - phase 2 [RedmineID: #209344]
 		- 20241001@Kelvin: LAP - Integrate BetRadar Virtual Horses & Dogs Racing [RedmineID: #210808]
+		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -196,7 +197,7 @@ BEGIN
 				ELSE 0
 			END AS BetGroup,
 			CASE
-				WHEN bt.EventType IN (1, 3) THEN b.matchid
+				WHEN bt.EventType IN (1, 3, 5) THEN b.matchid
 				ELSE 0
 			END AS MatchId,
 			CASE b.bettype
@@ -253,7 +254,7 @@ BEGIN
 			bt.ProductCode,
 			b.bettype,
 			CASE
-				WHEN bt.EventType IN (1, 3) THEN b.matchid
+				WHEN bt.EventType IN (1, 3, 5) THEN b.matchid
 				ELSE 0
 			END,
 			bt.EventType,
@@ -270,35 +271,58 @@ BEGIN
 			END,
 			b.currency
 
-		UPDATE b
-		SET
-			b.MatchId = CASE WHEN m.ChildMatchType = 200 THEN m.ParentID ELSE m.matchid END,
-			b.MatchCode = m.matchcode,
-			b.HomeId = m.homeid,
-			b.AwayId = m.awayid,
-			b.IsNeutral = ISNULL(m.IsNeutral, CONVERT(BIT, 0)),
-			b.LeagueId = m.leagueid,
-			b.SportType = m.sporttype,
-			b.VendorMatchId = '',
-			b.Distance = ''
-		FROM @Data AS b
-			INNER JOIN dbo.match AS m WITH (NOLOCK) ON m.matchid = b.MatchId
-		WHERE b.EventType = 1
+		IF EXISTS(SELECT TOP(1) 1 FROM @Data WHERE EventType = 1)
+		BEGIN
+			UPDATE b
+			SET
+				b.MatchId = CASE WHEN m.ChildMatchType = 200 THEN m.ParentID ELSE m.matchid END,
+				b.MatchCode = m.matchcode,
+				b.HomeId = m.homeid,
+				b.AwayId = m.awayid,
+				b.IsNeutral = ISNULL(m.IsNeutral, CONVERT(BIT, 0)),
+				b.LeagueId = m.leagueid,
+				b.SportType = m.sporttype,
+				b.VendorMatchId = '',
+				b.Distance = ''
+			FROM @Data AS b
+				INNER JOIN dbo.match AS m WITH (NOLOCK) ON m.matchid = b.MatchId
+			WHERE b.EventType = 1
+		END
 
-		UPDATE b
-		SET
-			b.MatchCode = '',
-			b.HomeId = 0,
-			b.AwayId = 0,
-			b.KickOffTime = r.EventTime,
-			b.IsNeutral = 0,
-			b.LeagueId = r.LeagueID,
-			b.SportType = r.SportType,
-			b.VendorMatchId = r.VendorMatchId,
-			b.Distance = r.Distance
-		FROM @Data AS b
-			INNER JOIN dbo.VSRaceInfo AS r WITH (NOLOCK) ON r.EventID = b.MatchId
-		WHERE b.EventType = 3
+		IF EXISTS(SELECT TOP(1) 1 FROM @Data WHERE EventType = 3)
+		BEGIN
+			UPDATE b
+			SET
+				b.MatchCode = '',
+				b.HomeId = 0,
+				b.AwayId = 0,
+				b.KickOffTime = r.EventTime,
+				b.IsNeutral = 0,
+				b.LeagueId = r.LeagueID,
+				b.SportType = r.SportType,
+				b.VendorMatchId = r.VendorMatchId,
+				b.Distance = r.Distance
+			FROM @Data AS b
+				INNER JOIN dbo.VSRaceInfo AS r WITH (NOLOCK) ON r.EventID = b.MatchId
+			WHERE b.EventType = 3
+		END
+
+		IF EXISTS(SELECT TOP(1) 1 FROM @Data WHERE EventType = 5)
+		BEGIN
+			UPDATE b
+			SET
+				b.MatchCode = m.matchcode,
+				b.HomeId = m.HomeId,
+				b.AwayId = m.AwayId,
+				b.IsNeutral = 0,
+				b.LeagueId = m.League3rdId,
+				b.SportType = m.SportType,
+				b.VendorMatchId = '',
+				b.Distance = ''
+			FROM @Data AS b
+				INNER JOIN dbo.Match3rd AS m WITH (NOLOCK) ON m.Match3rdId = b.MatchId
+			WHERE b.EventType = 5
+		END
 	END
 
 	-- bettrans14 & bettrans_bk
@@ -335,7 +359,7 @@ BEGIN
 				ELSE 0
 			END AS BetGroup,
 			CASE
-				WHEN bt.EventType IN (1, 3) THEN b.matchid
+				WHEN bt.EventType IN (1, 3, 5) THEN b.matchid
 				ELSE 0
 			END AS MatchId,
 			CASE b.bettype
@@ -392,7 +416,7 @@ BEGIN
 			bt.ProductCode,
 			b.bettype,
 			CASE
-				WHEN bt.EventType IN (1, 3) THEN b.matchid
+				WHEN bt.EventType IN (1, 3, 5) THEN b.matchid
 				ELSE 0
 			END,
 			bt.EventType,
@@ -411,35 +435,58 @@ BEGIN
 
 		IF @_Date BETWEEN @BalanceUpDay AND @MoveBetsDay	-- bettrans14
 		BEGIN
-			UPDATE b
-			SET
-				b.MatchId = CASE WHEN m.ChildMatchType = 200 THEN m.ParentID ELSE m.matchid END,
-				b.MatchCode = m.matchcode,
-				b.HomeId = m.homeid,
-				b.AwayId = m.awayid,
-				b.IsNeutral = ISNULL(m.IsNeutral, CONVERT(BIT, 0)),
-				b.LeagueId = m.leagueid,
-				b.SportType = m.sporttype,
-				b.VendorMatchId = '',
-				b.Distance = ''
-			FROM @Data AS b
-				INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON m.matchid = b.MatchId
-			WHERE b.EventType = 1
+			IF EXISTS(SELECT TOP(1) 1 FROM @Data WHERE EventType = 1)
+			BEGIN
+				UPDATE b
+				SET
+					b.MatchId = CASE WHEN m.ChildMatchType = 200 THEN m.ParentID ELSE m.matchid END,
+					b.MatchCode = m.matchcode,
+					b.HomeId = m.homeid,
+					b.AwayId = m.awayid,
+					b.IsNeutral = ISNULL(m.IsNeutral, CONVERT(BIT, 0)),
+					b.LeagueId = m.leagueid,
+					b.SportType = m.sporttype,
+					b.VendorMatchId = '',
+					b.Distance = ''
+				FROM @Data AS b
+					INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON m.matchid = b.MatchId
+				WHERE b.EventType = 1
+			END
 
-			UPDATE b
-			SET
-				b.MatchCode = '',
-				b.HomeId = 0,
-				b.AwayId = 0,
-				b.KickOffTime = r.EventTime,
-				b.IsNeutral = 0,
-				b.LeagueId = r.LeagueID,
-				b.SportType = r.SportType,
-				b.VendorMatchId = r.VendorMatchId,
-				b.Distance = r.Distance
-			FROM @Data AS b
-				INNER JOIN dbo.VSRaceInfo14 AS r WITH (NOLOCK) ON r.EventID = b.MatchId
-			WHERE b.EventType = 3
+			IF EXISTS(SELECT TOP(1) 1 FROM @Data WHERE EventType = 3)
+			BEGIN
+				UPDATE b
+				SET
+					b.MatchCode = '',
+					b.HomeId = 0,
+					b.AwayId = 0,
+					b.KickOffTime = r.EventTime,
+					b.IsNeutral = 0,
+					b.LeagueId = r.LeagueID,
+					b.SportType = r.SportType,
+					b.VendorMatchId = r.VendorMatchId,
+					b.Distance = r.Distance
+				FROM @Data AS b
+					INNER JOIN dbo.VSRaceInfo14 AS r WITH (NOLOCK) ON r.EventID = b.MatchId
+				WHERE b.EventType = 3
+			END
+
+			IF EXISTS(SELECT TOP(1) 1 FROM @Data WHERE EventType = 5)
+			BEGIN
+				UPDATE b
+				SET
+					b.MatchCode = m.matchcode,
+					b.HomeId = m.HomeId,
+					b.AwayId = m.AwayId,
+					b.IsNeutral = 0,
+					b.LeagueId = m.League3rdId,
+					b.SportType = m.SportType,
+					b.VendorMatchId = '',
+					b.Distance = ''
+				FROM @Data AS b
+					INNER JOIN dbo.Match3rd14 AS m WITH (NOLOCK) ON m.Match3rdId = b.MatchId
+				WHERE b.EventType = 5
+			END
 		END
 		ELSE	-- bettrans_bk
 		BEGIN
@@ -452,57 +499,93 @@ BEGIN
 				AwayId			INT,
 				IsNeutral		BIT,
 				LeagueId		INT,
-				SportType		SMALLINT
+				SportType		SMALLINT,
+				EventType		TINYINT
 			)
 
 			CREATE CLUSTERED INDEX IX_MatchId ON #TmpMatch (MatchId);
 
-			INSERT INTO #TmpMatch (MatchId)
-			SELECT DISTINCT MatchId FROM @Data
-			WHERE EventType = 1
+			INSERT INTO #TmpMatch (MatchId, EventType)
+			SELECT DISTINCT MatchId, EventType FROM @Data
+			WHERE EventType IN (1, 5)
 
-			UPDATE b
-			SET
-				b.ParentId = m.ParentId,
-				b.ChildMatchType = m.ChildMatchType,
-				b.MatchCode = m.matchcode,
-				b.HomeId = m.homeid,
-				b.AwayId = m.awayid,
-				b.IsNeutral = ISNULL(m.IsNeutral, CONVERT(BIT, 0)),
-				b.LeagueId = m.leagueid,
-				b.SportType = m.sporttype
-			FROM #TmpMatch AS b
-				INNER JOIN DBARC.bodb_Archive.dbo.match_bk AS m WITH (NOLOCK) ON m.matchid = b.MatchId
+			IF EXISTS(SELECT TOP(1) 1 FROM @Data WHERE EventType = 1)
+			BEGIN
+				UPDATE b
+				SET
+					b.ParentId = m.ParentId,
+					b.ChildMatchType = m.ChildMatchType,
+					b.MatchCode = m.matchcode,
+					b.HomeId = m.homeid,
+					b.AwayId = m.awayid,
+					b.IsNeutral = ISNULL(m.IsNeutral, CONVERT(BIT, 0)),
+					b.LeagueId = m.leagueid,
+					b.SportType = m.sporttype
+				FROM #TmpMatch AS b
+					INNER JOIN DBARC.bodb_Archive.dbo.match_bk AS m WITH (NOLOCK) ON m.matchid = b.MatchId
+				WHERE b.EventType = 1
 
-			UPDATE b
-			SET
-				b.MatchId = CASE WHEN m.ChildMatchType = 200 THEN m.ParentId ELSE m.matchid END,
-				b.MatchCode = m.matchcode,
-				b.HomeId = m.homeid,
-				b.AwayId = m.awayid,
-				b.IsNeutral = ISNULL(m.IsNeutral, CONVERT(BIT, 0)),
-				b.LeagueId = m.leagueid,
-				b.SportType = m.sporttype,
-				b.VendorMatchId = '',
-				b.Distance = ''
-			FROM @Data AS b
-				INNER JOIN #TmpMatch AS m ON m.matchid = b.MatchId
-			WHERE b.EventType = 1
+				UPDATE b
+				SET
+					b.MatchId = CASE WHEN m.ChildMatchType = 200 THEN m.ParentId ELSE m.matchid END,
+					b.MatchCode = m.matchcode,
+					b.HomeId = m.homeid,
+					b.AwayId = m.awayid,
+					b.IsNeutral = m.IsNeutral,
+					b.LeagueId = m.leagueid,
+					b.SportType = m.sporttype,
+					b.VendorMatchId = '',
+					b.Distance = ''
+				FROM @Data AS b
+					INNER JOIN #TmpMatch AS m ON m.matchid = b.MatchId AND b.EventType = m.EventType
+				WHERE b.EventType = 1
+			END
 
-			UPDATE b
-			SET
-				b.MatchCode = '',
-				b.HomeId = 0,
-				b.AwayId = 0,
-				b.KickOffTime = r.EventTime,
-				b.IsNeutral = 0,
-				b.LeagueId = r.LeagueID,
-				b.SportType = r.SportType,
-				b.VendorMatchId = r.VendorMatchId,
-				b.Distance = r.Distance
-			FROM @Data AS b
-				INNER JOIN DBARC.bodb_Archive.dbo.VSRaceInfo_bk AS r WITH (NOLOCK) ON r.EventID = b.MatchId
-			WHERE b.EventType = 3
+			IF EXISTS(SELECT TOP(1) 1 FROM @Data WHERE EventType = 3)
+			BEGIN
+				UPDATE b
+				SET
+					b.MatchCode = '',
+					b.HomeId = 0,
+					b.AwayId = 0,
+					b.KickOffTime = r.EventTime,
+					b.IsNeutral = 0,
+					b.LeagueId = r.LeagueID,
+					b.SportType = r.SportType,
+					b.VendorMatchId = r.VendorMatchId,
+					b.Distance = r.Distance
+				FROM @Data AS b
+					INNER JOIN DBARC.bodb_Archive.dbo.VSRaceInfo_bk AS r WITH (NOLOCK) ON r.EventID = b.MatchId
+				WHERE b.EventType = 3
+			END
+
+			IF EXISTS(SELECT TOP(1) 1 FROM @Data WHERE EventType = 5)
+			BEGIN
+				UPDATE b
+				SET
+					b.MatchCode = m.matchcode,
+					b.HomeId = m.HomeId,
+					b.AwayId = m.AwayId,					
+					b.LeagueId = m.League3rdId,
+					b.SportType = m.SportType
+				FROM #TmpMatch AS b
+					INNER JOIN DBARC.bodb_Archive.dbo.Match3rd_bk AS m WITH (NOLOCK) ON m.Match3rdId = b.MatchId
+				WHERE b.EventType = 5
+				
+				UPDATE b
+				SET
+					b.MatchCode = m.matchcode,
+					b.HomeId = m.homeid,
+					b.AwayId = m.awayid,
+					b.IsNeutral = 0,
+					b.LeagueId = m.leagueid,
+					b.SportType = m.sporttype,
+					b.VendorMatchId = '',
+					b.Distance = ''
+				FROM @Data AS b
+					INNER JOIN #TmpMatch AS m ON m.matchid = b.MatchId AND b.EventType = m.EventType
+				WHERE b.EventType = 5
+			END
 
 			DROP TABLE #TmpMatch
 		END
@@ -543,7 +626,8 @@ BEGIN
 				SportType,
 				BetType,
 				ProductCode,
-				LiveIndicator
+				LiveIndicator,
+				EventType
 			FROM @Data
 		) AS Temp
 
@@ -558,7 +642,7 @@ BEGIN
 	SELECT wl.*
 	FROM ( SELECT
 				b.BetGroup,
-				b.MatchId,
+				b.MatchId,				
 				ISNULL(b.MatchCode, '') AS MatchCode,
 				b.HomeId,
 				b.AwayId,
@@ -573,6 +657,7 @@ BEGIN
 				END AS BetType,
 				ISNULL(f.GroupProductPrefix,b.ProductCode) ProductCode,
 				b.LiveIndicator,
+				b.EventType,
 				SUM(b.BetCount) AS BetCount,
 				CAST(SUM(b.Turnover		* e.Rate) AS MONEY) AS Turnover,
 				CAST(SUM(b.WinLost		* e.Rate) AS MONEY) AS WinLost,
@@ -588,7 +673,7 @@ BEGIN
 				LEFT JOIN dbo.Lrf_f_GroupProduct() f ON f.ProductPrefix = b.ProductCode
 			GROUP BY
 				b.BetGroup,
-				b.MatchId,
+				b.MatchId,				
 				ISNULL(b.MatchCode, ''),
 				b.HomeId,
 				b.AwayId,
@@ -602,7 +687,8 @@ BEGIN
 					WHEN ISNULL(ss.bettype, 0) <> 0 THEN ss.GroupTypeId ELSE b.BetType
 				END,
 				ISNULL(f.GroupProductPrefix,b.ProductCode),
-				b.LiveIndicator
+				b.LiveIndicator,
+				b.EventType
 			) wl
 	WHERE wl.RowNum BETWEEN @RowStart AND @RowEnd
 

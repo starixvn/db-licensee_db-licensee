@@ -97,6 +97,7 @@ AS
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20242901@Evan: Integrate VS4 [RedmineID: #199347]
 		- 20241001@Kelvin: LAP - Integrate BetRadar Virtual Horses & Dogs Racing [RedmineID: #210808]
+		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]
 		
 	Parameter's Explanation:
 		- @ReportBy: 1: daily, 2: monthly
@@ -405,6 +406,7 @@ BEGIN
 			OR bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
 			OR bettype BETWEEN 5302 AND 5399 -- Virtual Sport 3 (LG)
 			OR bettype BETWEEN 10400 AND 10448 -- Virtual Sport 4
+			OR bettype BETWEEN 13000 AND 13199 -- Virtual Sports 6 (Betby)
 			OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 			OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 			OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
@@ -464,6 +466,16 @@ BEGIN
 				INNER JOIN dbo.VSRaceInfo AS r WITH (NOLOCK) ON vs.EventID = r.EventID
 			WHERE b.EventType = 3
 				AND vs.eventdate BETWEEN @tempFromDate AND @ToDate 
+		END
+
+		IF EXISTS(SELECT TOP(1) 1 FROM #tempBettrans WHERE EventType = 5)
+		BEGIN
+			UPDATE b
+			SET b.sporttype = m3rd.SportType
+			FROM #tempBettrans b
+				INNER JOIN dbo.Match3rd m3rd WITH (NOLOCK) ON b.matchid = m3rd.Match3rdId
+			WHERE b.EventType = 5
+				AND m3rd.EventDate BETWEEN @tempFromDate AND @ToDate				
 		END
 
 		--FILTER product
