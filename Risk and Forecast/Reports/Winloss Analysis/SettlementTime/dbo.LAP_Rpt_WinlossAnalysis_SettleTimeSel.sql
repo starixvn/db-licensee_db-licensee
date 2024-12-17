@@ -531,7 +531,7 @@ BEGIN
 					END AS SportType,
 					ISNULL(CASE WHEN b.bettype IN(29,2799,10449) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 			) AS ck
-			LEFT JOIN @PlatformSel bf ON bf.betfrom = b.BetFrom
+			OUTER APPLY (SELECT TOP 1 bf.PlatformId, IsSelect FROM @PlatformSel bf WHERE b.betfrom = bf.BetFrom) AS bf
 			INNER JOIN #tmpSettleTime st ON b.SettlementTime >= st.SettlementTime AND b.SettlementTime < st.SettlementTimeEnd
 			LEFT JOIN #playerSel psl ON psl.custid = b.custid
 		WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
@@ -630,7 +630,7 @@ BEGIN
 					ELSE bt.Product3rdId 
 				END AS Product3rdId
 			) AS ck
-			LEFT JOIN @PlatformSel bf ON bf.betfrom = b.BetFrom
+			OUTER APPLY (SELECT TOP 1 bf.PlatformId, IsSelect FROM @PlatformSel bf WHERE b.betfrom = bf.BetFrom) AS bf
 			INNER JOIN (
 				SELECT DISTINCT Product3rdId FROM #ProductSel
 			) AS ps ON ps.Product3rdId = ck.Product3rdId

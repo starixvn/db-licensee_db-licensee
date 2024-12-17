@@ -395,7 +395,7 @@ BEGIN
 				,SUM(0 * b.Rate) AS BaseAmtDueToBA
 				,SUM(ABS(b.winlost) * b.Rate) AS BaseBetEffective
 			FROM CTE_bettrans AS b
-				LEFT JOIN @PlatformSel bf ON b.betfrom = bf.BetFrom
+				OUTER APPLY (SELECT TOP 1 bf.PlatformId, IsSelect FROM @PlatformSel bf WHERE b.betfrom = bf.BetFrom) AS bf
 				OUTER APPLY (
 					SELECT 
 						CASE 
@@ -528,7 +528,7 @@ BEGIN
 						END AS SportType,
 						ISNULL(CASE WHEN b.bettype IN(29,2799,10449) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 				) AS ck
-				LEFT JOIN @PlatformSel bf ON bf.betfrom = b.BetFrom
+				OUTER APPLY (SELECT TOP 1 bf.PlatformId, IsSelect FROM @PlatformSel bf WHERE b.betfrom = bf.BetFrom) AS bf
 			WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate
 				AND ',' + @StatusCheck + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 				AND (',' + @LiveIds + ',' LIKE '%,' + CAST(ck.liveindicator AS VARCHAR(3)) + ',%')
@@ -643,7 +643,7 @@ BEGIN
 				
 		) AS b
 		INNER JOIN #tmpExchange e on e.ExchangeID =  b.Currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
-		LEFT JOIN @PlatformSel bf ON bf.betfrom = b.BetFrom
+		OUTER APPLY (SELECT TOP 1 bf.PlatformId, IsSelect FROM @PlatformSel bf WHERE b.betfrom = bf.BetFrom) AS bf
 		WHERE 
 			(@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(b.sporttype AS VARCHAR(10)) + ',%')
 			AND (bf.IsSelect = 1 OR (bf.IsSelect IS NULL AND @IsSelectOthersPlatform = 1))
@@ -734,7 +734,7 @@ BEGIN
 					ELSE bt.Product3rdId 
 				END AS Product3rdId
 			) AS ck
-			LEFT JOIN @PlatformSel bf ON bf.betfrom = b.BetFrom
+			OUTER APPLY (SELECT TOP 1 bf.PlatformId, IsSelect FROM @PlatformSel bf WHERE b.betfrom = bf.BetFrom) AS bf
 			INNER JOIN (
 				SELECT DISTINCT Product3rdId FROM #ProductSel
 			) AS ps ON ps.Product3rdId = ck.Product3rdId
