@@ -154,7 +154,7 @@ BEGIN
 		FROM dbo.bettrans AS b WITH (NOLOCK)
 			INNER JOIN #TempAg AS tma ON tma.CustID = b.recommend
 			INNER JOIN @BetType AS bt ON bt.BetType = b.bettype
-			LEFT JOIN #PlatformList AS pl ON pl.betfrom = b.betfrom
+			OUTER APPLY (SELECT TOP 1 bf.PlatformType FROM #PlatformList bf WHERE b.betfrom = bf.BetFrom) AS pl
 		WHERE b.statusID IN (111, 112, 113)
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND b.tpositiontaking <> 0
@@ -185,7 +185,7 @@ BEGIN
 		FROM bodb_LicenseeReport.dbo.rptLicWinloss2 AS b WITH (NOLOCK)
 			INNER JOIN #TempAg AS ag ON ag.CustId = b.recommend
 			INNER JOIN @SportType AS s ON s.SportType = b.sporttype
-			LEFT JOIN #PlatformList AS pl ON pl.betfrom = b.betfrom
+			OUTER APPLY (SELECT TOP 1 bf.PlatformType FROM #PlatformList bf WHERE b.betfrom = bf.BetFrom) AS pl
 		WHERE b.winlostdate BETWEEN @FDate AND @TempToDate
 			AND b.roleid = 1
 			AND b.statusID <> 101 --exclude REJECT bets

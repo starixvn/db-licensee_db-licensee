@@ -123,7 +123,7 @@ BEGIN
 				INNER JOIN #TempAg AS a ON a.custid = rpt.recommend
 				INNER JOIN @Exchange ex ON ex.ExchangeId = a.Currency
 				INNER JOIN #rptBettype bt ON bt.bettype = rpt.bettype AND bt.RefTable NOT IN (1,2)
-				LEFT JOIN #rptPlatform AS pl ON pl.betfrom = rpt.betfrom 
+				OUTER APPLY (SELECT TOP 1 bf.PlatformType, IsSelect FROM #rptPlatform bf WHERE rpt.betfrom = bf.BetFrom) AS pl
 			WHERE rpt.winlostdate = @apiDate
 				AND rpt.statusid IN (111, 112, 113)
 				AND (pl.IsSelect = 1 OR (pl.IsSelect IS NULL AND @IsSelectOthersPlatform = 1))
@@ -139,7 +139,7 @@ BEGIN
 				INNER JOIN #TempAg AS a ON a.custid = rpt.recommend
 				INNER JOIN @Exchange ex ON ex.ExchangeId = a.Currency
 				INNER JOIN #rptBettype bt ON bt.bettype = rpt.GameID AND bt.RefTable IN (1)
-				LEFT JOIN #rptPlatform AS pl ON pl.betfrom = rpt.betfrom
+				OUTER APPLY (SELECT TOP 1 bf.PlatformType, IsSelect FROM #rptPlatform bf WHERE rpt.betfrom = bf.BetFrom) AS pl
 			WHERE rpt.winlostdate = @apiDate
 				AND rpt.statusid IN (111, 112, 113)
 				AND (pl.IsSelect = 1 OR (pl.IsSelect IS NULL AND @IsSelectOthersPlatform = 1))
@@ -155,7 +155,7 @@ BEGIN
 				INNER JOIN #TempAg AS a ON a.custid = rpt.recommend
 				INNER JOIN @Exchange ex ON ex.ExchangeId = a.Currency
 				INNER JOIN #rptBettype bt ON bt.bettype = rpt.GameID AND bt.RefTable IN (2)
-				LEFT JOIN #rptPlatform AS pl ON pl.betfrom = rpt.betfrom
+				OUTER APPLY (SELECT TOP 1 bf.PlatformType, IsSelect FROM #rptPlatform bf WHERE rpt.betfrom = bf.BetFrom) AS pl
 			WHERE rpt.winlostdate = @apiDate
 				AND rpt.statusid IN (111, 112, 113)
 				AND (pl.IsSelect = 1 OR (pl.IsSelect IS NULL AND @IsSelectOthersPlatform = 1))
@@ -189,7 +189,7 @@ BEGIN
 				INNER JOIN #TempAg AS a ON a.custid = rpt.recommend
 				INNER JOIN @Exchange ex ON ex.ExchangeId = a.Currency
 				INNER JOIN #rptBettype bt ON bt.bettype = rpt.bettype AND bt.RefTable NOT IN (1,2)
-				LEFT JOIN #rptPlatform AS pl ON pl.betfrom = rpt.betfrom 
+				OUTER APPLY (SELECT TOP 1 bf.PlatformType, IsSelect FROM #rptPlatform bf WHERE rpt.betfrom = bf.BetFrom) AS pl
 			WHERE rpt.winlostdate = @apiDate
 				AND rpt.statusid IN (111, 112, 113)
 				AND (pl.IsSelect = 1 OR (pl.IsSelect IS NULL AND @IsSelectOthersPlatform = 1))
@@ -205,7 +205,7 @@ BEGIN
 				INNER JOIN #TempAg AS a ON a.custid = rpt.recommend
 				INNER JOIN @Exchange ex ON ex.ExchangeId = a.Currency
 				INNER JOIN #rptBettype bt ON bt.bettype = rpt.GameID AND bt.RefTable IN (1)
-				LEFT JOIN #rptPlatform AS pl ON pl.betfrom = rpt.betfrom
+				OUTER APPLY (SELECT TOP 1 bf.PlatformType, IsSelect FROM #rptPlatform bf WHERE rpt.betfrom = bf.BetFrom) AS pl
 			WHERE rpt.winlostdate = @apiDate
 				AND rpt.statusid IN (111, 112, 113)
 				AND (pl.IsSelect = 1 OR (pl.IsSelect IS NULL AND @IsSelectOthersPlatform = 1))
@@ -221,7 +221,7 @@ BEGIN
 				INNER JOIN #TempAg AS a ON a.custid = rpt.recommend
 				INNER JOIN @Exchange ex ON ex.ExchangeId = a.Currency
 				INNER JOIN #rptBettype bt ON bt.bettype = rpt.GameID AND bt.RefTable IN (2)
-				LEFT JOIN #rptPlatform AS pl ON pl.betfrom = rpt.betfrom
+				OUTER APPLY (SELECT TOP 1 bf.PlatformType, IsSelect FROM #rptPlatform bf WHERE rpt.betfrom = bf.BetFrom) AS pl
 			WHERE rpt.winlostdate = @apiDate
 				AND rpt.statusid IN (111, 112, 113)
 				AND (pl.IsSelect = 1 OR (pl.IsSelect IS NULL AND @IsSelectOthersPlatform = 1))
