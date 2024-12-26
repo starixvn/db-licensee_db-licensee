@@ -33,6 +33,7 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 		- 20240606@Kelvin: LAP - Changes on betfrom W003, W004 [Redmine: #206176]
 		- 20241205@Kelvin: LAP - Enhance reports showing betfrom data [Redmine: #214849]
 		- 20241206@Kelvin: Rollback code  - remove ')' [Redmine: #214849]
+		- 20241213@Kelvin: LAP - Integrate new betfrom W005, W006, W007 & Q001 [Redmine: #213273]
 	
 
 	Param's Explanation:
@@ -58,6 +59,7 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 				17: Desktop Galaxy
 				18: Mobile Galaxy
 				19: Desktop Compact
+				20: Quick Bet Widget
 				88: Others
 				-- Jollysports
 				91: Desktop
@@ -93,10 +95,13 @@ RETURN
 				(7, '#',0),
 				(8, '1',0),
 				(8, '4',0),
+				(8, 'W005',0),
 				(9, '2',0),
 				(9, '5',0),
+				(9, 'W006',0),
 				(10, '3',0),
 				(10, '6',0),
+				(10, 'W007',0),
 				(11, 'o',0),
 				(11, '~',0),
 				(12, '0',0),
@@ -108,7 +113,7 @@ RETURN
 				(17, 'W001',0), 				 
 				(18, 'W002',0),
 				(19, 'W003',0),
-
+				(20, 'Q001',0),
 				
 				(88, 'v',0),
 				(88, 'd',0),
@@ -162,8 +167,13 @@ RETURN
 				(99, 'g',2),
 				(99, 'e',2),
 				(99, 'u',2),
-				(99, '^',2),
+				(99, '^',2),				
 				(99, 'I001',2),
+				(99, 'W005',2),
+				(99, 'W006',2),
+				(99, 'W007',2),
+				(99, 'Q001',2),
+
 				(91, 'A001',2),
 				(92, 'A002',2)
 	) d(PlatformType, betfrom, SpecialPlatform)
