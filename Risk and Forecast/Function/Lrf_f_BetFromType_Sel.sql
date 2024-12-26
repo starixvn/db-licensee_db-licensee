@@ -31,6 +31,8 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 		- 20240102@Evan: Support add new betfrom I001 [Redmine: #198817]	
 		- 20240410@Eddie: Support add new betfrom W003, W004, A003 and change metadata 'bodbLicenseeNet' to 'wsv_lap' [Redmine: #202935]
 		- 20240606@Kelvin: LAP - Changes on betfrom W003, W004 [Redmine: #206176]
+		- 20241205@Kelvin: LAP - Enhance reports showing betfrom data [Redmine: #214849]
+		- 20241206@Kelvin: Rollback code  - remove ')' [Redmine: #214849]
 	
 
 	Param's Explanation:
@@ -116,7 +118,7 @@ RETURN
 				(88, '^',0),
 				(88, 'A001',0),
 				(88, 'A002',0),
-				(88, 'I001',0),
+				(88, 'I001',0),				
 
 				-- Jollysports licensee
 				(99, 'x',2),
