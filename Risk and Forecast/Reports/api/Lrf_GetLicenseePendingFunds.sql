@@ -70,14 +70,14 @@ BEGIN
 		RETURN
 	END CATCH;
  
-	SELECT CAST(SUM(ISNULL(p.outstanding,0) * e.Rate) AS money) AS PendingFund
+	SELECT CAST(SUM(ISNULL(p.outstanding,0) * e.Rate) AS MONEY) AS PendingFund
 	FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)
 		INNER JOIN dbo.Customer c WITH(NOLOCK)
 			ON p.custid = c.custid
 		INNER JOIN #tmpAg a
 			ON a.CustID = c.Recommend
 		INNER JOIN dbo.Lrf_f_GetExchangeRate(@Yesterday, @Today, @BaseCurrency, '') e
-			ON e.ExchangeID = c.Currency AND p.winlostdate BETWEEN e.FromDate AND e.ToDate
+			ON e.ExchangeID = a.Currency AND p.winlostdate BETWEEN e.FromDate AND e.ToDate
 	WHERE p.Winlostdate BETWEEN @Yesterday AND @Today
 		AND c.roleid = 1
 		AND sporttype NOT IN (-6, -7, -8, -9)
