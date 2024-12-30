@@ -19,6 +19,7 @@ AS
 		- 20190620@Amanda: Add Base currency param [RedmineID: #112531]
 		- 20191115@Merlin: Get data by AgentList instead of LicenseeID and CurrentcyList[RedmineID: #123651]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+		- 20241230@Kelvin: LAP - DB - Enhance Pending Funds reports [Redmine #216015]
 
 	Param's Explanation:
 	
@@ -45,6 +46,11 @@ BEGIN
 	CREATE TABLE #tmpAg (custID INT, currency INT);
 	
 	DECLARE @DocHandler INT
+			,@Yesterday SMALLDATETIME
+			,@Today SMALLDATETIME
+
+	SELECT @Yesterday	= CONVERT(DATE, DATEADD(D, -1, CURRENT_TIMESTAMP), 112)
+			,@Today		= CONVERT(DATE, CURRENT_TIMESTAMP, 112)
 	
 	BEGIN TRY
 		EXEC sp_xml_preparedocument @DocHandler OUTPUT
@@ -64,63 +70,19 @@ BEGIN
 		RETURN
 	END CATCH;
  
-	CREATE TABLE #tmpRpt
-	(
-		Winlostdate   SMALLDATETIME,
-		Currency   INT,  
-		PendingFund   MONEY
-	);
-
-	INSERT INTO #tmpRpt
-	(
-		Winlostdate, Currency, PendingFund
-	)
-	SELECT  p.winlostdate,
-			a.currency,
-			SUM(ISNULL(p.outstanding,0)) AS PendingFund
-	FROM bodb_Report.dbo.rptdepwinlostbyproduct_SUM p WITH(NOLOCK)  
-		INNER JOIN #tmpAg a ON a.CustID = p.custid
-	WHERE sporttype NOT IN (-6, -7, -8, -9)
-	GROUP BY p.winlostdate, a.currency
-	HAVING SUM(ISNULL(p.outstanding,0)) > 0;
- 
-	INSERT INTO #tmpRpt
-	(
-		Winlostdate, Currency, PendingFund
-	)
-	SELECT  p.winlostdate,
-		a.currency,
-		SUM(ISNULL(p.outstanding,0)) AS PendingFund
-	FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)    
-		INNER JOIN dbo.Customer c WITH(NOLOCK) ON p.custid = c.custid
-		INNER JOIN #tmpAg a ON a.CustID = c.Recommend
-	WHERE c.roleid = 1
-		AND sporttype NOT IN (-6, -7, -8, -9)        
-	GROUP BY p.winlostdate, a.currency
-	HAVING SUM(ISNULL(p.outstanding,0)) > 0;
-
-	CREATE TABLE #TempExchange(
-		FromDate	SMALLDATETIME,
-		ToDate		SMALLDATETIME,
-		ExchangeID	INT,
-		Rate		FLOAT
-	);
-
-	DECLARE @MinDate SMALLDATETIME, @MaxDate SMALLDATETIME
-	SELECT @MinDate = MIN(winlostdate), @MaxDate = MAX(winlostdate)
-	FROM #tmpRpt
-
-	INSERT INTO #TempExchange(FromDate, ToDate, ExchangeID, Rate)
-	SELECT FromDate, ToDate, ExchangeID, Rate
-	FROM dbo.Lrf_f_GetExchangeRate(@MinDate, @MaxDate, @BaseCurrency, '') e
-	WHERE EXISTS (SELECT 1 FROM #tmpAg c WHERE e.ExchangeID = c.Currency)
-
-	SELECT  CAST(SUM(b.PendingFund * e.Rate) AS MONEY) AS PendingFund
-	FROM #tmpRpt b
-		INNER JOIN #TempExchange e ON e.exchangeid = b.currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
-
-	DROP TABLE #TempExchange;
-	DROP TABLE #tmpRpt;
+	SELECT CAST(SUM(ISNULL(p.outstanding,0) * e.Rate) AS money) AS PendingFund
+	FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)
+		INNER JOIN dbo.Customer c WITH(NOLOCK)
+			ON p.custid = c.custid
+		INNER JOIN #tmpAg a
+			ON a.CustID = c.Recommend
+		INNER JOIN dbo.Lrf_f_GetExchangeRate(@Yesterday, @Today, @BaseCurrency, '') e
+			ON e.ExchangeID = c.Currency AND p.winlostdate BETWEEN e.FromDate AND e.ToDate
+	WHERE p.Winlostdate BETWEEN @Yesterday AND @Today
+		AND c.roleid = 1
+		AND sporttype NOT IN (-6, -7, -8, -9)
+		AND ISNULL(p.outstanding,0) > 0;
+			
 	DROP TABLE #tmpAg;
 END
 GO
