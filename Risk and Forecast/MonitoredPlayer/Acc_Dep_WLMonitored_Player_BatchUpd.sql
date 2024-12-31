@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE dbo.Acc_Dep_WLMonitored_Player_BatchUpd
 	 @AgentList VARCHAR(MAX)
 	,@Sporttype SMALLINT = 0
@@ -14,6 +14,8 @@ AS
   
 	Revisions:  
 	    - 20220523@Eden: LAP - Player Segmentation - Monitored Player [Redmine:#172605]
+		- 20241230@Aries: Scale Out DBCUST - Apply Inhouse replication for the remaning tables [Redmine: #215627]
+
 
 	Param's Explanation:  	
 	- @Result:
