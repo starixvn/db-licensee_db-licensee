@@ -20,6 +20,7 @@ AS
 		- 20191115@Merlin: Get data by AgentList instead of LicenseeID and CurrentcyList[RedmineID: #123651]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20241230@Kelvin: LAP - DB - Enhance Pending Funds reports [Redmine #216015]
+		- 20250103@Kelvin: LAP - DB - Enhance Pending Funds reports - Enhance [Redmine #216015]
 
 	Param's Explanation:
 	
@@ -105,10 +106,12 @@ BEGIN
 	FROM dbo.Lrf_f_GetExchangeRate(@Yesterday, @Today, @BaseCurrency, '') e
 	WHERE EXISTS (SELECT 1 FROM #tmpAg c WHERE e.ExchangeID = c.Currency)
 
-	SELECT  CAST(SUM(b.PendingFund * e.Rate) AS MONEY) AS PendingFund
+	SELECT CAST(SUM(b.PendingFund * e.Rate) AS MONEY) AS PendingFund
 	FROM #tmpRpt b
 		INNER JOIN #TempExchange e ON e.exchangeid = b.currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
-
+	
+	DROP TABLE #TempExchange;
+	DROP TABLE #tmpRpt;
 	DROP TABLE #tmpAg;
 END
 GO
