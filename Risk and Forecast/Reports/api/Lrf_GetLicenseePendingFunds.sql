@@ -70,26 +70,44 @@ BEGIN
 		RETURN
 	END CATCH;
  
-	;WITH CTE AS
+	CREATE TABLE #tmpRpt
 	(
-		SELECT p.winlostdate,
-			a.currency,
-			SUM(ISNULL(p.outstanding,0)) AS PendingFund
-		FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)
-			INNER JOIN dbo.vw_Customer c WITH(NOLOCK)
-				ON p.custid = c.custid
-			INNER JOIN #tmpAg a
-				ON a.CustID = c.Recommend
-		WHERE p.Winlostdate BETWEEN @Yesterday AND @Today
-			AND c.roleid = 1
-			AND sporttype NOT IN (-6, -7, -8, -9)
-		GROUP BY p.winlostdate, a.currency
-		HAVING SUM(ISNULL(p.outstanding,0)) > 0
+		Winlostdate   SMALLDATETIME,
+		Currency   INT,  
+		PendingFund   MONEY
+	);
+
+	INSERT INTO #tmpRpt
+	(
+		Winlostdate, Currency, PendingFund
 	)
-	SELECT CAST(SUM(b.PendingFund * e.Rate) AS MONEY) AS PendingFund
-	FROM CTE b
-	INNER JOIN dbo.Lrf_f_GetExchangeRate(@Yesterday, @Today, @BaseCurrency, '') e
-		ON e.exchangeid = b.currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
+	SELECT  p.winlostdate,
+		a.currency,
+		SUM(ISNULL(p.outstanding,0)) AS PendingFund
+	FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)    
+		INNER JOIN dbo.vw_Customer c WITH(NOLOCK) ON p.custid = c.custid
+		INNER JOIN #tmpAg a ON a.CustID = c.Recommend
+	WHERE p.Winlostdate BETWEEN @Yesterday AND @Today
+		AND c.roleid = 1
+		AND sporttype NOT IN (-6, -7, -8, -9)        
+	GROUP BY p.winlostdate, a.currency
+	HAVING SUM(ISNULL(p.outstanding,0)) > 0;
+
+	CREATE TABLE #TempExchange(
+		FromDate	SMALLDATETIME,
+		ToDate		SMALLDATETIME,
+		ExchangeID	INT,
+		Rate		FLOAT
+	);
+
+	INSERT INTO #TempExchange(FromDate, ToDate, ExchangeID, Rate)
+	SELECT FromDate, ToDate, ExchangeID, Rate
+	FROM dbo.Lrf_f_GetExchangeRate(@Yesterday, @Today, @BaseCurrency, '') e
+	WHERE EXISTS (SELECT 1 FROM #tmpAg c WHERE e.ExchangeID = c.Currency)
+
+	SELECT  CAST(SUM(b.PendingFund * e.Rate) AS MONEY) AS PendingFund
+	FROM #tmpRpt b
+		INNER JOIN #TempExchange e ON e.exchangeid = b.currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
 
 	DROP TABLE #tmpAg;
 END
