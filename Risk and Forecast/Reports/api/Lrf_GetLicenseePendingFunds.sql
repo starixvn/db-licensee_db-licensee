@@ -41,8 +41,8 @@ AS
 */
 
 BEGIN
-    SET NOCOUNT ON;
-   
+	SET NOCOUNT ON;
+
 	CREATE TABLE #tmpAg (custID INT, currency INT);
 	
 	DECLARE @DocHandler INT
@@ -70,19 +70,27 @@ BEGIN
 		RETURN
 	END CATCH;
  
-	SELECT CAST(SUM(ISNULL(p.outstanding,0) * e.Rate) AS MONEY) AS PendingFund
-	FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)
-		INNER JOIN dbo.Customer c WITH(NOLOCK)
-			ON p.custid = c.custid
-		INNER JOIN #tmpAg a
-			ON a.CustID = c.Recommend
-		INNER JOIN dbo.Lrf_f_GetExchangeRate(@Yesterday, @Today, @BaseCurrency, '') e
-			ON e.ExchangeID = a.Currency AND p.winlostdate BETWEEN e.FromDate AND e.ToDate
-	WHERE p.Winlostdate BETWEEN @Yesterday AND @Today
-		AND c.roleid = 1
-		AND sporttype NOT IN (-6, -7, -8, -9)
-		AND ISNULL(p.outstanding,0) > 0;
-			
+	;WITH CTE AS
+	(
+		SELECT p.winlostdate,
+			a.currency,
+			SUM(ISNULL(p.outstanding,0)) AS PendingFund
+		FROM bodb_Report.dbo.rptDepWinlostByProduct p WITH(NOLOCK)
+			INNER JOIN dbo.vw_Customer c WITH(NOLOCK)
+				ON p.custid = c.custid
+			INNER JOIN #tmpAg a
+				ON a.CustID = c.Recommend
+		WHERE p.Winlostdate BETWEEN @Yesterday AND @Today
+			AND c.roleid = 1
+			AND sporttype NOT IN (-6, -7, -8, -9)
+		GROUP BY p.winlostdate, a.currency
+		HAVING SUM(ISNULL(p.outstanding,0)) > 0
+	)
+	SELECT CAST(SUM(b.PendingFund * e.Rate) AS MONEY) AS PendingFund
+	FROM CTE b
+	INNER JOIN dbo.Lrf_f_GetExchangeRate(@Yesterday, @Today, @BaseCurrency, '') e
+		ON e.exchangeid = b.currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
+
 	DROP TABLE #tmpAg;
 END
 GO
