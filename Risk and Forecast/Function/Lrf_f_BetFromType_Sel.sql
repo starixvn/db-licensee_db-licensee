@@ -34,6 +34,7 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 		- 20241205@Kelvin: LAP - Enhance reports showing betfrom data [Redmine: #214849]
 		- 20241206@Kelvin: Rollback code  - remove ')' [Redmine: #214849]
 		- 20241213@Kelvin: LAP - Integrate new betfrom W005, W006, W007 & Q001 [Redmine: #213273]
+		- 20250110@Kelvin: LAP - Integrate Betfrom W012 & W013 [Redmine: #216500]
 	
 
 	Param's Explanation:
@@ -80,6 +81,7 @@ RETURN
 				(2, '[',0),
 				(3, '9',0),
 				(3, '>',0),
+				(3, 'W012',0),
 				(4, 'l',0),
 				(4, ']',0),
 				(5, '%',0),
@@ -93,6 +95,7 @@ RETURN
 				(7, '$',0),
 				(7, '}',0),
 				(7, '#',0),
+				(7, 'W013',0),
 				(8, '1',0),
 				(8, '4',0),
 				(8, 'W005',0),
@@ -173,6 +176,8 @@ RETURN
 				(99, 'W006',2),
 				(99, 'W007',2),
 				(99, 'Q001',2),
+				(99, 'W012',2),
+				(99, 'W013',2),
 
 				(91, 'A001',2),
 				(92, 'A002',2)
