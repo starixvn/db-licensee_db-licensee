@@ -17,6 +17,7 @@ AS
 		- 20240417@Bobby: Init [RedmineID: #202281]
 		- 20240710@Bobby: Enhance perf [RedmineID: #207858]
 		- 20240808@Kelvin: Add new bettype 11009 for "Saba Nickname Edited" - change bettype range [11001 -> 11049] [RedmineID: #209038]
+		- 20241227@Kelvin: LAP - Saba Coins phase 2 - Support multiple wallets [RedmineID: #215890]
 
 	Param's Explanation:
 */
@@ -53,37 +54,43 @@ BEGIN
 	END CATCH;
 
 	--TODO: shadow vs real member
-	DROP TABLE IF EXISTS #tmpShadowCust;
-	CREATE TABLE #shadowRealCust (realCustId INT, shadowCustId INT PRIMARY KEY, username VARCHAR(30), username2 VARCHAR(50));
+	--==============================================================================================================================	
+	CREATE TABLE #tmpRealCust (realCustId INT, recommend INT, username VARCHAR(30), username2 VARCHAR(50), SabaID BIGINT)
 
-	SELECT custid AS shadowCustId, CONVERT(INT, SUBSTRING(c.username2, 11, LEN(username2))) AS realCustId
-	INTO #tmpShadowCust
+	--Get list RealCust -target index=IX_agent nonclustered
+	INSERT INTO #tmpRealCust (realCustId, recommend, username, username2, SabaID)
+	SELECT c.custid, c.recommend, c.username, c.username2, d.SabaID
 	FROM dbo.Customer c WITH(NOLOCK)
-	WHERE c.username2 LIKE 'sabacoins$%';
-
-	--TODO: filter owner Licensee -- target index=IX_agent nonclustered
-	INSERT INTO #shadowRealCust (realCustId, shadowCustId, username, username2)
-	SELECT c.custid, tmp.shadowCustId, c.username, c.username2
-	FROM dbo.Customer c WITH(NOLOCK)
-		INNER JOIN #tmpShadowCust tmp ON c.custid = tmp.realCustId
-		INNER JOIN #tmpAg a ON a.CustId = c.recommend 
-	WHERE c.roleid = 1
-	;
+		INNER JOIN dbo.Dep_CustSabaInfo d WITH(NOLOCK) ON d.CustID = c.custid
+		INNER JOIN #tmpAg a ON a.CustId = c.recommend
+	WHERE c.roleid = 1 AND d.CustType = 0 --Real member
 
 	--TODO: filter username if any
 	IF LEN(@UserName) > 0
 	BEGIN
 		WITH CTE_CustSearch AS (
 			SELECT t.realCustId
-			FROM #shadowRealCust t 
+			FROM #tmpRealCust t
 			WHERE t.username = @UserName --- system Id
 				OR t.username2 LIKE '%$' + @UserName -- external Id
 		)
 		DELETE d
-		FROM #shadowRealCust d
-		LEFT JOIN CTE_CustSearch cs ON cs.realCustId = d.realCustId
+		FROM #tmpRealCust d
+			LEFT JOIN CTE_CustSearch cs ON cs.realCustId = d.realCustId
 		WHERE cs.realCustId IS NULL
 	END
+
+	--Get list ShadowCust
+	CREATE TABLE #tmpShadowCust (shadowCustId INT PRIMARY KEY, SabaID BIGINT)
+
+	;WITH CTE_SabaID AS
+		(SELECT DISTINCT SabaID FROM #tmpRealCust)
+	INSERT INTO #tmpShadowCust(shadowCustId, SabaID)
+	SELECT s.CustID AS shadowCustId, s.SabaID
+	FROM dbo.Dep_CustSabaInfo s WITH(NOLOCK)
+		INNER JOIN CTE_SabaID cte ON cte.SabaID = s.SabaID
+	WHERE s.CustType = 1 --Shadow member
+	--==============================================================================================================================
 
 	--TODO: Get sport type	
 	CREATE TABLE #sabaBetType (Bettype INT PRIMARY KEY, AmountType SMALLINT);
@@ -100,7 +107,7 @@ BEGIN
 	FROM CTE_SabaBettype;
 
 	CREATE TABLE #SumWinlostExtra (
-		ShadowCustId		INT,
+		SabaID				BIGINT,
 		RewardPromotionAmt	MONEY,
 		ExchangeAmt			MONEY
 	);
@@ -113,15 +120,15 @@ BEGIN
 		SELECT @fdate	= IIF(@FromDate >  @MoveBetsDay, @FromDate,DATEADD(DAY, 1 ,@MoveBetsDay))
 			,@tdate		= @ToDate;
 
-		INSERT INTO #sumWinlostExtra (shadowCustId, RewardPromotionAmt, ExchangeAmt)
-		SELECT b.custid
+		INSERT INTO #sumWinlostExtra (SabaID, RewardPromotionAmt, ExchangeAmt)
+		SELECT a.SabaID
 			, SUM(IIF(bt.AmountType = 0, b.winlost-b.actual_stake, 0)) AS RewardPromotionAmt
 			, SUM(IIF(bt.AmountType = 1, b.winlost-b.actual_stake, 0)) AS ExchangeAmt
 		FROM dbo.bettrans AS b WITH (NOLOCK)
-			INNER JOIN #shadowRealCust AS a ON b.custid = a.shadowCustId
+			INNER JOIN #tmpShadowCust AS a ON b.custid = a.shadowCustId
 			INNER JOIN #sabaBetType bt ON bt.bettype = b.bettype
 		WHERE b.winlostdate BETWEEN @fdate AND @tdate
-		GROUP BY b.custid;
+		GROUP BY a.SabaID;
 	END
 
 	IF @FromDate <= @MoveBetsDay
@@ -129,23 +136,24 @@ BEGIN
 		SELECT @fdate	= @FromDate
 			,@tdate		= IIF(@ToDate >  @MoveBetsDay, @MoveBetsDay, @ToDate);
 
-		INSERT INTO #sumWinlostExtra (shadowCustId, RewardPromotionAmt, ExchangeAmt)
-		SELECT b.custid
+		INSERT INTO #sumWinlostExtra (SabaID, RewardPromotionAmt, ExchangeAmt)
+		SELECT a.SabaID
 			, SUM(IIF(bt.AmountType = 0, b.winlost, 0)) AS RewardPromotionAmt
 			, SUM(IIF(bt.AmountType = 1, b.winlost, 0)) AS ExchangeAmt
 		FROM bodb_LicenseeReport.dbo.rptLicenseeWinloss AS b WITH (NOLOCK)
-			INNER JOIN #shadowRealCust AS a ON b.custid = a.shadowCustId
+			INNER JOIN #tmpShadowCust AS a ON b.custid = a.shadowCustId
 			INNER JOIN #sabaBetType bt ON bt.bettype = b.bettype
 		WHERE b.winlostdate BETWEEN @fdate AND @tdate
-		GROUP BY b.CustId;
+		GROUP BY a.SabaID;
 	END
 
 	--TODO: output
-	SELECT t.realCustId AS custid
+	SELECT t.SabaID
+		, t.realCustId AS custid
 		, SUM(rpt.RewardPromotionAmt) AS	RewardPromotionAmt
 		, SUM(rpt.ExchangeAmt) AS			ExchangeAmt
 	FROM #sumWinlostExtra rpt
-		INNER JOIN #shadowRealCust t ON t.shadowCustId = rpt.ShadowCustId
-	GROUP BY t.realCustId
+		INNER JOIN #tmpRealCust t ON t.SabaID = rpt.SabaID
+	GROUP BY t.SabaID, t.realCustId
 END
 GO

@@ -5,6 +5,7 @@ ALTER FUNCTION dbo.LAP_f_Statement_Mem_Summary
 	, @FromDate SMALLDATETIME
 	, @ToDate SMALLDATETIME
 	, @PromoBettypes VARCHAR(MAX)
+	, @ReportViewType TINYINT
 )
 RETURNS TABLE
 AS
@@ -22,20 +23,40 @@ Revisions:
 	- 20241701@Evan: Integrate Saba Reward Risk-free Rebate + add missing bettype 17006 [RedmineID: #201886]
 	- 20240503@Kelvin: LAP - Player Administration - Statement - Missing data in Statement [RedmineID: #204744]
 	- 20240416@Evan: Integrate Saba Coins - add param @PromoBettypes [RedmineID: #202281]
+	- 20241227@Kelvin: LAP - Saba Coins phase 2 - Support multiple wallets [RedmineID: #215890]
 	
-Param's Explanation:     
+Param's Explanation:
 */
 RETURN (
 WITH temp AS
 (
 	SELECT CAST(CAST(@FromDate AS DATE) AS SMALLDATETIME) AS FromDate
 			, DATEADD(DAY, 1, CAST(CAST(@ToDate AS DATE) AS SMALLDATETIME)) AS ToDate
-		 , @CustID AS custid
 		 , 0 AS BAL_KEY
 		 , 2 AS VOID_KEY
 		 , 1 AS BET_KEY
 		 , 2 AS TRAN_KEY
 		 , 4 AS PROMO_KEY
+),
+cte_ListCustID AS
+(	
+	SELECT CustID
+	FROM
+		(
+			SELECT @CustID AS CustID, 1 AS ReportViewType --Main Wallet
+
+			UNION ALL
+			SELECT s.CustID, 2 AS ReportViewType --Saba coins
+			FROM dbo.Dep_CustSabaInfo s WITH(NOLOCK)
+				CROSS APPLY 
+				(
+					SELECT TOP 1 SabaID
+					FROM dbo.Dep_CustSabaInfo r WITH(NOLOCK)
+					WHERE r.CustType = 0 AND r.CustID = @CustID AND r.SabaID = s.SabaID
+				) r
+			WHERE s.CustType = 1
+		) c
+	WHERE ReportViewType = @ReportViewType
 ),
 cte_PromoBettypes AS
 (
@@ -70,12 +91,12 @@ FROM temp
 				 , SUM(b.winlost - b.actual_stake) AS TotalAmt
 				 , SUM(b.playercomm) AS commission
 			FROM bodb_Archive.dbo.bettrans_bk b (NOLOCK)
+				INNER JOIN cte_ListCustID c ON c.CustID = b.custid
 				LEFT JOIN cte_PromoBettypes s ON s.bettype = b.bettype
-			WHERE b.custid = temp.custid
-				AND b.winlostdate >= temp.FromDate AND b.winlostdate < temp.ToDate
+			WHERE b.winlostdate >= temp.FromDate AND b.winlostdate < temp.ToDate
 			GROUP BY CASE
 						 WHEN b.statusID IN (101, 102, 103) AND
-							 s.bettype IS NULL THEN 2 --> Void/Reject/Refund
+							 s.bettype IS NULL THEN temp.VOID_KEY --> Void/Reject/Refund
 						 WHEN s.bettype IS NOT NULL THEN temp.PROMO_KEY
 						 ELSE temp.BET_KEY --> Won/Lose/Draw
 					 END
@@ -92,12 +113,14 @@ FROM temp
 				 , UPPER(rpt.transtype)
 				 , NULL
 				 , 0
-				 , rpt.TotalAmt
+				 , SUM(rpt.TotalAmt)
 				 , 0
 			FROM bodb_Report.dbo.[Statement] rpt WITH (NOLOCK)
-			WHERE rpt.custid = @CustID
-				AND rpt.accdate >= temp.FromDate AND rpt.accdate < temp.ToDate 
+				INNER JOIN cte_ListCustID c ON c.CustID = rpt.custid
+			WHERE rpt.accdate >= temp.FromDate AND rpt.accdate < temp.ToDate 
 				AND rpt.transtype IN ('BAL')
+			GROUP BY rpt.accdate,
+					 UPPER(rpt.transtype)
 
 			-- transactions
 			UNION ALL
@@ -106,12 +129,15 @@ FROM temp
 				 , UPPER(rpt.transtype)
 				 , ISNULL(rpt.transdesc, '')
 				 , 0
-				 , rpt.TotalAmt
+				 , SUM(rpt.TotalAmt)
 				 , 0
 			FROM bodb_Report.dbo.[Statement] rpt WITH (NOLOCK)
-			WHERE rpt.custid = @CustID
-				AND rpt.accdate >= temp.FromDate AND rpt.accdate < temp.ToDate 
+				INNER JOIN cte_ListCustID c ON c.CustID = rpt.custid
+			WHERE rpt.accdate >= temp.FromDate AND rpt.accdate < temp.ToDate 
 				AND rpt.transtype NOT IN ('BAL', 'BET', 'COM')
+			GROUP BY rpt.accdate,
+					 UPPER(rpt.transtype),
+					 ISNULL(rpt.transdesc, '')
 		) AS rpt
 		GROUP BY rpt.winlostdate
 			   , rpt.orderkey
