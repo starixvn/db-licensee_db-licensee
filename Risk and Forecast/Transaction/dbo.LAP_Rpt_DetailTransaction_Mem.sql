@@ -44,6 +44,7 @@ BEGIN
 		, @_custID			INT
 		, @_TransactionId	BIGINT
 		, @_IsResettled		BIT
+		, @_SabaID			INT
 
 	CREATE TABLE #ListCustID
 	(
@@ -88,16 +89,14 @@ BEGIN
 
 	IF @ReportViewType = 2
 		BEGIN
+			SELECT TOP(1) @_SabaID = SabaID
+			FROM dbo.Dep_CustSabaInfo r WITH(NOLOCK)
+			WHERE CustID = @_custID
+
 			INSERT INTO #ListCustID(CustID)
 			SELECT s.CustID
 			FROM dbo.Dep_CustSabaInfo s WITH(NOLOCK)
-				CROSS APPLY
-				(
-					SELECT TOP 1 SabaID
-					FROM dbo.Dep_CustSabaInfo r WITH(NOLOCK)
-					WHERE r.CustType = 0 AND r.CustID = @_custID AND r.SabaID = s.SabaID
-				) r
-			WHERE s.CustType = 1
+			WHERE s.CustType = 1 AND s.SabaID = @_SabaID
 
 			IF @@ROWCOUNT = 0
 				SELECT @_CustID = 0

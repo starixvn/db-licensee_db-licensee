@@ -52,9 +52,9 @@ cte_ListCustID AS
 				(
 					SELECT TOP 1 SabaID
 					FROM dbo.Dep_CustSabaInfo r WITH(NOLOCK)
-					WHERE r.CustType = 0 AND r.CustID = @CustID AND r.SabaID = s.SabaID
+					WHERE r.CustID = @CustID
 				) r
-			WHERE s.CustType = 1
+			WHERE s.CustType = 1 AND r.SabaID = s.SabaID
 		) c
 	WHERE ReportViewType = @ReportViewType
 ),
