@@ -30,7 +30,8 @@ BEGIN
 	DROP TABLE IF EXISTS #sumWinlostExtra
 	DROP TABLE IF EXISTS #tmpAg
 	DROP TABLE IF EXISTS #sabaBetType;
-	DROP TABLE IF EXISTS #shadowRealCust;
+	DROP TABLE IF EXISTS #tmpRealCust;
+	DROP TABLE IF EXISTS #tmpShadowCust;
 
 	CREATE TABLE #TmpAg (CustId INT, Currency INT)
 	CREATE CLUSTERED INDEX IX_TmpAg ON #TmpAg (CustId);
