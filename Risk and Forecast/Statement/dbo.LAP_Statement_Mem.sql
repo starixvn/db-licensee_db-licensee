@@ -53,7 +53,6 @@ BEGIN
 		, @_tempEndDate			SMALLDATETIME
 		, @_CustID				INT
 		, @currency				INT
-		, @_SabaID				INT
 
 	DECLARE @BAL_KEY			TINYINT = 0
 			, @BET_KEY			TINYINT = 1
@@ -113,14 +112,16 @@ BEGIN
 
 	IF @ReportViewType = 2
 		BEGIN
-			SELECT TOP(1) @_SabaID = SabaID
-			FROM dbo.Dep_CustSabaInfo r WITH(NOLOCK)
-			WHERE CustID = @_custID
-
 			INSERT INTO #ListCustID(CustID)
 			SELECT s.CustID
 			FROM dbo.Dep_CustSabaInfo s WITH(NOLOCK)
-			WHERE s.CustType = 1 AND s.SabaID = @_SabaID
+				CROSS APPLY 
+				(
+					SELECT TOP 1 SabaID
+					FROM dbo.Dep_CustSabaInfo r WITH(NOLOCK)
+					WHERE r.CustID = @_CustID
+				) r
+			WHERE s.CustType = 1 AND r.SabaID = s.SabaID
 
 			IF @@ROWCOUNT = 0
 				SELECT @_CustID = 0
