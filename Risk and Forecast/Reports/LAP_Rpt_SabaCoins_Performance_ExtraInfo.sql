@@ -95,12 +95,11 @@ BEGIN
 
 	--TODO: Get sport type	
 	CREATE TABLE #sabaBetType (Bettype INT PRIMARY KEY, AmountType SMALLINT);
-	WITH CTE_SabaBettype AS (
-		SELECT 11001 AS bettype 
-		UNION ALL
-		SELECT bettype = bettype + 1
-		FROM CTE_SabaBettype
-		WHERE bettype < 11049
+	WITH CTE_SabaBettype AS
+	(
+		SELECT DISTINCT BetType
+		FROM dbo.SportBettypeMatrix WITH(NOLOCK)
+		WHERE ProductID = 81 AND SportType = 149
 	)
 	INSERT INTO #sabaBetType(bettype, AmountType)
 	SELECT bettype
