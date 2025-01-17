@@ -408,7 +408,6 @@ BEGIN
 			OR bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
 			OR bettype BETWEEN 5302 AND 5399 -- Virtual Sport 3 (LG)
 			OR bettype BETWEEN 10400 AND 10448 -- Virtual Sport 4
-			OR bettype BETWEEN 11050 AND 11098 -- Virtual Sport 5
 			OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 			OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 			OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
