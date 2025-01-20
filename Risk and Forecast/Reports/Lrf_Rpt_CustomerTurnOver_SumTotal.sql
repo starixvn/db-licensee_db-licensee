@@ -44,6 +44,7 @@ AS
 		- 20242901@Evan: Integrate VS4 [RedmineID: #199347]
 		- 20241001@Kelvin: LAP - Integrate BetRadar Virtual Horses & Dogs Racing [RedmineID: #210808]
 		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]
+		- 20250117@Kelvin: BetBy - Change from Multiple Odds to Decimal Odds (VS6) [RedmineID: #216783]
 */
 
 BEGIN
@@ -213,7 +214,6 @@ BEGIN
 									OR b.bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
 									OR bettype BETWEEN 5302 AND 5399 -- Virtual Sport 3 (LG)
 									OR b.bettype BETWEEN 10400 AND 10448 -- Virtual Sport 4
-									OR b.bettype BETWEEN 13000 AND 13199 -- Virtual Sports 6 (Betby)
 									OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 									OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 									OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
@@ -385,7 +385,6 @@ BEGIN
 							OR b.bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
 							OR bettype BETWEEN 5302 AND 5399 -- Virtual Sport 3 (LG)
 							OR b.bettype BETWEEN 10400 AND 10448 -- Virtual Sport 4
-							OR b.bettype BETWEEN 13000 AND 13199 -- Virtual Sports 6 (Betby)
 							OR bettype IN (467,468,469) -- PH-AIO new bettypes (phase 4a)
 							OR bettype IN (470,471,472,479,481,488,489,490,491,492) -- PH-AIO new bettypes (phase 4b)
 							OR (bettype NOT IN (703, 711) AND bettype BETWEEN 701 AND 714) -- BM-AIO new bettypes (phase 2)
