@@ -57,6 +57,7 @@ BEGIN
 		, transtime			DATETIME
         , transremark		VARCHAR(200)
         , changedAmt		MONEY DEFAULT(0)
+		, totalAmt			MONEY DEFAULT(0)
 		--, CONSTRAINT PK_Trans PRIMARY KEY (transtime, transid)
 		, rowIdx			INT PRIMARY KEY
 		, IsResettled		BIT
@@ -121,6 +122,7 @@ BEGIN
 		, transtime
 		, transremark
 		, changedAmt
+		, totalAmt
 		, rowIdx
 		, IsResettled
 	)
@@ -129,6 +131,7 @@ BEGIN
 		, br.transtime
 		, br.transremark
 		, br.changedAmt
+		, br.totalAmt
 		, rowIdx = ROW_NUMBER() OVER(ORDER BY RowID)
 		, br.IsResettled
 	FROM (
@@ -140,6 +143,7 @@ BEGIN
 			 , ActionDate AS transtime
 			 , REPLACE([Action], 'TransLog', 'Ticket') AS transremark
 			 , BalanceChanged AS changedAmt
+			 , NewBalance AS totalAmt
 			 , RowID
 			 , CASE
 				   WHEN br.SettlementType IN (2, 3, 10, 11) THEN 1
@@ -171,6 +175,7 @@ BEGIN
 			 , ActionDate AS transtime
 			 , REPLACE([Action], 'TransLog', 'Ticket') AS transremark
 			 , BalanceChanged AS changedAmt
+			 , NewBalance AS totalAmt
 			 , RowID
 			 , CASE
 				   WHEN SettlementType IN (2, 3, 10, 11) THEN 1
@@ -221,6 +226,7 @@ BEGIN
 		, br.transtime
 		, br.transremark
 		, br.changedAmt
+		, br.totalAmt
 		, br.IsResettled
 	FROM #transactionRpt br
 	WHERE 
