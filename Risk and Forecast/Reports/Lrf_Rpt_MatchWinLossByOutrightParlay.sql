@@ -5,7 +5,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByOutrightParlay]
 	@Date			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
 	@ProductList	VARCHAR(500),
-	@ShowBA			BIT				= 0,
 	@BaseCurrency	VARCHAR(12)		= ''
 AS
 
@@ -37,6 +36,7 @@ AS
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20242901@Evan: Integrate VS4 [RedmineID: #199347]
+		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -69,14 +69,6 @@ BEGIN
 		RETURN
 	END CATCH;
 
-	DECLARE @ShowSB	BIT = 0
-
-	IF ',' + @ProductList + ',' LIKE '%,SB,%'
-		SET @ShowSB = 1
-
-	IF @ShowBA = 1
-		SET @ProductList = @ProductList + ',SB'
-
 	SELECT @ProductList = STRING_AGG(b.ProductPrefix, ',')
 	FROM (
 		SELECT DISTINCT ISNULL(b.ProductPrefix,a.Value) AS ProductPrefix
@@ -105,9 +97,7 @@ BEGIN
 		Turnover	MONEY,
 		WinLost		MONEY,
 		PlayerComm	MONEY,
-		LicenseeWL	MONEY,
-		CommBA		MONEY,
-		AmtDueToBA	MONEY )
+		LicenseeWL	MONEY)
 
 	DECLARE @_Date AS SMALLDATETIME
 
@@ -124,9 +114,7 @@ BEGIN
 			Turnover,
 			WinLost,
 			PlayerComm,
-			LicenseeWL,
-			CommBA,
-			AmtDueToBA )
+			LicenseeWL)
 		SELECT
 			bt.ProductCode,
 			b.bettype,
@@ -135,28 +123,12 @@ BEGIN
 			SUM(b.stake) AS Turnover,
 			SUM(b.winlost - b.actual_stake) AS WinLost,
 			SUM(b.playercomm) AS PlayerComm,
-			-SUM(CASE
-					WHEN bt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
-					ELSE b.winlost - b.actual_stake
-				END) AS LicenseeWL,
-			SUM(CASE
-					WHEN bt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN b.comm
-					ELSE 0
-				END) AS CommBA,
-			SUM(CASE
-					WHEN bt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN b.winlost - b.actual_stake + b.awinlost + b.comm
-					ELSE 0
-				END) AS AmountDueToBA
+			-SUM(b.winlost - b.actual_stake) AS LicenseeWL
 		FROM dbo.bettrans AS b WITH (NOLOCK)
 			INNER JOIN @TempAg AS a ON a.CustId = b.recommend
 			INNER JOIN @BetType AS bt ON bt.BetType = b.bettype
 		WHERE b.winlostdate = @_Date
 			AND b.statusID IN (111, 112, 113)
-			AND CASE
-					WHEN @ShowBA = 0 AND bt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
-					WHEN @ShowSB = 0 AND bt.ProductCode = 'SB' AND b.tpositiontaking <> 0 THEN 0
-					ELSE 1
-				END <> 0
 		GROUP BY
 			bt.ProductCode,
 			b.bettype,
@@ -175,9 +147,7 @@ BEGIN
 			Turnover,
 			WinLost,
 			PlayerComm,
-			LicenseeWL,
-			CommBA,
-			AmtDueToBA )
+			LicenseeWL)
 		SELECT
 			bt.ProductCode,
 			b.bettype,
@@ -186,28 +156,12 @@ BEGIN
 			SUM(b.stake) AS Turnover,
 			SUM(b.winlost) AS WinLost,
 			SUM(b.playercomm) AS PlayerComm,
-			-SUM(CASE
-					WHEN bt.ProductCode = 'SB' AND b.isBA = 1 THEN 0
-					ELSE b.winlost
-				END) AS LicenseeWL,
-			SUM(CASE
-					WHEN bt.ProductCode = 'SB' AND b.isBA = 1 THEN b.comm
-					ELSE 0
-				END) AS CommBA,
-			SUM(CASE
-					WHEN bt.ProductCode = 'SB' AND b.isBA = 1 THEN b.winlost + b.awinlost + b.comm
-					ELSE 0
-				END) AS AmountDueToBA
+			-SUM(b.winlost) AS LicenseeWL
 		FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague AS b WITH (NOLOCK)
 			INNER JOIN @TempAg AS a ON a.CustId = b.recommend
 			INNER JOIN @BetType AS bt ON bt.BetType = b.bettype
 		WHERE b.winlostdate = @_Date
 			AND b.statusID <> 101
-			AND CASE
-					WHEN @ShowBA = 0 AND bt.ProductCode = 'SB' AND b.isBA = 1 THEN 0
-					WHEN @ShowSB = 0 AND bt.ProductCode = 'SB' AND b.isBA = 0 THEN 0
-					ELSE 1
-				END <> 0
 		GROUP BY
 			bt.ProductCode,
 			b.bettype,
@@ -229,9 +183,7 @@ BEGIN
 		CAST(SUM(b.Turnover		* e.Rate) AS MONEY) AS Turnover,
 		CAST(SUM(b.WinLost		* e.Rate) AS MONEY) AS WinLost,
 		CAST(SUM(b.LicenseeWL	* e.Rate) AS MONEY) AS LicenseeWL,
-		CAST(SUM(b.CommBA		* e.Rate) AS MONEY) AS CommBA,
-		CAST(SUM(b.PlayerComm	* e.Rate) AS MONEY) AS PlayerComm,
-		CAST(SUM(b.AmtDueToBA	* e.Rate) AS MONEY) AS AmtDuetoBA
+		CAST(SUM(b.PlayerComm	* e.Rate) AS MONEY) AS PlayerComm
 	FROM @Data AS b
 		INNER JOIN @ExchangeDaily AS e ON e.ExchangeId = b.Currency
 		LEFT JOIN dbo.Lrf_f_GroupBettype() ss ON b.bettype = ss.bettype

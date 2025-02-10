@@ -86,11 +86,9 @@ BEGIN
 	DECLARE @SBBACheck TINYINT;
 	SELECT @SBBACheck = (POWER(2*1, 1)
 				+ POWER(2*CASE WHEN ISNULL(@ProductList, 'ALL') = 'ALL'  OR ',' + @ProductList + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 2))
-
 	-- Get sport/bettype matrix
 	DECLARE @IsTest BIT = 0
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
-
 	CREATE TABLE #BetTypeSel (ProductCode VARCHAR(10), Bettype INT, ProductId INT);
 	--Bettype selection
 	;WITH BettypeSel AS (
@@ -104,7 +102,6 @@ BEGIN
 	CROSS APPLY (
 		SELECT value FROM STRING_SPLIT (a.Bettype,',') 
 	) b;
-
 	UPDATE a
 	SET a.ProductId = IIF(a.ProductCode = 'VS', 5, t.ProductId)
 	FROM #BetTypeSel a

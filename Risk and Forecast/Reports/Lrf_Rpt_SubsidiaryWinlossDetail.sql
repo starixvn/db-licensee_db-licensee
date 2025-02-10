@@ -31,6 +31,7 @@ AS
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240311@Eddie: Change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
+		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -102,14 +103,9 @@ BEGIN
 	DECLARE @IsTest BIT = 0
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
-	DECLARE @ShowBA BIT = 0,
-		@ShowSB BIT = 0
+	DECLARE @ShowSB BIT = 0
 
-	SELECT @ShowBA = CASE WHEN ',' + @ProductList + ',' LIKE '%,BA,%' THEN 1 ELSE 0 END
 	SELECT @ShowSB = CASE WHEN ',' + @ProductList + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END
-
-	IF @ShowBA = 1
-		SET @ProductList = @ProductList + ',SB'
 
 	SELECT @ProductList = STRING_AGG(b.ProductPrefix, ',')
 	FROM (
@@ -159,10 +155,7 @@ BEGIN
 				COUNT(b.transid) AS BetCount,
 				SUM(b.stake) AS Turnover,
 				SUM(b.winlost - b.actual_stake) AS WinLost,
-				- SUM(CASE
-						WHEN p.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
-						ELSE b.winlost - b.actual_stake
-					END) AS LicenseeWL
+				- SUM(b.winlost - b.actual_stake) AS LicenseeWL
 			FROM
 				dbo.bettrans AS b WITH (NOLOCK)
 				INNER JOIN @TempAg AS a ON b.recommend = a.custid
@@ -174,11 +167,6 @@ BEGIN
 				AND b.matchid > 0 
 				AND (b.bettype NOT BETWEEN 1611 AND 1697 OR b.matchid <> 150)
 				AND (b.bettype NOT BETWEEN 3801 AND 3899 OR b.matchid <> 173)
-				AND (CASE
-						WHEN @ShowBA = 0 AND p.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
-						WHEN @ShowSB = 0 AND p.ProductCode = 'SB' AND b.tpositiontaking <> 0 THEN 0
-						ELSE 1
-					END <> 0)
 			GROUP BY
 				b.winlostdate,
 				b.custid,
@@ -212,10 +200,7 @@ BEGIN
 				SUM(b.BetCount) AS BetCount,
 				SUM(b.turnover) AS Turnover,
 				SUM(b.winlost) AS Winlost,
-				- SUM(CASE
-						WHEN p.ProductCode = 'SB' AND b.isBA = 1 THEN 0
-						ELSE b.winlost
-					END) AS LicenseeWL
+				- SUM(b.winlost) AS LicenseeWL
 			FROM bodb_LicenseeReport.dbo.rptLicWinloss2 AS b WITH (NOLOCK)
 				INNER JOIN #SporttypeProduct AS p ON b.sporttype = p.SportType
 				INNER JOIN @TempAg AS a ON b.recommend = a.CustId
@@ -227,11 +212,6 @@ BEGIN
 				AND b.roleid = 1
 				AND (b.statusID IN (112, 113, 114, 115)
 					OR (@IncludeRaw = 1 AND b.statusID = 111)) --exclude REJECT bets
-				AND (CASE
-						WHEN @ShowBA = 0 AND p.ProductCode = 'SB' AND b.isBA = 1 THEN 0
-						WHEN @ShowSB = 0 AND p.ProductCode = 'SB' AND b.isBA = 0 THEN 0
-						ELSE 1
-					END <> 0)
 			GROUP BY
 				b.winlostdate,
 				b.custid,

@@ -66,6 +66,7 @@ AS
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240311@Eddie: Change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
 		- 20240605@Kelvin: Exclude CusitID in bodb02.dbo.Dep_Customer_Archived [RedmineID: #206148]
+		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 
 	Param's Explanation:
 		+ @TopCount:
@@ -108,11 +109,6 @@ BEGIN
 		RETURN
 	END CATCH;
 
-	DECLARE @ShowSB BIT = 0
-
-	IF ',' + @ProductList + ',' LIKE '%,SB,%'
-		SET @ShowSB = 1
-
 	SELECT @ProductList = STRING_AGG(b.ProductPrefix, ',')
 	FROM (
 		SELECT DISTINCT ISNULL(b.ProductPrefix,a.Value) AS ProductPrefix
@@ -150,7 +146,7 @@ BEGIN
 	END
 
 	CREATE TABLE #SumWinlost (
-		CustId				INT,
+		CustId				INT PRIMARY KEY,
 		Deposit				MONEY,
 		AffiliateTransfer	MONEY,
 		Withdrawal			MONEY,
@@ -163,10 +159,23 @@ BEGIN
 		OpeningBalance		MONEY,
 		ClosingBalance		MONEY,
 		DrawGame			MONEY,
-		TurnoverBA			MONEY,
-		CommBA				MONEY,
-		PlayerComm			MONEY,
-		AmountDueToBA		MONEY)
+		PlayerComm			MONEY	)
+
+	CREATE TABLE #SumWinlost2 (
+		CustId				INT PRIMARY KEY,
+		Deposit				MONEY,
+		AffiliateTransfer	MONEY,
+		Withdrawal			MONEY,
+		Turnover			MONEY,
+		WinLoss				MONEY,
+		Bonus				MONEY,
+		Adjustment			MONEY,
+		Promotion			MONEY,
+		Outstanding			MONEY,
+		OpeningBalance		MONEY,
+		ClosingBalance		MONEY,
+		DrawGame			MONEY,
+		PlayerComm			MONEY	)
 
 	DECLARE @CutDate DATETIME
 
@@ -206,27 +215,18 @@ BEGIN
 					ELSE 0
 				END) AS ClosingBalance
 			, 0 AS DrawGame
-			, CASE
-				WHEN @showSB = 1 THEN SUM(ISNULL(Turnover_BA, 0))
-				ELSE 0
-			END TurnoverBA
-			, CASE 
-				WHEN @showSB = 1 THEN SUM(ISNULL(Comm_BA, 0))
-				ELSE 0
-			END CommBA
 			, 0 AS PlayerComm
-			, CASE 
-				WHEN @showSB = 1 THEN SUM(ISNULL(AmountDueTo_BA, 0))
-				ELSE 0
-			END AmountDueToBA
 		FROM bodb_Report.dbo.rptDepWinlost_bk AS b WITH (NOLOCK)
 			INNER JOIN #TmpAg AS a ON b.recommend = a.CustId
 			LEFT JOIN bodb_Report.dbo.rptDepWinlost_BonusWallet AS bo WITH (NOLOCK) ON b.custid = bo.CustID AND b.winlostdate = bo.Winlostdate
 		WHERE b.winlostdate BETWEEN @fdate AND @tmpdate
-			AND NOT EXISTS (SELECT TOP 1 1 FROM bodb02.dbo.Dep_Customer_Archived da WITH(NOLOCK) WHERE b.CustID = da.CustID) 
-		GROUP BY b.CustId;
+		GROUP BY b.CustId
 
-		WITH sourceDATA
+		DELETE s 
+		FROM #SumWinlost s
+		INNER JOIN dbo.Dep_Customer_Archived da WITH(NOLOCK) ON s.CustID = da.CustID
+
+		;WITH sourceDATA
 		AS (
 			SELECT p.custid
 				, SUM(ISNULL(CASE 
@@ -260,6 +260,7 @@ BEGIN
 							ELSE @fdate
 						END
 
+		INSERT INTO #SumWinlost2
 		SELECT b.custid
 			, SUM(b.Deposit) AS Deposit
 			, SUM(b.Aff2MemTransfer) AS AffiliateTransfer
@@ -279,27 +280,17 @@ BEGIN
 					ELSE 0
 				END) AS ClosingBalance
 			, CAST(0 AS MONEY) AS DrawGame
-			, CASE
-				WHEN @showSB = 1 THEN SUM(ISNULL(Turnover_BA, 0))
-				ELSE 0
-			END TurnoverBA
-			, CASE
-				WHEN @showSB = 1 THEN SUM(ISNULL(Comm_BA, 0))
-				ELSE 0
-			END CommBA
 			, CAST(0 AS MONEY) AS PlayerComm
-			, CASE 
-				WHEN @showSB = 1 THEN SUM(ISNULL(AmountDueTo_BA, 0))
-				ELSE 0
-			END AmountDueToBA
-		INTO #SumWinlost2
 		FROM bodb_Report.dbo.rptDepWinlost AS b WITH (NOLOCK)
 			INNER JOIN #TmpAg AS a ON b.recommend = a.CustId
 		WHERE b.winlostdate BETWEEN @tmpdate AND @tdate
-			AND NOT EXISTS (SELECT TOP 1 1 FROM bodb02.dbo.Dep_Customer_Archived da WITH(NOLOCK) WHERE b.CustID = da.CustID)
-		GROUP BY b.CustId;
+		GROUP BY b.CustId
 
-		WITH sourceDATA
+		DELETE s 
+		FROM #SumWinlost2 s
+		INNER JOIN dbo.Dep_Customer_Archived da WITH(NOLOCK) ON s.CustID = da.CustID
+
+		;WITH sourceDATA
 		AS (
 			SELECT p.custid
 				, SUM(ISNULL(CASE
@@ -338,10 +329,7 @@ BEGIN
 			, OpeningBalance = #SumWinlost.OpeningBalance + s.OpeningBalance
 			, ClosingBalance = #SumWinlost.ClosingBalance + s.ClosingBalance
 			, DrawGame = #SumWinlost.DrawGame + s.DrawGame
-			, TurnoverBA = #SumWinlost.TurnoverBA + s.TurnoverBA
-			, CommBA = #SumWinlost.CommBA + s.CommBA
 			, PlayerComm = #SumWinlost.PlayerComm + s.PlayerComm
-			, AmountDueToBA = #SumWinlost.AmountDueToBA + s.AmountDueToBA
 		FROM #SumWinlost2 s
 		WHERE #SumWinlost.custid = s.custid
 
@@ -359,12 +347,9 @@ BEGIN
 			, OpeningBalance
 			, ClosingBalance
 			, DrawGame
-			, TurnoverBA
-			, CommBA
 			, PlayerComm
-			, AmountDueToBA
-		FROM #SumWinlost2
-		WHERE custid NOT IN (SELECT Custid FROM #SumWinlost)
+		FROM #SumWinlost2 s2
+		WHERE NOT EXISTS (SELECT TOP 1 1 FROM #SumWinlost s1 WHERE s2.CustId = s1.CustId)
 
 		DROP TABLE #SumWinlost2
 	END
@@ -405,10 +390,7 @@ BEGIN
 				, SUM(OpeningBalance) AS SumOpeningBalance
 				, SUM(ClosingBalance) AS SumClosingBalance
 				, SUM(DrawGame) AS SumDrawGame
-				, SUM(TurnoverBA) AS SumTurnoverBA
-				, SUM(CommBA) AS SumCommBA
 				, SUM(PlayerComm) AS SumPlayerComm
-				, SUM(AmountDueToBA) AS SumAmountDueToBA
 			FROM #SumWinlost
 		END
 		ELSE
@@ -438,10 +420,7 @@ BEGIN
 				, SUM(OpeningBalance) AS SumOpeningBalance
 				, SUM(ClosingBalance) AS SumClosingBalance
 				, SUM(DrawGame) AS SumDrawGame
-				, SUM(TurnoverBA) AS SumTurnoverBA
-				, SUM(CommBA) AS SumCommBA
 				, SUM(PlayerComm) AS SumPlayerComm
-				, SUM(AmountDueToBA) AS SumAmountDueToBA
 			FROM (
 				SELECT TOP (@TopCount)
 					rpt.*,
@@ -487,10 +466,7 @@ BEGIN
 				, SUM(OpeningBalance) AS SumOpeningBalance
 				, SUM(ClosingBalance) AS SumClosingBalance
 				, SUM(DrawGame) AS SumDrawGame
-				, SUM(TurnoverBA) AS SumTurnoverBA
-				, SUM(CommBA) AS SumCommBA
 				, SUM(PlayerComm) AS SumPlayerComm
-				, SUM(AmountDueToBA) AS SumAmountDueToBA
 			FROM #SumWinlost
 		END
 		ELSE
@@ -527,10 +503,7 @@ BEGIN
 				, SUM(OpeningBalance) AS SumOpeningBalance
 				, SUM(ClosingBalance) AS SumClosingBalance
 				, SUM(DrawGame) AS SumDrawGame
-				, SUM(TurnoverBA) AS SumTurnoverBA
-				, SUM(CommBA) AS SumCommBA
 				, SUM(PlayerComm) AS SumPlayerComm
-				, SUM(AmountDueToBA) AS SumAmountDueToBA
 			FROM (
 				SELECT TOP (@TopCount) rpt.*
 					, ROW_NUMBER() OVER (ORDER BY CASE @OrderItem

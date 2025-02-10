@@ -120,6 +120,7 @@ AS
 		- 20242503@Evan: Enhance code to avoid hardcode  [RedmineID: #199843]
 		- 20240509@Evan: Integrate VS4 [RedmineID: #199347]
 		- 20241001@Kelvin: LAP - Integrate BetRadar Virtual Horses & Dogs Racing [RedmineID: #210808]
+		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 
 	Param's Explanation:
 		@Liveindicator : indicate that whether the report will get live data or not
@@ -219,8 +220,7 @@ BEGIN
 
 	DECLARE @SBBACheck TINYINT, @NASportType SMALLINT = 0;
 	SELECT @SBBACheck = (POWER(2*1, 1)
-				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 2) 
-				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,BA,%' THEN 1 ELSE 0 END, 3))
+				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 2))
 	
 	CREATE TABLE #tmpBettype ( Bettype INT, EventType TINYINT, ProductID SMALLINT, SportType SMALLINT)
 	INSERT INTO #tmpBettype (Bettype, EventType,ProductID)
@@ -259,7 +259,7 @@ BEGIN
 			ELSE @NASportType END
 			, SUM(stake) turnover
 			, SUM(b.winlost - b.actual_stake) AS Winlost
-			, -SUM(CASE WHEN s.IsBA = 1 THEN 0 ELSE (b.winlost - b.actual_stake) END) AS LicenseeWL
+			, -SUM(b.winlost - b.actual_stake) AS LicenseeWL
 			, SUM(comm) AS Comm
 			, SUM(playercomm) AS PlayerComm
 			, -SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd
@@ -267,21 +267,16 @@ BEGIN
 		FROM bettrans b WITH (NOLOCK)
 			INNER JOIN #TempAg t ON b.recommend = t.custid
 			INNER JOIN #tmpBettype bt ON b.bettype = bt.Bettype
-			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.recommend = BA.recommend AND b.TransId = BA.TransId 
 			LEFT JOIN [match] m WITH (NOLOCK) ON b.matchid = m.matchid 
 			LEFT JOIN [bodb02].[dbo].[Match3rd] m3rd WITH(NOLOCK) ON m3rd.Match3rdId = b.matchid
 			LEFT JOIN #tmpVS vs ON b.oddsid = vs.Orid
 			OUTER APPLY
 			(
-				SELECT	CASE WHEN BA.TransID IS NOT NULL THEN 1 ELSE 0 END AS IsBA,
-						ISNULL(CASE WHEN b.bettype IN (9,29,2799,10449) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
+				SELECT ISNULL(CASE WHEN b.bettype IN (9,29,2799,10449) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 			) s
 		WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND (@Liveindicator = s.liveindicator OR @Liveindicator = 2)
 			AND b.statusID IN (111, 112, 113)
-			AND 1 = CASE WHEN @SBBACheck = 6 AND s.IsBA = 1 THEN 0 
-						 WHEN @SBBACheck = 10 AND s.IsBA = 0 THEN 0
-					ELSE 1 END
 			AND 1 = CASE WHEN b.bettype BETWEEN 1611 AND 1697 AND b.matchid = 150 THEN 0
 						WHEN b.bettype BETWEEN 3801 AND 3899 AND b.matchid = 173 THEN 0
 					ELSE 1 END	
@@ -313,77 +308,7 @@ BEGIN
 		FROM #tmpBettype b 
 			INNER JOIN dbo.SportBettypeMatrix sbm (NOLOCK) ON b.Bettype = sbm.BetType
 		WHERE b.EventType = 0
-		
-		--BA
-		IF ',' + @ProductCodes + ',' LIKE '%,BA,%'
-		BEGIN
-			-- Get data from rpt_Betting_BA for BA
-			INSERT INTO #tmpWinloss (winlostdate, Currency, SportType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
-			SELECT b.rptDate
-				 , b.CurrencyID
-				 , CASE
-					   WHEN b.bettype = 10 THEN 103 -- Outright
-					   ELSE l.SportType
-				   END AS Sporttype
-				 , SUM(b.turnover) turnover
-				 , SUM(b.WinLoss) winlost
-				 , 0 AS LicenseeWL
-				 , SUM(CommissionA) AS Comm
-				 , SUM(CommissionP) AS PlayerComm
-				 , -SUM(b.WinLoss + b.WinLossA + b.CommissionA) AmountDueTo3rd
-				 , SUM(b.betcount) BetCount
-			FROM bodb_LicenseeReport.dbo.rpt_Betting_BA b WITH (NOLOCK)
-				INNER JOIN #LicenseeList ll ON b.SiteID = ll.LicenseeID AND b.CurrencyID = ll.Currency
-				LEFT JOIN League l WITH (NOLOCK) ON b.LeagueID = l.LeagueID
-			WHERE b.rptDate BETWEEN @FDate AND @TempToDate
-				AND b.status NOT IN (-1, 103)
-				AND b.bettype NOT IN (9, 29)
-				AND (b.bettype < 901 OR b.bettype > 904)
-				AND (b.bettype < 911 OR b.bettype > 914)
-				AND NOT EXISTS (
-					SELECT 1
-					FROM @ExcludedBetType e
-					WHERE e.BetType = b.BetType
-				)
-				AND (b.IsLive = @Liveindicator OR @Liveindicator = 2) 
-			GROUP BY b.rptDate
-				   , b.CurrencyID
-				   , CASE
-						 WHEN b.bettype = 10 THEN 103 -- Outright
-						 ELSE l.SportType
-					 END
-			
-			-- Get Tikect Parlay
-			INSERT INTO #tmpWinloss (winlostdate, Currency, SportType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
-			SELECT b.rptDate
-				 , b.CurrencyID
-				 , CASE
-					   WHEN b.bettype = 9 THEN 101 --Mix Parlay
-					   WHEN b.bettype = 29 THEN 102 --System Parlay
-				   END AS Sporttype
-				 , SUM(b.turnover) turnover
-				 , SUM(b.WinLoss) winlost
-				 , 0 AS LicenseeWL
-				 , SUM(CommissionA) AS Comm
-				 , SUM(CommissionP) AS PlayerComm
-				 , -SUM(b.WinLoss + b.WinLossA + b.CommissionA) AmountDueTo3rd
-				 , SUM(b.betcount) BetCount
-			FROM bodb_LicenseeReport.dbo.rpt_BettingParlay b WITH (NOLOCK)
-				INNER JOIN #LicenseeList l ON b.SiteID = l.LicenseeID AND b.CurrencyID = l.Currency
-			WHERE b.rptDate BETWEEN  @FDate AND @TempToDate
-				AND b.Status NOT IN (-1, 103)
-				AND b.bettype IN (9,29)
-				AND (b.IsLive = @Liveindicator OR @Liveindicator = 2)
-				AND b.isBA = 1
-			GROUP BY b.rptDate
-				   , b.CurrencyID
-				   , CASE
-						 WHEN b.bettype = 9 THEN 101 --Mix Parlay
-						 WHEN b.bettype = 29 THEN 102 --System Parlay
-					 END
-			
-		END
-		
+				
 		--Get data from rpt_Betting for non-BA
 		INSERT INTO #tmpWinloss (winlostdate, Currency, SportType, TurnOver, Winlost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, Betcount)
 		SELECT b.rptDate
@@ -414,7 +339,6 @@ BEGIN
 			AND 1 = CASE WHEN b.bettype BETWEEN 1611 AND 1697 AND b.TicketType = 2 THEN 0
 						WHEN b.bettype BETWEEN 3801 AND 3899 AND b.TicketType = 2 THEN 0
 					ELSE 1 END	
-			AND 1 = CASE WHEN @SBBACheck = 10 AND bt.ProductID IN (1,69,63) THEN 0 ELSE 1 END
 		GROUP BY b.rptDate
 			   , b.CurrencyID
 			   , CASE
@@ -447,8 +371,6 @@ BEGIN
 			AND b.status NOT IN (-1, 103)
 			AND b.bettype IN (9, 29, 2799,10449)
 			AND (b.IsLive = @Liveindicator OR @Liveindicator = 2)
-			AND b.isBA = 0
-			AND 1 = CASE WHEN @SBBACheck = 10 AND bt.ProductID = 1 THEN 0 ELSE 1 END
 		GROUP BY b.rptDate
 				, b.CurrencyID
 				, CASE

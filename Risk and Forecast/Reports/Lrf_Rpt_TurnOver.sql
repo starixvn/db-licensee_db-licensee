@@ -74,6 +74,7 @@ AS
 		- 20231127@Evan: Enhance performance [Redmine #198479]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240311@Eddie: Change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
+		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 */
 
 BEGIN
@@ -101,11 +102,6 @@ BEGIN
 
 		RETURN
 	END CATCH;
-
-	DECLARE @ShowSB BIT = 0
-
-	IF ',' + @ProductList + ',' LIKE '%,SB,%'
-		SET @ShowSB = 1
 
 	SELECT @ProductList = STRING_AGG(b.ProductPrefix, ',')
 	FROM (
@@ -185,10 +181,7 @@ BEGIN
 		ClosingBalance		MONEY,
 		Transfer3rd			MONEY,
 		DrawGame			MONEY,
-		Turnover_BA			MONEY,
-		Comm_BA				MONEY,
-		PlayerComm			MONEY,
-		AmountDueTo_BA		MONEY
+		PlayerComm			MONEY
 	)
 
 	DECLARE @CutDate SMALLDATETIME
@@ -230,10 +223,8 @@ BEGIN
 					ClosingBalance,
 					Transfer3rd,
 					DrawGame, 
-					Turnover_BA,
-					Comm_BA,
-					PlayerComm,
-					AmountDueTo_BA)
+					PlayerComm
+					)
 				SELECT
 					b.winlostdate,
 					b.currency,
@@ -250,10 +241,7 @@ BEGIN
 					SUM(ISNULL(b.ClosingBalance, 0)),
 					SUM(ISNULL(b.Transfer3rd + b.Transfer3rdOthers, 0)),
 					0 AS DrawGame,
-					SUM(ISNULL(b.Turnover_BA, 0)),
-					SUM(ISNULL(b.Comm_BA, 0)),
-					0 AS PlayerComm,
-					SUM(ISNULL(b.AmountDueTo_BA, 0))
+					0 AS PlayerComm
 				FROM
 					bodb_report.dbo.rptdepwinlost_bk AS b WITH (NOLOCK)
 					INNER JOIN #TempAg AS a ON b.recommend = a.CustId
@@ -303,7 +291,7 @@ BEGIN
 				(
 					Winlostdate, Currency, OpeningBalance, Deposit, Withdrawal, AffiliateTransfer, Bonus, 
 					Adjustment, Promotion, Turnover, PendingFund, Winloss, ClosingBalance, Transfer3rd, DrawGame, 
-					Turnover_BA, Comm_BA, PlayerComm, AmountDueTo_BA
+					PlayerComm
 				)
 				SELECT
 					b.winlostdate,
@@ -321,10 +309,7 @@ BEGIN
 					SUM(ISNULL(b.ClosingBalance, 0)),
 					SUM(ISNULL(b.Transfer3rd + b.Transfer3rdOthers, 0)),
 					0 AS DrawGame,
-					SUM(ISNULL(b.Turnover_BA, 0)),
-					SUM(ISNULL(b.Comm_BA, 0)),
-					0 AS PlayerComm,
-					SUM(ISNULL(b.AmountDueTo_BA, 0))
+					0 AS PlayerComm
 				FROM
 					bodb_report.dbo.rptdepwinlost AS b WITH(NOLOCK)
 					INNER JOIN #TempAg AS a ON b.recommend = a.CustId
@@ -389,10 +374,8 @@ BEGIN
 					ClosingBalance,
 					Transfer3rd,
 					DrawGame,
-					Turnover_BA,
-					Comm_BA,
-					PlayerComm,
-					AmountDueTo_BA)
+					PlayerComm
+					)
 				SELECT
 					b.winlostdate,
 					b.currency,
@@ -409,10 +392,7 @@ BEGIN
 					SUM(ISNULL(b.ClosingBalance, 0)),
 					SUM(ISNULL(b.Transfer3rd + b.Transfer3rdOthers, 0)),
 					0 AS DrawGame,
-					SUM(ISNULL(b.Turnover_BA, 0)),
-					SUM(ISNULL(b.Comm_BA, 0)),
-					0 AS PlayerComm,
-					SUM(ISNULL(b.AmountDueTo_BA, 0))
+					0 AS PlayerComm
 				FROM
 					bodb_report.dbo.rptdepwinlost_SUM AS b WITH(NOLOCK)
 					INNER JOIN #TempAg AS ag ON b.recommend = ag.CustId
@@ -474,10 +454,8 @@ BEGIN
 					ClosingBalance,
 					Transfer3rd,
 					DrawGame,
-					Turnover_BA,
-					Comm_BA,
-					PlayerComm,
-					AmountDueTo_BA)
+					PlayerComm
+					)
 				SELECT
 					b.winlostdate,
 					b.currency,
@@ -494,10 +472,7 @@ BEGIN
 					SUM(ISNULL(b.ClosingBalance, 0)),
 					SUM(ISNULL(b.Transfer3rd + b.Transfer3rdOthers, 0)),
 					0 AS DrawGame,
-					SUM(ISNULL(b.Turnover_BA, 0)),
-					SUM(ISNULL(b.Comm_BA, 0)),
-					0 AS PlayerComm,
-					SUM(ISNULL(b.AmountDueTo_BA, 0))
+					0 AS PlayerComm
 				FROM
 					bodb_report.dbo.rptdepwinlost AS b WITH(NOLOCK)
 					INNER JOIN #TempAg AS a ON b.recommend = a.CustId
@@ -561,10 +536,7 @@ BEGIN
 			CAST(SUM(b.ClosingBalance		* e.Rate) AS MONEY) AS ClosingBalance,
 			CAST(SUM(b.Transfer3rd			* e.Rate) AS MONEY) AS Transfer3rd,
 			CAST(SUM(b.DrawGame				* e.Rate) AS MONEY) AS DrawGame,
-			CAST(SUM(b.PlayerComm			* e.Rate) AS MONEY) AS PlayerComm,
-			CASE WHEN @showSB = 1 THEN CAST(SUM(b.Turnover_BA		* e.Rate) AS MONEY) ELSE 0 END AS TurnoverBA,
-			CASE WHEN @showSB = 1 THEN CAST(SUM(b.Comm_BA			* e.Rate) AS MONEY) ELSE 0 END AS CommBA,
-			CASE WHEN @showSB = 1 THEN CAST(SUM(b.AmountDueTo_BA	* e.Rate) AS MONEY) ELSE 0 END AS AmountDueToBA
+			CAST(SUM(b.PlayerComm			* e.Rate) AS MONEY) AS PlayerComm
 		FROM #tmpRpt b
 			INNER JOIN #TempExchange e ON e.ExchangeId = b.Currency AND b.Winlostdate BETWEEN e.FromDate AND e.ToDate
 		GROUP BY b.Winlostdate

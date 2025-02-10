@@ -18,6 +18,7 @@ AS
 	Revisions:
 		- 20240325@Evan: Initial SP  [RedmineID: #199843]
 		- 20240509@Evan: Integrate VS4 [RedmineID: #199347]
+		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -97,8 +98,7 @@ BEGIN
 
 	DECLARE @SBBACheck TINYINT;
 	SELECT @SBBACheck = (POWER(2*1, 1)
-				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 2) 
-				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,BA,%' THEN 1 ELSE 0 END, 3))
+				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 2))
 	
 	CREATE TABLE #tmpBettype ( Bettype INT, ProductCode VARCHAR(10), RefTable TINYINT)
 	INSERT INTO #tmpBettype
@@ -122,10 +122,10 @@ BEGIN
 		SELECT
 			b.winlostdate,
 			t.currency,
-			CASE WHEN s.IsBA = 1 THEN 'BA' ELSE bt.ProductCode END AS ProductCode,
+			bt.ProductCode,
 			SUM(stake) turnover,
 			SUM(b.winlost - b.actual_stake) AS Winlost,
-			- SUM(CASE WHEN s.IsBA = 1 THEN 0 ELSE (b.winlost - b.actual_stake) END) AS LicenseeWL,
+			- SUM(b.winlost - b.actual_stake) AS LicenseeWL,
 			SUM(b.comm) AS Comm,
 			SUM(b.playercomm) AS PlayerComm,
 			- SUM(b.awinlost + b.winlost - b.actual_stake + b.comm) AmountDueTo3rd,
@@ -134,23 +134,18 @@ BEGIN
 			dbo.bettrans AS b WITH (NOLOCK)
 			INNER JOIN #TempAg AS t ON b.recommend = t.custid
 			INNER JOIN #tmpBettype bt ON b.bettype = bt.Bettype AND bt.RefTable NOT IN (1,2)
-			LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.recommend = BA.recommend AND b.TransId = BA.TransId
 			OUTER APPLY
 			(
-				SELECT	CASE WHEN BA.TransID IS NOT NULL THEN 1 ELSE 0 END AS IsBA,
-						ISNULL(CASE WHEN b.bettype IN (9,29,2799,10449) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
+				SELECT ISNULL(CASE WHEN b.bettype IN (9,29,2799,10449) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 			) s
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND b.statusID IN (111, 112, 113)
 			AND (s.liveindicator = @Liveindicator OR @Liveindicator = 2) 
-			AND 1 = CASE WHEN @SBBACheck = 6 AND s.IsBA = 1 THEN 0 
-						 WHEN @SBBACheck = 10 AND s.IsBA = 0 THEN 0
-					ELSE 1 END
 		GROUP BY
 			b.winlostdate,
 			t.currency,
-			CASE WHEN s.IsBA = 1 THEN 'BA' ELSE bt.ProductCode END
+			bt.ProductCode
 			
 		--Get ticket on bettransRnG
 		INSERT INTO #tmpWinloss (WinLostDate, Currency, ProductCode, Turnover, WinLost, LicenseeWL, Comm, PlayerComm, AmtDueTo3rd, BetCount)
@@ -221,10 +216,10 @@ BEGIN
 		SELECT 
 			b.WinlostDate,
 			l.Currency,
-			IIF(b.Product3rdId = 3,'BA',bt.ProductCode),
+			bt.ProductCode,
 			SUM(b.turnover) turnover,
 			SUM(b.Winlost) winlost,
-			- SUM(CASE WHEN b.Product3rdId = 3 THEN 0 ELSE b.Winlost END) AS LicenseeWL,
+			- SUM(b.Winlost) AS LicenseeWL,
 			SUM(b.AComm) Comm,
 			SUM( b.PComm) PlayerComm,
 			- SUM(b.Winlost + b.AWinlost + b.AComm) as AmountDueTo3rd,
@@ -239,14 +234,11 @@ BEGIN
 			AND (b.LiveIndicator = @Liveindicator OR @Liveindicator = 2) 
 			AND 1 = CASE WHEN b.bettype BETWEEN 1611 AND 1697 AND b.Sporttype = 150 THEN 0
 						WHEN b.bettype BETWEEN 3801 AND 3899 AND b.Sporttype = 173 THEN 0
-					ELSE 1 END	
-			AND 1 = CASE WHEN @SBBACheck = 6 AND b.Product3rdId = 3 THEN 0 
-						 WHEN @SBBACheck = 10 AND b.Product3rdId <> 3 THEN 0
 					ELSE 1 END
 		GROUP BY
 			b.WinlostDate,
 			l.Currency,
-			IIF(b.Product3rdId = 3,'BA',bt.ProductCode)
+			bt.ProductCode
 	END
 	
 	---------------------------------

@@ -13,14 +13,14 @@ AS
 		- 20231214@Evan: Hide Upcoming bettype [RedmineID: #197020]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240306@Evan: Remove checking Enabled in SportBettypeMatrix [RedmineID: #201944]
+		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 
-		
 */
 BEGIN
 	WITH CTE_Filter AS (
 		SELECT t.Code 
 		FROM (
-			SELECT ProductCodes =  CONCAT(@ProductCodes, IIF(((',' + @ProductCodes + ',' LIKE '%,SB,%') OR (',' + @ProductCodes + ',' LIKE '%,BA,%')), ',SLT,BTC',''))
+			SELECT ProductCodes =  CONCAT(@ProductCodes, IIF((',' + @ProductCodes + ',' LIKE '%,SB,%'), ',SLT,BTC',''))
 		) AS c
 		CROSS APPLY (
 			SELECT DISTINCT value AS Code
@@ -29,7 +29,7 @@ BEGIN
 	),
 	CTE_Product3rd AS (
 		----------- default SB Product
-		SELECT ProductID, CONCAT(ProductPrefix,',BA') AS ProductCode
+		SELECT ProductID, ProductPrefix AS ProductCode
 		FROM dbo.Products sb
 		WHERE ProductID=1
 		--------------3rd Products
@@ -47,10 +47,8 @@ BEGIN
 		SELECT DISTINCT	p.ProductID
 			,ISNULL(gbt.GroupTypeId, m.BetType) AS BetType,
 			CASE 
-				WHEN p.ProductID IN (1, 63,69) AND saba.SBBACheck & 6 = 6 THEN 'SB,BA' 
-				WHEN p.ProductID IN (1, 63,69) AND saba.SBBACheck & 2 = 2 THEN 'SB' 
-				WHEN p.ProductID IN (1, 63,69) AND saba.SBBACheck & 4 = 4 THEN 'BA' 
-				ELSE p.ProductCode 
+				WHEN p.ProductID IN (1, 63,69) AND saba.SBBACheck & 2 = 2 THEN 'SB'
+				ELSE p.ProductCode
 			END AS ProductCode
 		FROM CTE_Product3rd AS p
 		LEFT JOIN bodb02.dbo.Lrf_f_GroupProduct() lf ON p.ProductID = lf.GroupProductId
@@ -66,7 +64,6 @@ BEGIN
 			SELECT 
 				( 
 					POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 1) 
-					+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,BA,%' THEN 1 ELSE 0 END, 2)
 				) AS SBBACheck
 		) AS saba 
 		WHERE m.SportType NOT IN (150, 173) --exclude free games

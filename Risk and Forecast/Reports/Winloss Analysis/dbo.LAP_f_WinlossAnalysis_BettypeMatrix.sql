@@ -19,6 +19,7 @@ AS
 		- 20240304@Evan: Grant execute new acc [RedmineID: #201283]
 		- 20242901@Evan: Enhance code use function Lrf_f_GroupBettype [RedmineID: #199347]
 		- 20240915@Bobby: Deploy WL SettleTime [RedmineID: #209631]
+		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 		
 */
 RETURN
@@ -72,11 +73,6 @@ RETURN
 			SELECT Code
 			FROM (VALUES('SLT'),('BTC')) AS t (Code)
 			WHERE ck.SBBACheck > 2
-			UNION 
-			SELECT Code
-			FROM (VALUES('SB')) AS t (Code)
-			WHERE ck.SBBACheck & 4 = 0
-				AND ck.SBBACheck & 8 = 8
 		) AS ex
 		UNION 
 		SELECT value AS Code 

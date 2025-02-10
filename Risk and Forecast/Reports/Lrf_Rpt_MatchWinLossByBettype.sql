@@ -7,7 +7,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchWinLossByBettype]
 	@MoveBetsDay	SMALLDATETIME,
 	@BalanceUpDay	SMALLDATETIME,
 	@ProductList	VARCHAR(500),
-	@ShowBA			BIT				= 0,
 	@BaseCurrency	VARCHAR(12)		= '',
 	@EventType		TINYINT         = NULL
 AS
@@ -58,7 +57,8 @@ AS
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240830@Lewis: BaseBallAIO - phase 2 [RedmineID: #209344]
 		- 20241001@Kelvin: LAP - Integrate BetRadar Virtual Horses & Dogs Racing [RedmineID: #210808]
-		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]		
+		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]
+		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -90,14 +90,6 @@ BEGIN
 
 		RETURN
 	END CATCH;
-
-	DECLARE @ShowSB	BIT = 0
-
-	IF ',' + @ProductList + ',' LIKE '%,SB,%'
-		SET @ShowSB = 1
-
-	IF @ShowBA = 1
-		SET @ProductList = @ProductList + ',SB'
 
 	SELECT @ProductList = STRING_AGG(b.ProductPrefix, ',')
 	FROM (
@@ -201,9 +193,7 @@ BEGIN
 		Turnover			MONEY,
 		WinLost				MONEY,
 		PlayerComm			MONEY,
-		LicenseeWL			MONEY,
-		CommBA				MONEY,
-		AmtDueToBA			MONEY )
+		LicenseeWL			MONEY)
 
 	DECLARE @_Date AS SMALLDATETIME
 
@@ -222,9 +212,7 @@ BEGIN
 			Turnover,
 			WinLost,
 			PlayerComm,
-			LicenseeWL,
-			CommBA,
-			AmtDueToBA )
+			LicenseeWL)
 		SELECT
 			b.matchid,
 			b.bettype,
@@ -238,18 +226,7 @@ BEGIN
 			SUM(b.stake) AS Turnover,
 			SUM(b.winlost - b.actual_stake) AS WinLost,
 			SUM(b.playercomm) AS PlayerComm,
-			-SUM(CASE
-					WHEN bt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
-					ELSE b.winlost - b.actual_stake
-				END) AS LicenseeWL,
-			SUM(CASE
-					WHEN bt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN b.comm
-					ELSE 0
-				END) AS CommBA,
-			SUM(CASE
-					WHEN bt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN b.winlost - b.actual_stake + b.awinlost + b.comm
-					ELSE 0
-				END) AS AmountDueToBA
+			-SUM(b.winlost - b.actual_stake) AS LicenseeWL
 		FROM dbo.bettrans AS b WITH(NOLOCK)
 			INNER JOIN @TempAg AS t ON t.CustId = b.recommend
 			INNER JOIN @BetType AS bt ON bt.BetType = b.bettype
@@ -258,12 +235,7 @@ BEGIN
 			AND (
 					b.matchid = @MatchId
 					OR b.matchid IN (SELECT MatchId FROM @Match)
-				)			
-			AND CASE
-					WHEN @ShowBA = 0 AND bt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
-					WHEN @ShowSB = 0 AND bt.ProductCode = 'SB' AND b.tpositiontaking <> 0 THEN 0
-					ELSE 1
-				END <> 0
+				)
 		GROUP BY
 			b.matchid,
 			b.bettype,
@@ -338,9 +310,7 @@ BEGIN
 			Turnover,
 			WinLost,
 			PlayerComm,
-			LicenseeWL,
-			CommBA,
-			AmtDueToBA )
+			LicenseeWL)
 		SELECT
 			b.matchid,
 			b.bettype,
@@ -354,18 +324,7 @@ BEGIN
 			SUM(b.stake) AS Turnover,
 			SUM(b.winlost) AS WinLost,
 			SUM(b.playercomm) AS PlayerComm,
-			-SUM(CASE
-					WHEN bt.ProductCode = 'SB' AND b.isBA = 1 THEN 0
-					ELSE b.winlost
-				END) AS LicenseeWL,
-			SUM(CASE
-					WHEN bt.ProductCode = 'SB' AND b.isBA = 1 THEN b.comm
-					ELSE 0
-				END) AS CommBA,
-			SUM(CASE
-					WHEN bt.ProductCode = 'SB' AND b.isBA = 1 THEN b.Winlost + b.awinlost + b.comm
-					ELSE 0
-				END) AS AmountDueToBA
+			-SUM(b.winlost) AS LicenseeWL
 		FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague AS b WITH (NOLOCK)
 			INNER JOIN @TempAg AS t ON t.CustId = b.recommend
 			INNER JOIN @BetType AS bt ON bt.BetType = b.bettype
@@ -374,12 +333,7 @@ BEGIN
 			AND (
 					b.matchid = @MatchId
 					OR b.matchid IN (SELECT MatchId FROM @Match)
-				)			
-			AND CASE
-					WHEN @ShowBA = 0 AND bt.ProductCode = 'SB' AND b.isBA = 1 THEN 0
-					WHEN @ShowSB = 0 AND bt.ProductCode = 'SB' AND b.isBA = 0 THEN 0
-					ELSE 1
-				END <> 0
+				)
 		GROUP BY
 			b.matchid,
 			b.bettype,
@@ -578,9 +532,7 @@ BEGIN
 		CAST(SUM(b.Turnover		* e.Rate) AS MONEY) AS Turnover,
 		CAST(SUM(b.WinLost		* e.Rate) AS MONEY) AS WinLost,
 		CAST(SUM(b.PlayerComm	* e.Rate) AS MONEY) AS PlayerComm,
-		CAST(SUM(b.LicenseeWL	* e.Rate) AS MONEY) AS LicenseeWL,
-		CAST(SUM(b.CommBA		* e.Rate) AS MONEY) AS CommBA,
-		CAST(SUM((b.AmtDueToBA)	* e.Rate) AS MONEY) AS AmtDuetoBA
+		CAST(SUM(b.LicenseeWL	* e.Rate) AS MONEY) AS LicenseeWL
 	FROM @Data AS b
 		INNER JOIN @ExchangeDaily AS e ON e.ExchangeId = b.Currency
 		LEFT JOIN @GroupBetType AS ss ON ss.bettype = b.BetType

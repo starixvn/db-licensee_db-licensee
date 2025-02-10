@@ -1,4 +1,4 @@
-/*<info serverAlias="DBLIC-bodb_Licensee" selecters="bodbLicenseeNet" viewers="" isFunction="1"></info>*/
+/*<info serverAlias="DBLIC-bodb_Licensee" selecters="wsv_lap" viewers="" isFunction="1"></info>*/
 
 CREATE FUNCTION [dbo].[Lrf_f_GetSportTypeByProduct]  
 (  
@@ -18,13 +18,12 @@ RETURNS @Sports TABLE (Id SMALLINT)
 		- 20190227@Joseph: Betting ticket center phase 3b [RedmineID: #108221]
 		- 20200326@Vickie: Add New Sport Virtual Soccer English Premier and Virtual Soccer Champions Cup [RedmineID: #131168]
 		- 20200408@Kos: Change to use SportBetTypeMatrix [RedmineID: #131447]
+		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 
 	Paramters Explanation:
 		@ProductCode: Product code
 */
 BEGIN
-	IF @ProductCode = 'BA'
-		SET @ProductCode = 'SB'
 
 	INSERT INTO @Sports(Id)
 	SELECT DISTINCT s.SportType
