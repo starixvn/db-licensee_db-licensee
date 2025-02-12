@@ -518,7 +518,7 @@ BEGIN
 				AND (',' + @LiveIds + ',' LIKE '%,' + CAST(ck.liveindicator AS VARCHAR(3)) + ',%')
 				AND (ck.sporttype <> 0 AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ck.sporttype AS VARCHAR(10)) + ',%'))
 				AND (',' + @strProduct3rd + ',' LIKE '%,' + CAST(ck.Product3rdIdMix AS VARCHAR(3)) + ',%')
-				AND NOT (ck.Product3rdIdMix IN (0, 3) AND ba.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB & BA
+				AND NOT (ck.Product3rdIdMix = 0 AND ba.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB
 				AND (bf.IsSelect = 1 OR (bf.IsSelect IS NULL AND @IsSelectOthersPlatform = 1))
 			GROUP BY CASE 
 					WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
@@ -689,7 +689,7 @@ BEGIN
 			,SUM(b.NetTurnover) AS NetTurnover
 			,SUM(b.Winlost) AS MemWinloss
 			,SUM(b.[PComm]) AS [MemComm]
-			,-SUM(IIF(b.Product3rdId = 3, 0, b.Winlost)) AS LicWinloss
+			,-SUM(b.Winlost) AS LicWinloss
 			,SUM(b.[AComm]) AS [LicComm]
 			,SUM(ABS(b.Winlost)) AS BetEffective
 			,---------BASE
@@ -697,7 +697,7 @@ BEGIN
 			,SUM(b.NetTurnover * e.Rate) AS BaseNetTurnover
 			,SUM(b.Winlost * e.Rate) AS BaseMemWinloss
 			,SUM(b.[PComm] * e.Rate) AS [BaseMemComm]
-			,-SUM(IIF(b.Product3rdId = 3, 0, b.Winlost) * e.Rate) AS BaseLicWinloss
+			,-SUM(b.Winlost * e.Rate) AS BaseLicWinloss
 			,SUM(b.[AComm] * e.Rate) AS [BaseLicComm]
 			,SUM(ABS(b.Winlost) * e.Rate) AS BaseBetEffective
 		 FROM bodb_LicenseeReport.dbo.rptLicenseeWinloss b WITH(NOLOCK)
@@ -708,7 +708,7 @@ BEGIN
 			CROSS APPLY (
 				SELECT CASE 
 					WHEN b.Product3rdId IN (63,69) THEN 0
-					WHEN @IsViewCOOnlyCheck = 1 AND b.Product3rdId = 0 AND @SBBACheck & 4 = 4 THEN -99 --Cashout 
+					WHEN @IsViewCOOnlyCheck = 1 AND b.Product3rdId = 0 AND @SBBACheck & 4 = 4 AND b.TicketType = 1 THEN -99 --Cashout
 					WHEN bt.ProductId = 1 THEN b.Product3rdId
 					ELSE bt.Product3rdId 
 				END AS Product3rdId
@@ -729,7 +729,7 @@ BEGIN
 			--			WHEN bt.IsPriceBettype > 0 THEN 0
 			--			ELSE 1
 			--		END
-			AND NOT (b.Product3rdId IN (0, 3) AND b.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB & BA
+			AND NOT (b.Product3rdId = 0 AND b.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB
 			AND (bf.IsSelect = 1 OR (bf.IsSelect IS NULL AND @IsSelectOthersPlatform = 1))
 		GROUP BY 
 			CASE 
@@ -754,10 +754,10 @@ BEGIN
 			OPTION (MAXDOP 8)
 	END
 	
-	-- TODO: Cashout separate from SB&BA
+	-- TODO: Cashout separate from SB
 	DELETE rpt
 	FROM #rptData rpt
-	WHERE @IsViewCOOnlyCheck = 1 AND ParentKey IN(0,3); --> 0.SB,3.BA Product3rdId
+	WHERE @IsViewCOOnlyCheck = 1 AND ParentKey = 0; --> 0.SB Product3rdId
 
 	-- TODO: Sorting all columns
 	--BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, BetEffective, Margin

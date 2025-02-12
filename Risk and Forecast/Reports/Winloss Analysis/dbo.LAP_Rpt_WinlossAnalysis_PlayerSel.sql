@@ -462,7 +462,7 @@ BEGIN
 			AND (',' + @LiveIds + ',' LIKE '%,' + CAST(ck.liveindicator AS VARCHAR(3)) + ',%')
 			AND (ck.sporttype <> 0 AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ck.sporttype AS VARCHAR(10)) + ',%'))
 			AND (',' + @strProduct3rd + ',' LIKE '%,' + CAST(ck.Product3rdIdMix AS VARCHAR(3)) + ',%')
-			AND NOT (ck.Product3rdIdMix IN (0, 3) AND ba.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB & BA
+			AND NOT (ck.Product3rdIdMix = 0 AND ba.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB
 			AND (bf.IsSelect = 1 OR (bf.IsSelect IS NULL AND @IsSelectOthersPlatform = 1))
 		GROUP BY CASE 
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
@@ -652,7 +652,7 @@ BEGIN
 			LEFT JOIN #tmpSabaSporttype saba ON saba.Sporttype = b.Sporttype AND saba.LeagueGroupID = b.LeagueGroupId
 			OUTER APPLY (
 				SELECT 
-					-(CASE WHEN b.Product3rdId = 3 THEN 0 ELSE b.winlost END) AS [LicWinloss],
+					-(b.winlost) AS [LicWinloss],
 					ISNULL(CASE WHEN b.winlostdate < saba.CutOffDate THEN b.Sporttype
 								ELSE saba.SabaSportType END, b.Sporttype) AS Sporttype,
 					CASE 
@@ -675,7 +675,7 @@ BEGIN
 			--			WHEN bt.IsPriceBettype > 0 THEN 0
 			--			ELSE 1
 			--		END
-			AND NOT (b.Product3rdId IN (0, 3) AND b.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB & BA
+			AND NOT (b.Product3rdId = 0 AND b.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB
 			AND (bf.IsSelect = 1 OR (bf.IsSelect IS NULL AND @IsSelectOthersPlatform = 1))
 		GROUP BY 
 			CASE 
@@ -699,10 +699,10 @@ BEGIN
 			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END
 	END
 	
-	-- TODO: Cashout separate from SB&BA
+	-- TODO: Cashout separate from SB
 	DELETE rpt
 	FROM #rptData rpt
-	WHERE @IsViewCOOnlyCheck = 1 AND ParentKey IN(0,3);
+	WHERE @IsViewCOOnlyCheck = 1 AND ParentKey = 0;
 
 	-- TODO: Sorting all columns
 	--BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, BetEffective, Margin
