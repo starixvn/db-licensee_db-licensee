@@ -28,6 +28,7 @@ RETURNS TABLE
 		- 20240827@Lewis: FA CHAI - Integrate Promotion Prize [RedmineID: #209881]
 		- 20240812@Bobby: Grant wsv_lap permission [RedmineID: #209041]
 		- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #199292]
+		- 20250213@Kelvin: Integrate ASKMESLOT [RedmineID: #217785]
 
 */
 
@@ -91,5 +92,6 @@ RETURN
 	SELECT 'FS', 11295									-- FastSpin promotion prize
 	UNION ALL
 	SELECT 'FAC', 11399									-- FA CHAI promotion prize
-
+	UNION ALL
+	SELECT 'ASK', 15199									-- ASKMESLOT promotion prize
 GO

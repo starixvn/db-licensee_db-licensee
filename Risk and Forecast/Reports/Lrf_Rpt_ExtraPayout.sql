@@ -33,6 +33,7 @@ AS
 		- 20240725@Kelvin: Vgaming - Integrate Promotion Prize [RedmineID: #208144]
 		- 20240827@Lewis: FA CHAI - Integrate Promotion Prize [RedmineID: #209881]
 		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
+		- 20250213@Kelvin: Integrate ASKMESLOT [RedmineID: #217785]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -70,6 +71,8 @@ AS
 			- 8701: FastSpin - Promotion Prize (BetType: 11295)
 			- 8901: FACHAI - Promotion Prize (BetType: 11399)
 			- 101: Sportsbook - Odds Boost Adjustment (BetType: 997)
+			- 10301: ASKMESLOT - Promotion Prize (BetType: 15199)
+
 		+ @ReportType: 1: Daily, 2: Monthly
 */
 
@@ -168,6 +171,7 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,8701,%' AND BetType = 11295 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,8901,%' AND BetType = 11399 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,101,%'  AND BetType = 997 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10301,%' AND BetType = 15199 THEN 1
 				ELSE 0
 			END
 

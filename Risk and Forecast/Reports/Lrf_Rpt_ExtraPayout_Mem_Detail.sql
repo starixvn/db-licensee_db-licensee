@@ -30,6 +30,7 @@ AS
 		- 20240701@Kelvin: Integrate Integrate FastSpin [RedmineID: #207099]
 		- 20240725@Kelvin: Vgaming - Integrate Promotion Prize [RedmineID: #208144]
 		- 20240827@Lewis: FA CHAI - Integrate Promotion Prize [RedmineID: #209881]
+		- 20250213@Kelvin: Integrate ASKMESLOT [RedmineID: #217785]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -66,6 +67,7 @@ AS
 			- 7901: Live22 - Promotion Prize (BetType: 7698)
 			- 8701: FastSpin - Promotion Prize (BetType: 11295)
 			- 8901: FACHAI - Promotion Prize (BetType: 11399)
+			- 10301: ASKMESLOT - Promotion Prize (BetType: 15199)
 */
 
 BEGIN
@@ -137,6 +139,7 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7901,%' AND BetType = 7698 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,8701,%' AND BetType = 11295 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,8901,%' AND BetType = 11399 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10301,%' AND BetType = 15199 THEN 1
 				ELSE 0
 			END
 
@@ -211,6 +214,7 @@ BEGIN
 				WHEN b.bettype = 7698 THEN 7901
 				WHEN b.bettype = 11295 THEN 8701
 				WHEN b.bettype = 11399 THEN 8901
+				WHEN b.bettype = 15199 THEN 10301
 				ELSE 0
 			END AS PromotionType,
 			CASE
@@ -293,6 +297,7 @@ BEGIN
 				WHEN b.bettype = 7698 THEN 7901
 				WHEN b.bettype = 11295 THEN 8701
 				WHEN b.bettype = 11399 THEN 8901
+				WHEN b.bettype = 15199 THEN 10301
 				ELSE 0
 			END AS PromotionType,
 			CASE
@@ -369,6 +374,7 @@ BEGIN
 				WHEN b.bettype = 7698 THEN 7901
 				WHEN b.bettype = 11295 THEN 8701
 				WHEN b.bettype = 11399 THEN 8901
+				WHEN b.bettype = 15199 THEN 10301
 				ELSE 0
 			END AS PromotionType,
 			CASE
