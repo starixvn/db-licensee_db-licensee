@@ -45,6 +45,7 @@ Revisions:
 	- 20231222@Luke: LAP - Support Indonesian & Thai language [Redmine: #196246]  
 	- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 	- 20240202@Johnson: Restructure Commission [redmine:#179088]
+	- 20250219@Eden:Scale Out DBCUST - bodb_Licensee [Redmine:#216866]
 	
 Param's Explanation:
 	@DiscountSettings = '<Root>
@@ -82,7 +83,7 @@ BEGIN
 	IF EXISTS (SELECT TOP 1 1 FROM @tblSettings WHERE Discount > 0.15)	
 	BEGIN
 		SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Player Commission should not be greater than'
-										ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200002,@Langkey)
+										ELSE GlobCustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200002,@Langkey)
 										END + ' 0.15', @ErrCode = 100
 	END
 	
@@ -107,7 +108,7 @@ BEGIN
 			IF @IsResetDefault=0 AND EXISTS(SELECT TOP 1 1 FROM dbo.LicenseeGroupDiscount WITH (NOLOCK) WHERE LicenseeID = @LicenseeID AND  IsDefault=1 AND IsActive = 1 )
 			BEGIN
 				SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Another group is currently set as default. Wanna set this group as default?'
-													ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200018,@Langkey)
+													ELSE GlobCustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200018,@Langkey)
 													END, @ErrCode = 102	
 				RETURN
 			END
@@ -124,7 +125,7 @@ BEGIN
 		IF (@@ERROR <> 0)
 		BEGIN
 			SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN  'Process create new group commission has been failed!'
-									ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200019,@Langkey)
+									ELSE GlobCustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200019,@Langkey)
 									END , @ErrCode = 101
 		END	
 		
@@ -166,7 +167,7 @@ BEGIN
 	ELSE
 	BEGIN
 		SELECT @ErrMsg =CASE @Langkey WHEN  'en-US' THEN 'This group name has been already chosen, please try another name!'
-									  ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200020,@Langkey)
+									  ELSE GlobCustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200020,@Langkey)
 									  END, @ErrCode = 102
 	END
 END

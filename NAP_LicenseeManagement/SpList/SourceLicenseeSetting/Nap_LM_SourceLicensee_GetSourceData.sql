@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-bodb_licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-bodb_licensee" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Nap_LM_SourceLicensee_GetSourceData]
 	@FromDate			DATE		= '',
@@ -23,6 +23,7 @@ AS
 		- 20180315@Amanda: Fix paging issue [Redmine: #83584]
 		- 20200117@Amanda: Allow search with multiple currencies [Redmine: #112840]
 		- 20220518@Kos: Change to use STRING_SPLIT [Redmine: #171831]
+		- 20250219@Eden:Scale Out DBCUST - bodb_Licensee [Redmine:#216866]
 */
 
 BEGIN
@@ -94,7 +95,7 @@ BEGIN
 				s.EffectiveDate,
 				s.EndDate,
 				CASE WHEN s.SourcedId IS NOT NULL THEN 0 ELSE 1 END AS IsActive
-		FROM CustDB.dbo.custInfo c WITH (NOLOCK)
+		FROM GlobCustDB.dbo.custInfoMini c WITH (NOLOCK)
 			INNER JOIN dbo.LicenseeCust l WITH (NOLOCK) ON l.CustID = c.recommend AND c.currency = l.currency
 			LEFT JOIN Setting_CTE s ON s.SourcedId = c.custid
 		WHERE l.LicenseeID = @SourceLicenseeId
@@ -117,7 +118,7 @@ BEGIN
 			d.EndDate,
 			d.IsActive
 	FROM #data d
-		INNER JOIN CustDB.dbo.Exchange e WITH (NOLOCK) ON e.exchangeid = d.CurrencyId
+		INNER JOIN GlobCustDB.dbo.Exchange e WITH (NOLOCK) ON e.exchangeid = d.CurrencyId
 	WHERE d.RowNum BETWEEN @from AND @to
 	ORDER BY d.RowNum
 

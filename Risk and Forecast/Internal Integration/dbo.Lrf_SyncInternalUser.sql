@@ -1,7 +1,4 @@
-﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
-USE [bodb_licensee]
-GO
-
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_SyncInternalUser]
 	@LicenseeName		VARCHAR(50),
 	@Username			VARCHAR(50),
@@ -30,6 +27,8 @@ AS
 		- 20160818@Jim: LRF - Set "Adjust bet settings" with separate authorization [RedmineID : #61999]
 		- 20171002@Percy: Write more password into log [RedmineID: #83692]
 		- 20180925@Joseph: Migrate to DBCUST [Feature #99855]
+		- 20250219@Eden:Scale Out DBCUST - bodb_Licensee [Redmine:#216866]
+
 */
 
 BEGIN
@@ -51,7 +50,7 @@ BEGIN
 	IF @LicenseeID IS NULL
 	BEGIN
 		SET @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'The Licensee: ' + @LicenseeName + ' does not exist!'
-									ELSE [CustDB].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200021, @Langkey)
+									ELSE [GlobCustDB].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200021, @Langkey)
 									END	
 		SET @ErrCode = 101
 		

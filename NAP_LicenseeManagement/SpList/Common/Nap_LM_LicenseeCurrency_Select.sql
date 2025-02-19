@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-bodb_licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-bodb_licensee" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 
 CREATE PROCEDURE [dbo].[Nap_LM_LicenseeCurrency_Select]
 	@LicenseeId INT = 0
@@ -11,6 +11,7 @@ AS
 	 
 	 Revisions:
 	  - 20181211@Amanda: Select currency of licensee [Redmine: #83584]
+	  - 20250219@Eden:Scale Out DBCUST - bodb_Licensee [Redmine:#216866]
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -21,6 +22,6 @@ BEGIN
 		WHERE l.LicenseeID = @LicenseeId AND RoleID = 2
 	)
 	SELECT e.exchangeid AS Id, e.currency AS Name
-	FROM CustDB.dbo.exchange e WITH (NOLOCK)
+	FROM GlobCustDB.dbo.exchange e WITH (NOLOCK)
 	INNER JOIN Currency_CTE c ON e.exchangeid = c.Currency
 END

@@ -1,5 +1,4 @@
-/*<info serverAlias="DBCUST-bodb_licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
-
+/*<info serverAlias="DBCUST-bodb_licensee" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 CREATE PROCEDURE [dbo].[Nap_LM_ITUser_GetLicenseeCurrency]
 	@UserId	INT,
 	@CurrencyId INT = 0,
@@ -14,6 +13,7 @@ AS
 	 
 	 Revisions:
 	  - 20190129@Amanda: Get licensees & functions of user [Redmine: #83584]
+	  - 20250219@Eden:Scale Out DBCUST - bodb_Licensee [Redmine:#216866]
 	  
 	 Developer's Note
 	  - @System: 1 - LRF
@@ -57,7 +57,7 @@ BEGIN
 			l.LicenseeName
 	FROM LicenseeCurrency_CTE cte
 	INNER JOIN dbo.Licensees l WITH (NOLOCK) ON cte.LicenseeID = l.LicenseeID
-	INNER JOIN CustDB.dbo.exchange e WITH (NOLOCK) ON cte.Currency = e.exchangeid
+	INNER JOIN GlobCustDB.dbo.exchange e WITH (NOLOCK) ON cte.Currency = e.exchangeid
 	LEFT JOIN dbo.CurrencyUser cu WITH (NOLOCK) ON cte.LicenseeID = cu.LicenseeId
 												AND cu.usrID = @UserId
 												AND cu.CurrencyID = cte.Currency

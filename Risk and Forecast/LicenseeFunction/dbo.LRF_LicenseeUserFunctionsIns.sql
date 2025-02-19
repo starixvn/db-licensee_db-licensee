@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_LicenseeUserFunctionsIns]	
 	@LicenseeId INT,
 	@UserId INT,
@@ -18,6 +18,7 @@ AS
 		
 	Revisions: -20160707@Jim: change the way to grant ACCOUNT MANAGEMENT FUNCTIONS permission ( #58537)
 			- 20180925@Joseph: Migrate to DBCUST [Feature #99855]
+			- 20250219@Eden:Scale Out DBCUST - bodb_Licensee [Redmine:#216866]
 	
 */
 
@@ -58,7 +59,7 @@ BEGIN
 				SELECT @ErrMsg = 
 						CASE @Langkey 
 							WHEN 'en-US' THEN 'Update process is unsuccessful!'
-							ELSE [CustDB].[dbo].[Lrf_f_Get_MsgNamebyMsgID](90001,@Langkey)
+							ELSE [GlobCustDB].[dbo].[Lrf_f_Get_MsgNamebyMsgID](90001,@Langkey)
 						END, @ErrCode = 101
 			RETURN			
 			END 

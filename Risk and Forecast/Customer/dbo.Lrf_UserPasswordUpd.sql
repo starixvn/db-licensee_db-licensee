@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_UserPasswordUpd]  
  @UserName VARCHAR(50),    
  @OldPwd VARCHAR(50),   
@@ -19,6 +19,7 @@ AS
  - 20111004@Henry: check only LRF pure users (isInternal=0)
  - 20130413@jim: support multi language 
  - 20180925@Joseph: Migrate to DBCUST [Feature #99855]
+ - 20250219@Eden:Scale Out DBCUST - bodb_Licensee [Redmine:#216866]
 */  
 BEGIN  
 SET NOCOUNT ON;  
@@ -30,7 +31,7 @@ SELECT @UserId = UserId from Users with (nolock) WHERE Username = @UserName AND 
 If isnull(@UserId, 0) = 0
 Begin
 	SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'Wrong password.'  
-								   ELSE [CustDB].[dbo].[Lrf_f_Get_MsgNamebyMsgID](80001,@Langkey)  
+								   ELSE GlobCustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](80001,@Langkey)  
 								   	
         END ,@ErrCode=101    
     RETURN 
@@ -39,7 +40,7 @@ END
 if exists (SELECT 1 from Users with (nolock) WHERE @UserId = UserId AND Status <> 'Open')
 Begin
 	SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'This user is not active.'  
-								   ELSE [CustDB].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200022,@Langkey)
+								   ELSE GlobCustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200022,@Langkey)
         END ,@ErrCode=102
     RETURN 
 END
@@ -53,7 +54,7 @@ AND IsInternal = 0
   
  IF (@@ERROR > 0)  
   SELECT @ErrCode = 100, @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'Cannot change password'  
-												 ELSE [CustDB].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200025,@Langkey)
+												 ELSE GlobCustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200025,@Langkey)
 												 END
 END  
 

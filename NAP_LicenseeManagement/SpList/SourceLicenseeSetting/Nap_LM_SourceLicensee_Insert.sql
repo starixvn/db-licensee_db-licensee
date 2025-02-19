@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-bodb_licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-bodb_licensee" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Nap_LM_SourceLicensee_Insert]
 	@FromDate			DATE,
@@ -22,6 +22,7 @@ AS
 		- 20181212@Amanda: Add new Source Licensees [Redmine: #83584]
 		- 20200117@Amanda: Allow to add data with multiple currencies [Redmine: #112840]
 		- 20220518@Kos: Change to use STRING_SPLIT [Redmine: #171831]
+		- 20250219@Eden:Scale Out DBCUST - bodb_Licensee [Redmine:#216866]
 */
 
 BEGIN
@@ -74,7 +75,7 @@ BEGIN
 			)
 			INSERT INTO #data (SourceId, CurrencyId)
 			SELECT c.custid, l.Currency
-			FROM CustDB.dbo.custInfo c WITH (NOLOCK)
+			FROM GlobCustDB.dbo.custInfoMini c WITH (NOLOCK)
 				INNER JOIN dbo.LicenseeCust l WITH (NOLOCK) ON l.CustID = c.recommend AND l.Currency = c.currency
 				LEFT JOIN Setting_CTE s ON c.custid = s.SourcedId
 			WHERE l.LicenseeID = @SourceLicenseeId 
@@ -122,7 +123,7 @@ BEGIN
 			UPDATE s
 			SET IsValid = 1, s.CurrencyId = l.Currency
 			FROM @sourceId s
-				INNER JOIN CustDB.dbo.custInfo c WITH (NOLOCK) ON c.custid = s.Id
+				INNER JOIN GlobCustDB.dbo.custInfoMini c WITH (NOLOCK) ON c.custid = s.Id
 				INNER JOIN dbo.LicenseeCust l WITH (NOLOCK) ON l.CustID = c.recommend AND l.Currency = c.currency
 			WHERE l.LicenseeID = @SourceLicenseeId
 				AND l.RoleID = 2

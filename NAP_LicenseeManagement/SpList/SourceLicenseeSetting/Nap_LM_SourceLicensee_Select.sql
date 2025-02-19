@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-bodb_licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-bodb_licensee" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Nap_LM_SourceLicensee_Select]
 	@FromDate			DATE		= '',
@@ -24,6 +24,7 @@ AS
 		- 20190215@Amanda: Correct where condition for date [Redmine: #83584]
 		- 20200117@Amanda: Allow search with multiple currencies [Redmine: #112840]
 		- 20220518@Kos: Change to use STRING_SPLIT [Redmine: #171831]
+		- 20250219@Eden:Scale Out DBCUST - bodb_Licensee [Redmine:#216866]
 */
 
 BEGIN
@@ -104,7 +105,7 @@ BEGIN
 		l.IsActive
 	FROM #data d 
 		INNER JOIN dbo.LicenseeSourcedSetting l WITH(NOLOCK) ON l.ID = d.ID
-		INNER JOIN CustDB.dbo.Exchange e WITH (NOLOCK) ON e.exchangeid = l.SourcedCurrencyID
+		INNER JOIN GlobCustDB.dbo.Exchange e WITH (NOLOCK) ON e.exchangeid = l.SourcedCurrencyID
 	WHERE d.RowNum BETWEEN @from AND @to
 	ORDER BY d.RowNum
 

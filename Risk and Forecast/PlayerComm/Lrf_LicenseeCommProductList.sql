@@ -8,6 +8,7 @@ AS
 
 	Revisions:
 		- 20240628@Johnson: Restructure Commission [redmine:#179088]
+		- 20250219@Eden:Scale Out DBCUST - bodb_Licensee [Redmine:#216866]
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -16,8 +17,8 @@ BEGIN
 		CASE WHEN SportType = 1 AND Bettype = 1 THEN 'SB'
 			WHEN SportType = 1 AND Bettype = 9 THEN 'Parlay'
 			WHEN SportType = 161 AND Bettype = 81 THEN 'NG' ELSE p.ProductPrefix END as ProductCode
-	FROM CustDB.dbo.Dep_ProductSetting d WITH(NOLOCK)
-		INNER JOIN CustDB.dbo.Dep_ProductSettingDetail dp WITH(NOLOCK) 
+	FROM GlobCustDB.dbo.Dep_ProductSetting d WITH(NOLOCK)
+		INNER JOIN GlobCustDB.dbo.Dep_ProductSettingDetail dp WITH(NOLOCK) 
 			ON d.ProductSettingID = dp.ProductSettingID
 		LEFT JOIN Product3rd p WITH(NOLOCK) ON d.ProductID = p.ProductID
 	WHERE SettingType = 9

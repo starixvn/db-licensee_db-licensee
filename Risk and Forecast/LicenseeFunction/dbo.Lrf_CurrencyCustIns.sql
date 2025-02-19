@@ -1,7 +1,4 @@
-﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
-USE bodb_Licensee
-GO
-
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE  [dbo].[Lrf_CurrencyCustIns]		
 	@UserID INT,
 	@LicenseeID INT ,	
@@ -19,6 +16,7 @@ AS
 
 	Revisions:
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
+		- 20250219@Eden:Scale Out DBCUST - bodb_Licensee [Redmine:#216866]
     
 	Param's Explanation:
 		@Currency: string,store the currencies assigned to Licensee Users , each CurrencyID separate  by ',' (comma)
@@ -76,7 +74,7 @@ BEGIN
 			SELECT @ErrMsg = 
 					CASE @Langkey 
 						WHEN 'en-US' THEN 'Update process is unsuccessful!'
-						ELSE CustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](90001,@Langkey)
+						ELSE GlobCustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](90001,@Langkey)
 					END, @ErrCode = 101
 		END 
 

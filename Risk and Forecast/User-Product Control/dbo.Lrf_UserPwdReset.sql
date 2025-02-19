@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="wsv_lap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_UserPwdReset]
 	@LicenseeID INT	,
 	@UserID INT,
@@ -19,6 +19,7 @@ AS
 	- 20111004@Henry: check only LRF pure users (isInternal=0)
 	- 20130413@Jim: support multi language
 	- 20180925@Joseph: Migrate to DBCUST [Feature #99855]
+	- 20250219@Eden:Scale Out DBCUST - bodb_Licensee [Redmine:#216866]
 */
 
 SET NOCOUNT ON
@@ -36,7 +37,7 @@ SELECT @LicenseeName = LicenseeName FROM Licensees (NOLOCK) WHERE LicenseeID = @
 IF NOT EXISTS (SELECT 1 FROM Users (nolock) WHERE  UserID = @UserID AND IsInternal=0)
 BEGIN
 	SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'This user does not exist!'
-								   ELSE [CustDB].[dbo].[Lrf_f_Get_MsgNamebyMsgID](40002,@Langkey)
+								   ELSE GlobCustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](40002,@Langkey)
         END ,@ErrCode=102 
     RETURN    
 END
@@ -44,7 +45,7 @@ END
 IF NOT EXISTS (SELECT 1 FROM LicenseeUser (nolock) WHERE LicenseeID = @LicenseeID AND UserID = @UserID)
 BEGIN
 	SELECT @ErrMsg = CASE @Langkey WHEN 'en-US' THEN 'This user does not belong to:'  
-         ELSE [CustDB].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200026,@Langkey)
+         ELSE GlobCustDB.[dbo].[Lrf_f_Get_MsgNamebyMsgID](200026,@Langkey)
         END  + @LicenseeName  ,@ErrCode=103 
     RETURN    
 END
