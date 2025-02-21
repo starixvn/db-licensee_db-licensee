@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-bodb_Licensee" selecters="bodbLicenseeNet" viewers="" isFunction="1" isNested="1"></info>*/
+/*<info serverAlias="DBCUST-bodb_Licensee" selecters="wsv_lap" viewers="" isFunction="1" isNested="1"></info>*/
 USE bodb_Licensee
 GO 
 CREATE FUNCTION [dbo].[Lrf_f_LicenseeCurrencyLimit_Main] 
@@ -15,12 +15,14 @@ AS
 	
 	Revisions: 
 		- 20180926@Sophia: Initial func [Redmine: #99855]
+		- 20250219@Eddie: Using GlobCustDB replace for CustDB [#216866]
+
 */
  
 BEGIN
 	DECLARE @CurrencyID INT
 	SELECT @CurrencyID = ExchangeID 
-	FROM CUSTDB.dbo.Exchange WITH (NOLOCK)
+	FROM GlobCustDB.dbo.Exchange WITH (NOLOCK)
 	WHERE Code ='SGD'
 	
 	DECLARE @LicenseeID INT
@@ -45,7 +47,7 @@ BEGIN
 							)
 	UNION ALL 
 	SELECT @LicenseeID AS LicenseeID,ExchangeID AS CurrencyID
-	FROM CUSTDB.dbo.exchange WITH (NOLOCK)
+	FROM GlobCustDB.dbo.exchange WITH (NOLOCK)
 	WHERE Code IN (
 					 'EUR','HKD' 
 					)	
