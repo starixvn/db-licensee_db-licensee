@@ -34,6 +34,7 @@ AS
 		- 20240304@Evan: Integrate Saba Ice Hockey [RedmineID: #201283]
 		- 20240508@Bobby: Integrate Saba Kabaddi [RedmineID: #203612]
 		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
+		- 20250217@Kelvin: Win Loss By League - Support Virtual Sports [RedmineID: #217407]
 
 	Param's Explanation:
 		- @SportTypeList: sporttype list separated by ','
@@ -119,7 +120,7 @@ BEGIN
 		SET @ProductList = @ProductList + ',SB'
 
 	-- Get sport/bettype matrix
-	CREATE TABLE #SportBetType (BetType SMALLINT, ProductCode VARCHAR(10), EventType TINYINT)
+	CREATE TABLE #SportBetType (BetType SMALLINT, ProductID INT, ProductCode VARCHAR(10), EventType TINYINT, GroupProductCode VARCHAR(10))
 
 	CREATE CLUSTERED INDEX IX_SportBetType ON #SportBetType (BetType)
 
@@ -127,9 +128,10 @@ BEGIN
 
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
-	INSERT INTO #SportBetType (BetType, ProductCode, EventType)
-	SELECT DISTINCT BetType, ProductPrefix, EventType
-	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
+	INSERT INTO #SportBetType (BetType, ProductID, ProductCode, EventType, GroupProductCode)
+	SELECT DISTINCT s.BetType, s.ProductID, s.ProductPrefix, s.EventType, ISNULL(lf.GroupProductPrefix,IIF(s.ProductId IN (63,69),'SB',s.ProductPrefix)) AS GroupProductCode
+	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest) s
+		LEFT JOIN dbo.Lrf_f_GroupProduct() lf ON s.ProductId = lf.ProductId
 	WHERE BetType NOT IN (901, 902, 903, 904, 999, 997)
 		AND BetType NOT BETWEEN 801 AND 806
 		AND (@BetTypeList = 'All'
@@ -151,14 +153,14 @@ BEGIN
 		END
 
 		DELETE FROM #SportBetType
-		WHERE BetType = 29
+		WHERE BetType IN (29, 2799, 10449, 11099) -- parlay
 	END
 
 	IF @LeagueName <> ''
 	BEGIN
 		DELETE FROM #SportBetType
 		WHERE ProductCode IN ('SLT', 'BTC')
-			OR BetType = 29
+			OR BetType IN (29, 2799, 10449, 11099) -- parlay
 	END
 
 	DECLARE @_FromDate	SMALLDATETIME,
@@ -174,40 +176,92 @@ BEGIN
 	WHERE TypeName = 'SabaTennis'
 	
 	-- Get league list
-	CREATE TABLE #League (LeagueId INT, SportType SMALLINT, LeagueGroupId SMALLINT)
-	CREATE TABLE #TempLeague (LeagueId INT)
+	CREATE TABLE #League (LeagueId INT, EventType INT, SportType SMALLINT, LeagueGroupId SMALLINT)
+	CREATE TABLE #TempLeague (LeagueId INT, EventType INT)
+	CREATE TABLE #TempLeague3rd (LeagueId INT, EventType INT)
 
-	CREATE CLUSTERED INDEX IX_LeagueId ON #League (LeagueId)
+	CREATE CLUSTERED INDEX IX_LeagueId ON #League (LeagueId, EventType)
 	CREATE CLUSTERED INDEX IX_LeagueId ON #TempLeague (LeagueId)
+	CREATE CLUSTERED INDEX IX_LeagueId ON #TempLeague3rd (LeagueId)
 
-	INSERT INTO #TempLeague
-	SELECT DISTINCT leagueid
-	FROM dbo.match WITH (NOLOCK) WHERE eventdate BETWEEN @_FromDate AND @_ToDate
-	UNION
-	SELECT DISTINCT leagueid
-	FROM dbo.match14 WITH (NOLOCK) WHERE eventdate BETWEEN @_FromDate AND @_ToDate
-	UNION
-	SELECT DISTINCT leagueid
-	FROM DBARC.bodb_Archive.dbo.match_bk WITH (NOLOCK) WHERE eventdate BETWEEN @_FromDate AND @_ToDate
-	UNION
-	SELECT DISTINCT leagueid
-	FROM dbo.outright WITH (NOLOCK) WHERE eventdate BETWEEN @_FromDate AND @_ToDate
-	UNION
-	SELECT DISTINCT leagueid
-	FROM dbo.outright14 WITH (NOLOCK) WHERE eventdate BETWEEN @_FromDate AND @_ToDate
-	UNION
-	SELECT DISTINCT leagueid
-	FROM DBARC.bodb_Archive.dbo.outright_bk WITH (NOLOCK) WHERE eventdate BETWEEN @_FromDate AND @_ToDate
+	IF EXISTS (SELECT TOP 1 1 FROM #SportBetType WHERE EventType = 1)
+	BEGIN
+		INSERT INTO #TempLeague (LeagueId, EventType)
+		SELECT DISTINCT leagueid, 1
+		FROM dbo.match WITH (NOLOCK) WHERE eventdate BETWEEN @_FromDate AND @_ToDate
+		UNION
+		SELECT DISTINCT leagueid, 1
+		FROM dbo.match14 WITH (NOLOCK) WHERE eventdate BETWEEN @_FromDate AND @_ToDate
+		UNION
+		SELECT DISTINCT leagueid, 1
+		FROM DBARC.bodb_Archive.dbo.match_bk WITH (NOLOCK) WHERE eventdate BETWEEN @_FromDate AND @_ToDate
+	END
 
+	IF EXISTS (SELECT TOP 1 1 FROM #SportBetType WHERE EventType = 2)
+	BEGIN
+		INSERT INTO #TempLeague (LeagueId, EventType)
+		SELECT DISTINCT leagueid, 2
+		FROM dbo.outright WITH (NOLOCK) WHERE eventdate BETWEEN @_FromDate AND @_ToDate
+		UNION
+		SELECT DISTINCT leagueid, 2
+		FROM dbo.outright14 WITH (NOLOCK) WHERE eventdate BETWEEN @_FromDate AND @_ToDate
+		UNION
+		SELECT DISTINCT leagueid, 2
+		FROM DBARC.bodb_Archive.dbo.outright_bk WITH (NOLOCK) WHERE eventdate BETWEEN @_FromDate AND @_ToDate
+	END
+
+	IF EXISTS (SELECT TOP 1 1 FROM #SportBetType WHERE EventType = 3)
+	BEGIN
+		INSERT INTO #TempLeague3rd (LeagueId, EventType)
+		SELECT DISTINCT r.LeagueID, 3
+		FROM dbo.VSOutright AS o WITH (NOLOCK)
+			INNER JOIN dbo.VSRaceInfo AS r WITH (NOLOCK) ON r.EventID = o.EventID
+		WHERE o.EventDate BETWEEN @_FromDate AND @_ToDate
+		UNION
+		SELECT DISTINCT r.LeagueID, 3
+		FROM dbo.VSOutright14 AS o WITH (NOLOCK)
+			INNER JOIN dbo.VSRaceInfo14 AS r WITH (NOLOCK) ON r.EventID = o.EventID
+		WHERE o.EventDate BETWEEN @_FromDate AND @_ToDate
+		UNION
+		SELECT DISTINCT r.LeagueID, 3
+		FROM DBARC.bodb_Archive.dbo.VSOutright_bk AS o WITH (NOLOCK)
+			INNER JOIN DBARC.bodb_Archive.dbo.VSRaceInfo_bk AS r WITH (NOLOCK) ON r.EventID = o.EventID
+		WHERE o.EventDate BETWEEN @_FromDate AND @_ToDate
+	END
+
+	IF EXISTS (SELECT TOP 1 1 FROM #SportBetType WHERE EventType = 5)
+	BEGIN
+		INSERT INTO #TempLeague3rd (LeagueId, EventType)
+		SELECT DISTINCT League3rdId, 5
+		FROM dbo.match3rd WITH (NOLOCK) WHERE eventdate BETWEEN @_FromDate AND @_ToDate
+		UNION
+		SELECT DISTINCT League3rdId, 5
+		FROM dbo.match3rd14 WITH (NOLOCK) WHERE eventdate BETWEEN @_FromDate AND @_ToDate
+		UNION
+		SELECT DISTINCT League3rdId, 5
+		FROM DBARC.bodb_Archive.dbo.match3rd_bk WITH (NOLOCK) WHERE eventdate BETWEEN @_FromDate AND @_ToDate
+	END
+
+	;WITH CTE_SportTypeList AS
+	(
+		SELECT DISTINCT SportType
+		FROM dbo.SportBettypeMatrix WITH (NOLOCK)
+		WHERE ProductID IN (SELECT DISTINCT ProductID FROM #SportBetType)
+	)
 	INSERT INTO #League (
 		LeagueId,
-		SportType, 
-		LeagueGroupId )
+		EventType,
+		SportType,
+		LeagueGroupId
+		)
 	SELECT
 		l.leagueid,
+		tmp.EventType,
 		l.sporttype,
 		l.LeagueGroupID
 	FROM dbo.League AS l WITH (NOLOCK)
+	INNER JOIN #TempLeague tmp ON tmp.LeagueId = l.leagueid
+	INNER JOIN CTE_SportTypeList s ON s.SportType = l.SportType
 	WHERE (@SportTypeList = 'All'
 			OR ',' + @SportTypeList + ',' LIKE '%,' + CAST(l.sporttype AS VARCHAR(5)) + ',%'
 			OR (',' + @SportTypeList + ',' LIKE '%,-1,%'
@@ -247,8 +301,33 @@ BEGIN
 									WHEN @SearchLanguage = 'th-TH' AND ISNULL(l.leaguenameth,'') <> '' THEN l.leaguenameth
 									ELSE l.leaguename
 								END LIKE '%' + @LeagueName +'%')
-		AND l.sporttype IN (SELECT SportType FROM dbo.SportBettypeMatrix WITH (NOLOCK) WHERE ProductID = 1)
-		AND EXISTS (SELECT 1 FROM #TempLeague WHERE leagueid = l.leagueid)
+
+	;WITH CTE_SportTypeList AS
+	(
+		SELECT DISTINCT SportType
+		FROM dbo.SportBettypeMatrix WITH (NOLOCK)
+		WHERE ProductID IN (SELECT DISTINCT ProductID FROM #SportBetType)
+	)
+	INSERT INTO #League (
+		LeagueId,
+		SportType,
+		LeagueGroupId,
+		EventType)
+	SELECT
+		l.League3rdId,
+		l.SportType,
+		0 as LeagueGroupId,
+		tmp.EventType
+	FROM dbo.League3rd AS l WITH (NOLOCK)
+	INNER JOIN #TempLeague3rd tmp ON tmp.LeagueId = l.League3rdId
+	INNER JOIN CTE_SportTypeList s ON s.SportType = l.SportType
+	WHERE (@SportTypeList = 'All' OR ',' + @SportTypeList + ',' LIKE '%,' + CAST(l.sporttype AS VARCHAR(5)) + ',%')
+		AND (@LeagueName = '' OR CASE
+									WHEN @SearchLanguage = 'zh-CN' AND ISNULL(l.LeagueNameSC,'') <> '' THEN l.LeagueNameSC
+									WHEN @SearchLanguage = 'vi-VN' AND ISNULL(l.leaguenameVN,'') <> '' THEN l.leaguenameVN
+									WHEN @SearchLanguage = 'th-TH' AND ISNULL(l.leaguenameth,'') <> '' THEN l.leaguenameth
+									ELSE l.leaguename
+								END LIKE '%' + @LeagueName +'%')
 
 	IF @SportTypeList <> 'All'
 	BEGIN
@@ -362,37 +441,50 @@ BEGIN
 	-- Insert League for Parlay
 	IF @SportTypeList = 'All'
 		AND @LeagueName = ''
-		AND (@BetTypeList = 'All' OR ',' + @BetTypeList + ',' LIKE '%,29,%')
+		AND (@BetTypeList = 'All'	OR ',' + @BetTypeList + ',' LIKE '%,29,%'
+									OR ',' + @BetTypeList + ',' LIKE '%,2799,%'
+									OR ',' + @BetTypeList + ',' LIKE '%,10449,%'
+									OR ',' + @BetTypeList + ',' LIKE '%,11099,%')
 	BEGIN
-		INSERT INTO #League (LeagueId, SportType, LeagueGroupId)
-		SELECT -9, 0, 0
+		INSERT INTO #League (LeagueId, SportType, LeagueGroupId, EventType)
+		SELECT -9, 0, 0, 0
 		WHERE EXISTS (SELECT 1 FROM #SportBetType WHERE BetType = 29)
+		UNION
+		SELECT -2799, 0, 0, 0
+		WHERE EXISTS (SELECT 1 FROM #SportBetType WHERE BetType = 2799)
+		UNION
+		SELECT -10449, 0, 0, 0
+		WHERE EXISTS (SELECT 1 FROM #SportBetType WHERE BetType = 10449)
+		UNION
+		SELECT -11099, 0, 0, 0
+		WHERE EXISTS (SELECT 1 FROM #SportBetType WHERE BetType = 11099)
 	END
 
 	-- Insert League for Sports Lottery, Bitcoin
 	IF @LeagueName = ''
 	BEGIN
-		INSERT INTO #League (LeagueId, SportType, LeagueGroupId)
-		SELECT -63, 169, 0
+		INSERT INTO #League (LeagueId, SportType, LeagueGroupId, EventType)
+		SELECT -63, 169, 0, 0
 		WHERE EXISTS (SELECT 1 FROM #SportBetType WHERE ProductCode = 'SLT')
 		UNION ALL
-		SELECT League3rdId, 175, 0
+		SELECT League3rdId, 175, 0, 5
 		FROM dbo.League3rd WITH (NOLOCK)
 		WHERE SportType = 175
 			AND EXISTS (SELECT 1 FROM #SportBetType WHERE ProductCode = 'BTC')
 	END
 
 	DECLARE @Data TABLE (
-		LeagueId		INT,
-		LeagueGroupId	SMALLINT,
-		SportType		SMALLINT,
-		WinLostDate		SMALLDATETIME,
-		Currency		INT,
-		BetCount		BIGINT,
-		Turnover		MONEY,
-		WinLost			MONEY,
-		LicenseeWL		MONEY,
-		BAComm			MONEY
+		GroupProductCode	VARCHAR(10),
+		LeagueId			INT,
+		LeagueGroupId		SMALLINT,
+		SportType			SMALLINT,
+		WinLostDate			SMALLDATETIME,
+		Currency			INT,
+		BetCount			BIGINT,
+		Turnover			MONEY,
+		WinLost				MONEY,
+		LicenseeWL			MONEY,
+		BAComm				MONEY
 	)
 
 	DECLARE @TempFromDate	SMALLDATETIME,
@@ -405,11 +497,10 @@ BEGIN
 								WHEN @_FromDate <= @MoveBetsDay THEN DATEADD(DAY, 1, @MoveBetsDay)
 								ELSE @_FromDate
 							END
-
 		IF @CustId = -1		-- Licensee level
 		BEGIN
-			-- Sportsbook (EventType = 1)
 			INSERT INTO @Data (
+				GroupProductCode,
 				LeagueId,
 				LeagueGroupId,
 				SportType,
@@ -421,16 +512,15 @@ BEGIN
 				LicenseeWL,
 				BAComm )
 			SELECT
-				l.LeagueId,
-				l.LeagueGroupId,
-				l.SportType,
+				sbt.GroupProductCode,
+				ext.LeagueId,
+				ext.LeagueGroupId,
+				ext.SportType,
 				b.winlostdate,
 				b.currency,
 				COUNT(1) AS BetCount,
 				SUM(CASE
-						WHEN b.statusID IN (112, 113)
-							AND b.modds IN (-0.25, 0.25)
-							AND b.bettype NOT IN (29, 38)
+						WHEN b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29, 38)
 							THEN 0.5 * b.stake
 						ELSE b.stake
 					END) AS Turnover,
@@ -445,137 +535,79 @@ BEGIN
 					END) AS BAComm
 			FROM
 				dbo.bettrans AS b WITH (NOLOCK)
-				INNER JOIN #TempAg AS a ON a.CustId = b.recommend
-				INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
-				INNER JOIN dbo.match AS m WITH (NOLOCK) ON m.MatchId = b.matchid
-				INNER JOIN #League AS l ON l.LeagueId = m.leagueid
+				INNER JOIN #TempAg AS a
+					ON a.CustId = b.recommend
+				INNER JOIN #SportBetType AS sbt 
+					ON sbt.BetType = b.bettype
+				LEFT JOIN dbo.match AS m WITH (NOLOCK) 
+					ON m.MatchId = b.matchid
+				LEFT JOIN #League AS l 
+					ON l.LeagueId = m.leagueid AND l.EventType = sbt.EventType
+				LEFT JOIN dbo.outright o WITH(NOLOCK) 
+					ON o.orid = b.matchid
+				LEFT JOIN #League AS lo 
+					ON lo.LeagueId = o.leagueid AND lo.EventType = sbt.EventType
+				LEFT JOIN dbo.VSRaceInfo r WITH(NOLOCK) 
+					ON r.EventID = b.matchid
+				LEFT JOIN #League AS lr 
+					ON lr.LeagueId = r.LeagueID AND lr.EventType = sbt.EventType
+				LEFT JOIN dbo.Match3rd AS m3rd WITH (NOLOCK)
+					ON m3rd.Match3rdId = b.matchid
+				LEFT JOIN #League AS l3rd 
+					ON l3rd.LeagueId = m3rd.League3rdId AND l3rd.EventType = sbt.EventType
+				OUTER APPLY
+				(
+					SELECT 
+						CASE WHEN sbt.EventType = 0 THEN
+								CASE
+									WHEN b.bettype = 29 THEN -9 --parlay SB
+									WHEN b.bettype IN (2799, 10449, 11099) THEN -5 --parlay VS
+									WHEN sbt.ProductCode = 'SLT' THEN -63 --Sports Lottery
+									ELSE -1
+								END
+							WHEN sbt.EventType = 1 THEN ISNULL(l.LeagueId, -1)
+							WHEN sbt.EventType = 2 THEN ISNULL(lo.LeagueId, -1)
+							WHEN sbt.EventType = 3 THEN ISNULL(lr.LeagueID, -1)
+							WHEN sbt.EventType = 5 THEN IIF(sbt.ProductCode = 'BTC', -69, ISNULL(l3rd.LeagueId, -1))
+						END AS LeagueId,
+						CASE WHEN sbt.ProductCode = 'SB' AND sbt.EventType = 1 THEN l.LeagueGroupId
+							 WHEN sbt.ProductCode = 'SB' AND sbt.EventType = 2 THEN lo.LeagueGroupId
+							 ELSE 0
+						END AS LeagueGroupId,
+						CASE WHEN sbt.EventType = 0 THEN
+								CASE
+									WHEN b.bettype = 29 THEN 0 --parlay SB
+									WHEN b.bettype IN (2799, 10449, 11099) THEN 0 --parlay VS
+									WHEN sbt.ProductCode = 'SLT' THEN 0 --Sports Lottery
+									ELSE -1
+								END
+							WHEN sbt.EventType = 1 THEN ISNULL(l.SportType, -1)
+							WHEN sbt.EventType = 2 THEN ISNULL(lo.SportType, -1)
+							WHEN sbt.EventType = 3 THEN ISNULL(lr.SportType, -1)
+							WHEN sbt.EventType = 5 THEN IIF(sbt.ProductCode = 'BTC', 0, ISNULL(l3rd.SportType, -1))
+						END AS SportType
+				) ext
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
-				AND sbt.ProductCode = 'SB'
-				AND sbt.EventType = 1
+				AND ext.LeagueId <> -1
 				AND 1 = CASE
 							WHEN @ShowBA = 0 AND sbt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
 							WHEN @ShowSB = 0 AND sbt.ProductCode = 'SB' AND b.tpositiontaking <> 0 THEN 0
 							ELSE 1
 						END
 			GROUP BY
-				l.LeagueId,
-				l.LeagueGroupId,
-				l.SportType,
-				b.winlostdate,
-				b.currency
-
-			-- Outright
-			IF EXISTS (SELECT 1 FROM #SportBetType WHERE BetType = 10)
-			BEGIN
-				INSERT INTO @Data (
-					LeagueId,
-					LeagueGroupId,
-					SportType,
-					WinLostDate,
-					Currency,
-					BetCount,
-					Turnover,
-					WinLost,
-					LicenseeWL,
-					BAComm )
-				SELECT
-					l.LeagueId,
-					l.LeagueGroupId,
-					l.SportType,
-					b.winlostdate,
-					b.currency,
-					COUNT(1) AS BetCount,
-					SUM(b.stake) AS Turnover,
-					SUM(b.winlost - b.actual_stake) AS WinLost,
-					- SUM(CASE
-							WHEN b.tpositiontaking = 0 THEN 0
-							ELSE b.winlost - b.actual_stake
-						END) AS LicenseeWL,
-					SUM(CASE
-							WHEN b.tpositiontaking = 0 THEN b.comm
-							ELSE 0
-						END) AS BAComm
-				FROM
-					dbo.bettrans AS b WITH (NOLOCK)
-					INNER JOIN #TempAg AS a ON a.CustId = b.recommend
-					INNER JOIN dbo.outright AS o WITH (NOLOCK) ON o.orid = b.matchid
-					INNER JOIN #League AS l ON l.LeagueId = o.leagueid
-				WHERE
-					b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-					AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
-					AND b.bettype = 10
-					AND 1 = CASE
-								WHEN @ShowBA = 0 AND b.tpositiontaking = 0 THEN 0
-								WHEN @ShowSB = 0 AND b.tpositiontaking <> 0 THEN 0
-								ELSE 1
-							END
-				GROUP BY
-					l.LeagueId,
-					l.LeagueGroupId,
-					l.SportType,
-					b.winlostdate,
-					b.currency
-			END
-
-			-- Parlay, Sports Lottery, Bitcoin
-			INSERT INTO @Data (
-				LeagueId,
-				LeagueGroupId,
-				SportType,
-				WinLostDate,
-				Currency,
-				BetCount,
-				Turnover,
-				WinLost,
-				LicenseeWL,
-				BAComm )
-			SELECT
-				CASE
-					WHEN sbt.ProductCode = 'SB' THEN -9
-					WHEN sbt.ProductCode = 'SLT' THEN -63
-					WHEN sbt.ProductCode = 'BTC' THEN -69
-					ELSE 0
-				END AS LeagueId,
-				0 AS LeagueGroupId,
-				0 AS SportType,
-				b.winlostdate,
-				b.currency,
-				COUNT(1) AS BetCount,
-				SUM(b.stake) AS Turnover,
-				SUM(b.winlost - b.actual_stake) AS WinLost,
-				- SUM(CASE
-						WHEN b.tpositiontaking = 0 THEN 0
-						ELSE b.winlost - b.actual_stake
-					END) AS LicenseeWL,
-				SUM(CASE
-						WHEN b.tpositiontaking = 0 THEN b.comm
-						ELSE 0
-					END) AS BAComm
-			FROM
-				dbo.bettrans AS b WITH (NOLOCK)
-				INNER JOIN #TempAg AS a ON a.CustId = b.recommend
-				INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
-			WHERE
-				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-				AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
-				AND (sbt.ProductCode IN ('SLT', 'BTC')
-					OR (sbt.ProductCode = 'SB' AND sbt.EventType = 0))
-				AND 1 = CASE
-							WHEN sbt.ProductCode = 'SB' AND @ShowBA = 0 AND b.tpositiontaking = 0 THEN 0
-							WHEN sbt.ProductCode = 'SB' AND @ShowSB = 0 AND b.tpositiontaking <> 0 THEN 0
-							ELSE 1
-						END
-			GROUP BY
-				sbt.ProductCode,
+				sbt.GroupProductCode,
+				ext.LeagueId,
+				ext.LeagueGroupId,
+				ext.SportType,
 				b.winlostdate,
 				b.currency
 		END
 		ELSE IF @CustId <> 0	-- Customer level
 		BEGIN
-			-- Sportsbook (EventType = 1)
 			INSERT INTO @Data (
+				GroupProductCode,
 				LeagueId,
 				LeagueGroupId,
 				SportType,
@@ -587,16 +619,15 @@ BEGIN
 				LicenseeWL,
 				BAComm )
 			SELECT
-				l.LeagueId,
-				l.LeagueGroupId,
-				l.SportType,
+				sbt.GroupProductCode,
+				ext.LeagueId,
+				ext.LeagueGroupId,
+				ext.SportType,
 				b.winlostdate,
 				b.currency,
 				COUNT(1) AS BetCount,
 				SUM(CASE
-						WHEN b.statusID IN (112, 113)
-							AND b.modds IN (-0.25, 0.25)
-							AND b.bettype NOT IN (29, 38)
+						WHEN sbt.ProductCode = 'SB' AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29, 38)
 							THEN 0.5 * b.stake
 						ELSE b.stake
 					END) AS Turnover,
@@ -611,132 +642,74 @@ BEGIN
 					END) AS BAComm
 			FROM
 				dbo.bettrans AS b WITH (NOLOCK)
-				INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
-				INNER JOIN dbo.match AS m WITH (NOLOCK) ON m.MatchId = b.matchid
-				INNER JOIN #League AS l ON l.LeagueId = m.leagueid
+				INNER JOIN #SportBetType AS sbt 
+					ON sbt.BetType = b.bettype
+				LEFT JOIN dbo.match AS m WITH (NOLOCK) 
+					ON m.MatchId = b.matchid
+				LEFT JOIN #League AS l 
+					ON l.LeagueId = m.leagueid AND l.EventType = sbt.EventType
+				LEFT JOIN dbo.outright o WITH(NOLOCK) 
+					ON o.orid = b.matchid
+				LEFT JOIN #League AS lo 
+					ON lo.LeagueId = o.leagueid AND lo.EventType = sbt.EventType
+				LEFT JOIN dbo.VSRaceInfo r WITH(NOLOCK) 
+					ON r.EventID = b.matchid
+				LEFT JOIN #League AS lr 
+					ON lr.LeagueId = r.LeagueID AND lr.EventType = sbt.EventType
+				LEFT JOIN dbo.Match3rd AS m3rd WITH (NOLOCK)
+					ON m3rd.Match3rdId = b.matchid
+				LEFT JOIN #League AS l3rd 
+					ON l3rd.LeagueId = m3rd.League3rdId AND l3rd.EventType = sbt.EventType
+				OUTER APPLY
+				(
+					SELECT 
+						CASE WHEN sbt.EventType = 0 THEN
+								CASE
+									WHEN b.bettype = 29 THEN -9 --parlay SB
+									WHEN b.bettype IN (2799, 10449, 11099) THEN -5 --parlay VS
+									WHEN sbt.ProductCode = 'SLT' THEN -63 --Sports Lottery
+									ELSE -1
+								END
+							WHEN sbt.EventType = 1 THEN ISNULL(l.LeagueId, -1)
+							WHEN sbt.EventType = 2 THEN ISNULL(lo.LeagueId, -1)
+							WHEN sbt.EventType = 3 THEN ISNULL(lr.LeagueID, -1)
+							WHEN sbt.EventType = 5 THEN IIF(sbt.ProductCode = 'BTC', -69, ISNULL(l3rd.LeagueId, -1))
+						END AS LeagueId,
+						CASE WHEN sbt.ProductCode = 'SB' AND sbt.EventType = 1 THEN l.LeagueGroupId
+								WHEN sbt.ProductCode = 'SB' AND sbt.EventType = 2 THEN lo.LeagueGroupId
+								ELSE 0
+						END AS LeagueGroupId,
+						CASE WHEN sbt.EventType = 0 THEN
+								CASE
+									WHEN b.bettype = 29 THEN 0 --parlay SB
+									WHEN b.bettype IN (2799, 10449, 11099) THEN 0 --parlay VS
+									WHEN sbt.ProductCode = 'SLT' THEN 0 --Sports Lottery
+									ELSE -1
+								END
+							WHEN sbt.EventType = 1 THEN ISNULL(l.SportType, -1)
+							WHEN sbt.EventType = 2 THEN ISNULL(lo.SportType, -1)
+							WHEN sbt.EventType = 3 THEN ISNULL(lr.SportType, -1)
+							WHEN sbt.EventType = 5 THEN IIF(sbt.ProductCode = 'BTC', 0, ISNULL(l3rd.SportType, -1))
+						END AS SportType
+				) ext
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND b.custid = @CustId
 				AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
-				AND sbt.ProductCode = 'SB'
-				AND sbt.EventType = 1
+				AND ext.LeagueId <> -1
 				AND 1 = CASE
 							WHEN @ShowBA = 0 AND sbt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
 							WHEN @ShowSB = 0 AND sbt.ProductCode = 'SB' AND b.tpositiontaking <> 0 THEN 0
 							ELSE 1
 						END
 			GROUP BY
-				l.LeagueId,
-				l.LeagueGroupId,
-				l.SportType,
+				sbt.GroupProductCode,
+				ext.LeagueId,
+				ext.LeagueGroupId,
+				ext.SportType,
 				b.winlostdate,
 				b.currency
-
-			-- Outright
-			IF EXISTS (SELECT 1 FROM #SportBetType WHERE BetType = 10)
-			BEGIN
-				INSERT INTO @Data (
-					LeagueId,
-					LeagueGroupId,
-					SportType,
-					WinLostDate,
-					Currency,
-					BetCount,
-					Turnover,
-					WinLost,
-					LicenseeWL,
-					BAComm )
-				SELECT
-					l.LeagueId,
-					l.LeagueGroupId,
-					l.SportType,
-					b.winlostdate,
-					b.currency,
-					COUNT(1) AS BetCount,
-					SUM(b.stake) AS Turnover,
-					SUM(b.winlost - b.actual_stake) AS WinLost,
-					- SUM(CASE
-							WHEN b.tpositiontaking = 0 THEN 0
-							ELSE b.winlost - b.actual_stake
-						END) AS LicenseeWL,
-					SUM(CASE
-							WHEN b.tpositiontaking = 0 THEN b.comm
-							ELSE 0
-						END) AS BAComm
-				FROM
-					dbo.bettrans AS b WITH (NOLOCK)
-					INNER JOIN dbo.outright AS o WITH (NOLOCK) ON o.orid = b.matchid
-					INNER JOIN #League AS l ON l.LeagueId = o.leagueid
-				WHERE
-					b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-					AND b.custid = @CustId
-					AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
-					AND b.bettype = 10
-					AND 1 = CASE
-								WHEN @ShowBA = 0 AND b.tpositiontaking = 0 THEN 0
-								WHEN @ShowSB = 0 AND b.tpositiontaking <> 0 THEN 0
-								ELSE 1
-							END
-				GROUP BY
-					l.LeagueId,
-					l.LeagueGroupId,
-					l.SportType,
-					b.winlostdate,
-					b.currency
-			END
-
-			-- Parlay, Sports Lottery, Bitcoin
-			INSERT INTO @Data (
-				LeagueId,
-				LeagueGroupId,
-				SportType,
-				WinLostDate,
-				Currency,
-				BetCount,
-				Turnover,
-				WinLost,
-				LicenseeWL,
-				BAComm )
-			SELECT
-				CASE
-					WHEN sbt.ProductCode = 'SB' THEN -9
-					WHEN sbt.ProductCode = 'SLT' THEN -63
-					WHEN sbt.ProductCode = 'BTC' THEN -69
-					ELSE 0
-				END AS LeagueId,
-				0 AS LeagueGroupId,
-				0 AS SportType,
-				b.winlostdate,
-				b.currency,
-				COUNT(1) AS BetCount,
-				SUM(b.stake) AS Turnover,
-				SUM(b.winlost - b.actual_stake) AS WinLost,
-				- SUM(CASE
-						WHEN b.tpositiontaking = 0 THEN 0
-						ELSE b.winlost - b.actual_stake
-					END) AS LicenseeWL,
-				SUM(CASE
-						WHEN b.tpositiontaking = 0 THEN b.comm
-						ELSE 0
-					END) AS BAComm
-			FROM dbo.bettrans AS b WITH (NOLOCK)
-				INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
-			WHERE
-				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-				AND b.custid = @CustId
-				AND (sbt.ProductCode IN ('SLT', 'BTC')
-					OR (sbt.ProductCode = 'SB' AND sbt.EventType = 0))
-				AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
-				AND 1 = CASE
-							WHEN sbt.ProductCode = 'SB' AND @ShowBA = 0 AND b.tpositiontaking = 0 THEN 0
-							WHEN sbt.ProductCode = 'SB' AND @ShowSB = 0 AND b.tpositiontaking <> 0 THEN 0
-							ELSE 1
-						END
-			GROUP BY
-				sbt.ProductCode,
-				b.winlostdate,
-				b.currency
-		END
+		END		
 	END
 
 	-- bettrans14 & bettrans_bk range
@@ -764,6 +737,7 @@ BEGIN
 		IF @CustId = -1		-- Licensee level
 		BEGIN
 			INSERT INTO @Data (
+				GroupProductCode,
 				LeagueId,
 				LeagueGroupId,
 				SportType,
@@ -779,8 +753,10 @@ BEGIN
 				#Date AS d
 				CROSS APPLY (
 					SELECT
+						sbt.GroupProductCode,
 						CASE
 							WHEN sbt.ProductCode = 'BTC' THEN -69
+							WHEN b.bettype IN (2799, 10449, 11099) THEN -5 --parlay VS
 							ELSE b.leagueid
 						END AS LeagueId,
 						l.LeagueGroupId,
@@ -796,10 +772,10 @@ BEGIN
 						-SUM(CASE WHEN b.isBA = 0 THEN b.winlost ELSE 0 END) AS LicenseeWL,
 						SUM(CASE WHEN b.isBA = 1 THEN b.comm ELSE 0 END) AS BAComm
 					FROM
-						bodb_LicenseeReport.dbo.rptWinlostbyLeague AS b WITH (NOLOCK)
+						bodb_LicenseeReport.dbo.rptCustomerMatch AS b WITH (NOLOCK)
 						INNER JOIN #TempAg AS a ON a.CustId = b.recommend
 						INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
-						INNER JOIN #League AS l ON l.LeagueId = b.leagueid
+						INNER JOIN #League AS l ON l.LeagueId = b.leagueid AND l.EventType = sbt.EventType
 					WHERE
 						b.winlostdate = d.Date
 						AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
@@ -809,8 +785,10 @@ BEGIN
 									ELSE 1
 								END
 					GROUP BY
+						sbt.GroupProductCode,
 						CASE
 							WHEN sbt.ProductCode = 'BTC' THEN -69
+							WHEN b.bettype IN (2799, 10449, 11099) THEN -5 --parlay VS
 							ELSE b.leagueid
 						END,
 						l.LeagueGroupId,
@@ -822,6 +800,7 @@ BEGIN
 		ELSE IF @CustId <> 0	-- Customer level
 		BEGIN
 			INSERT INTO @Data (
+				GroupProductCode,
 				LeagueId,
 				LeagueGroupId,
 				SportType,
@@ -837,8 +816,10 @@ BEGIN
 				#Date AS d
 				CROSS APPLY (
 					SELECT
+						sbt.GroupProductCode,
 						CASE
 							WHEN sbt.ProductCode = 'BTC' THEN -69
+							WHEN b.bettype IN (2799, 10449, 11099) THEN -5 --parlay VS
 							ELSE b.leagueid
 						END AS LeagueId,
 						l.LeagueGroupId,
@@ -854,9 +835,9 @@ BEGIN
 						-SUM(CASE WHEN b.isBA = 0 THEN b.winlost ELSE 0 END) AS LicenseeWL,
 						SUM(CASE WHEN b.isBA = 1 THEN b.comm ELSE 0 END) AS BAComm
 					FROM
-						bodb_licenseereport.dbo.rptCustomerMatch AS b WITH (NOLOCK)
+						bodb_LicenseeReport.dbo.rptCustomerMatch AS b WITH (NOLOCK)
 						INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
-						INNER JOIN #League AS l ON l.LeagueId = b.leagueid
+						INNER JOIN #League AS l ON l.LeagueId = b.leagueid AND l.EventType = sbt.EventType
 					WHERE
 						b.winlostdate = d.Date
 						AND b.custid = @CustId
@@ -867,8 +848,10 @@ BEGIN
 									ELSE 1
 								END
 					GROUP BY
+						sbt.GroupProductCode,
 						CASE
 							WHEN sbt.ProductCode = 'BTC' THEN -69
+							WHEN b.bettype IN (2799, 10449, 11099) THEN -5 --parlay VS
 							ELSE b.leagueid
 						END,
 						l.LeagueGroupId,
@@ -877,7 +860,7 @@ BEGIN
 						b.currency
 				) AS b
 		END
-
+		
 		DROP TABLE #Date
 	END
 
@@ -902,9 +885,10 @@ BEGIN
 
 	-- Return result
 	SELECT
-		SportType, LeagueId, BetCount, Turnover, WinLost, LicenseeWL, BAComm
+		GroupProductCode ,SportType, LeagueId, BetCount, Turnover, WinLost, LicenseeWL, BAComm
 	FROM 
 		(SELECT 
+			d.GroupProductCode,
 			CASE
 				WHEN d.SportType = 1 AND d.LeagueGroupId IN (42, 74) THEN -1
 				WHEN d.SportType = 2 AND d.LeagueGroupId IN (42) THEN -2
@@ -929,6 +913,7 @@ BEGIN
 				ON d.WinLostDate BETWEEN e.FromDate AND e.ToDate
 					AND d.Currency = e.ExchangeId
 			GROUP BY
+			d.GroupProductCode,
 			CASE
 				WHEN d.SportType = 1 AND d.LeagueGroupId IN (42, 74) THEN -1
 				WHEN d.SportType = 2 AND d.LeagueGroupId IN (42) THEN -2
@@ -947,6 +932,7 @@ BEGIN
 	WHERE 
 		@SportTypeList = 'All' OR ',' + @SportTypeList + ',' LIKE '%,' + CAST(SportType AS VARCHAR(5)) + ',%'
 	ORDER BY
+		GroupProductCode ASC,
 		SportType ASC,
 		LeagueId ASC
 
@@ -954,5 +940,6 @@ BEGIN
 	DROP TABLE #SportBetType
 	DROP TABLE #League
 	DROP TABLE #TempLeague
+	DROP TABLE #TempLeague3rd
 END
 GO
