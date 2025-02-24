@@ -125,7 +125,7 @@ BEGIN
 	SELECT @_FromDate = @FromDate,
 		@_ToDate = @ToDate
 
-	DECLARE @Match TABLE (MatchId INT, EventDate DATETIME)
+	DECLARE @Match TABLE (MatchId INT)
 
 	IF @EventType = 1
 	BEGIN
@@ -163,8 +163,7 @@ BEGIN
 					@MatchId
 				UNION
 				SELECT DISTINCT
-					MatchId,
-					eventdate
+					MatchId
 				FROM dbo.match WITH (NOLOCK)
 				WHERE ParentID = @MatchId
 					AND sporttype = @MatchSportType

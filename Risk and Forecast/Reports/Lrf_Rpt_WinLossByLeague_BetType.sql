@@ -128,7 +128,7 @@ BEGIN
 	SELECT @_FromDate = @FromDate,
 		@_ToDate = @ToDate
 
-	DECLARE @Match TABLE (MatchId INT, EventDate DATETIME)
+	DECLARE @Match TABLE (MatchId INT)
 
 	IF @EventType = 1
 	BEGIN
