@@ -10,7 +10,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLossByLeague_BetType_Currency]
 	@MatchId		INT,
 	@EventType		TINYINT,
 	@ProductList	VARCHAR(100)	= '',
-	@ShowBA			BIT				= 0,
 	@BetType		SMALLINT,
 	@StatusIdList	VARCHAR(50)		= '',
 	@BaseCurrency	VARCHAR(12)		= ''
@@ -82,14 +81,6 @@ BEGIN
 		END
 	END
 
-	DECLARE @ShowSB BIT = 0
-
-	IF ',' + @ProductList + ',' LIKE '%,SB,%'
-		SET @ShowSB = 1
-
-	IF @ShowBA = 1
-		SET @ProductList = @ProductList + ',SB'
-
 	-- Get sport/bettype matrix
 	DECLARE @SportBetType TABLE (BetType SMALLINT PRIMARY KEY, ProductCode VARCHAR(10), EventType TINYINT)
 
@@ -111,8 +102,7 @@ BEGIN
 		BetCount	BIGINT,
 		Turnover	MONEY,
 		WinLost		MONEY,
-		LicenseeWL	MONEY,
-		BAComm		MONEY
+		LicenseeWL	MONEY
 	)
 
 	DECLARE
@@ -208,8 +198,8 @@ BEGIN
 				BetCount,
 				Turnover,
 				WinLost,
-				LicenseeWL,
-				BAComm )
+				LicenseeWL
+				)
 			SELECT
 				b.currency,
 				b.winlostdate,
@@ -220,14 +210,7 @@ BEGIN
 						ELSE b.stake
 					END) AS Turnover,
 				SUM(b.winlost - b.actual_stake) AS WinLost,
-				- SUM(CASE
-						WHEN sbt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
-						ELSE b.winlost - b.actual_stake
-					END) AS LicenseeWL,
-				SUM(CASE
-						WHEN sbt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN b.comm
-						ELSE 0
-					END) AS BAComm
+				- SUM(b.winlost - b.actual_stake) AS LicenseeWL
 			FROM
 				dbo.bettrans AS b WITH (NOLOCK)
 				INNER JOIN @TempAg AS a ON a.CustId = b.recommend
@@ -235,11 +218,6 @@ BEGIN
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
-				AND 1 = CASE
-							WHEN @ShowBA = 0 AND sbt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
-							WHEN @ShowSB = 0 AND sbt.ProductCode = 'SB' AND b.tpositiontaking <> 0 THEN 0
-							ELSE 1
-						END
 				AND (b.matchid = @MatchId
 					OR b.matchid IN (SELECT MatchId FROM @Match))
 			GROUP BY
@@ -254,8 +232,8 @@ BEGIN
 				BetCount,
 				Turnover,
 				WinLost,
-				LicenseeWL,
-				BAComm )
+				LicenseeWL
+				)
 			SELECT
 				b.currency,
 				b.winlostdate,
@@ -266,14 +244,7 @@ BEGIN
 						ELSE b.stake
 					END) AS Turnover,
 				SUM(b.winlost - b.actual_stake) AS WinLost,
-				- SUM(CASE
-						WHEN sbt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
-						ELSE b.winlost - b.actual_stake
-					END) AS LicenseeWL,
-				SUM(CASE
-						WHEN sbt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN b.comm
-						ELSE 0
-					END) AS BAComm
+				- SUM(b.winlost - b.actual_stake) AS LicenseeWL
 			FROM
 				dbo.bettrans AS b WITH (NOLOCK)
 				INNER JOIN @SportBetType AS sbt ON sbt.BetType = b.bettype
@@ -281,11 +252,6 @@ BEGIN
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND b.custid = @CustId
 				AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
-				AND 1 = CASE
-							WHEN @ShowBA = 0 AND sbt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
-							WHEN @ShowSB = 0 AND sbt.ProductCode = 'SB' AND b.tpositiontaking <> 0 THEN 0
-							ELSE 1
-						END
 				AND (b.matchid = @MatchId
 					OR b.matchid IN (SELECT MatchId FROM @Match))
 			GROUP BY
@@ -318,8 +284,8 @@ BEGIN
 				BetCount,
 				Turnover,
 				WinLost,
-				LicenseeWL,
-				BAComm )
+				LicenseeWL
+				)
 			SELECT
 				b.currency,
 				b.winlostdate,
@@ -329,8 +295,7 @@ BEGIN
 						ELSE b.stake
 					END) AS Turnover,
 				SUM(b.winlost) AS WinLost,
-				-SUM(CASE WHEN b.isBA = 0 THEN b.winlost ELSE 0 END) AS LicenseeWL,
-				SUM(CASE WHEN b.isBA = 1 THEN b.comm ELSE 0 END) AS BAComm
+				-SUM(b.winlost) AS LicenseeWL
 			FROM
 				bodb_licenseereport.dbo.rptCustomerMatch AS b WITH (NOLOCK)
 				INNER JOIN @TempAg AS a ON a.CustId = b.recommend
@@ -338,11 +303,6 @@ BEGIN
 			WHERE
 				b.winlostdate BETWEEN @_FromDate AND @TempToDate
 				AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
-				AND 1 = CASE
-							WHEN @ShowBA = 0 AND sbt.ProductCode = 'SB' AND b.isBA = 1 THEN 0
-							WHEN @ShowSB = 0 AND sbt.ProductCode = 'SB' AND b.isBA = 0 THEN 0
-							ELSE 1
-						END
 				AND (b.matchid = @MatchId
 					OR b.matchid IN (SELECT MatchId FROM @Match))
 			GROUP BY
@@ -357,8 +317,8 @@ BEGIN
 				BetCount,
 				Turnover,
 				WinLost,
-				LicenseeWL,
-				BAComm )
+				LicenseeWL
+				)
 			SELECT
 				b.currency,
 				b.winlostdate,
@@ -368,8 +328,7 @@ BEGIN
 						ELSE b.stake
 					END) AS Turnover,
 				SUM(b.winlost) AS WinLost,
-				-SUM(CASE WHEN b.isBA = 0 THEN b.winlost ELSE 0 END) AS LicenseeWL,
-				SUM(CASE WHEN b.isBA = 1 THEN b.comm ELSE 0 END) AS BAComm
+				-SUM(b.winlost) AS LicenseeWL
 			FROM
 				bodb_licenseereport.dbo.rptCustomerMatch AS b WITH (NOLOCK)
 				INNER JOIN @SportBetType AS sbt ON sbt.BetType = b.bettype
@@ -377,11 +336,6 @@ BEGIN
 				b.winlostdate BETWEEN @_FromDate AND @TempToDate
 				AND b.custid = @CustId
 				AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
-				AND 1 = CASE
-							WHEN @ShowBA = 0 AND sbt.ProductCode = 'SB' AND b.isBA = 1 THEN 0
-							WHEN @ShowSB = 0 AND sbt.ProductCode = 'SB' AND b.isBA = 0 THEN 0
-							ELSE 1
-						END
 				AND (b.matchid = @MatchId
 					OR b.matchid IN (SELECT MatchId FROM @Match))
 			GROUP BY
@@ -423,8 +377,7 @@ BEGIN
 		SUM(d.BetCount) AS BetCount,
 		CAST(SUM(d.Turnover		* e.Rate) AS MONEY) AS Turnover,
 		CAST(SUM(d.WinLost		* e.Rate) AS MONEY) AS WinLost,
-		CAST(SUM(d.LicenseeWL	* e.Rate) AS MONEY) AS LicenseeWL,
-		CAST(SUM(d.BAComm		* e.Rate) AS MONEY) AS BAComm
+		CAST(SUM(d.LicenseeWL	* e.Rate) AS MONEY) AS LicenseeWL
 	FROM @Data AS d
 		INNER JOIN @ExchangeRate AS e
 			ON d.WinLostDate BETWEEN e.FromDate AND e.ToDate
