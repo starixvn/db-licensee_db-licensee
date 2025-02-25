@@ -24,6 +24,8 @@ AS
 		- 20211109@Kos: Merge Sports Lottery into Sportsbook [RedmineID: #163191]
 					- Add new param @ProductList VARCHAR(500)
 		- 20220406@Hogan: Exclude Draw/Void/Reject/Refund tickets from Margin value [RedmineID: #167871]
+		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
+
 
 	Param's Explanation:
 		+ @ProductList: SB and all products grouped under SB (SB,SLT,...)
@@ -91,7 +93,6 @@ BEGIN
 			b.custid = @CustId
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND b.statusID IN (111, 112, 113, 101, 102, 103) -- Draw/Won/Lose/Rejected/Void/Refund
-			AND NOT EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeBATransaction_active AS ba WITH (NOLOCK) WHERE ba.TransID = b.transid)
 	END
 
 	IF @FDate <= @MoveBetsDay AND @TDate >= @BalanceUpDay
@@ -122,7 +123,6 @@ BEGIN
 		WHERE
 			b.custid = @CustId
 			AND b.winlostdate BETWEEN @TempFromDate AND @TempToDate
-			AND NOT EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeBATransaction_bk AS ba WITH (NOLOCK) WHERE ba.TransID = b.transid)
 	END
 
 	IF @FDate < @BalanceUpDay
@@ -148,7 +148,6 @@ BEGIN
 		WHERE
 			b.custid = @CustID
 			AND b.winlostdate BETWEEN @FDate AND @TempToDate
-			AND NOT EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeBATransaction_bk AS ba WITH (NOLOCK) WHERE ba.TransID = b.transid)
 	END
 
 	SELECT ISNULL(SUM(CASE WHEN StatusId = 112 THEN 1 ELSE 0 END), 0) AS Won,
