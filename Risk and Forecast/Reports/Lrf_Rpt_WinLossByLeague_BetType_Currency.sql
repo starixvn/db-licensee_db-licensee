@@ -82,19 +82,27 @@ BEGIN
 	END
 
 	-- Get sport/bettype matrix
-	DECLARE @SportBetType TABLE (BetType SMALLINT PRIMARY KEY, ProductCode VARCHAR(10), EventType TINYINT)
+	DECLARE @SBBACheck TINYINT;
+	SELECT @SBBACheck = (POWER(2*1, 1)
+				+ POWER(2*CASE WHEN ISNULL(@ProductList, 'ALL') = 'ALL'  OR ',' + @ProductList + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 2))
 
 	DECLARE @IsTest BIT = 0
-
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
-	INSERT INTO @SportBetType (BetType, ProductCode, EventType)
-	SELECT DISTINCT BetType, ProductPrefix, EventType
-	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
-	WHERE BetType IN (	SELECT Bettype FROM dbo.Lrf_f_GroupBettype() WHERE GroupTypeId = @BetType
-						UNION SELECT GroupTypeId FROM dbo.Lrf_f_GroupBettype() WHERE bettype = @BetType
-						UNION SELECT @BetType)
-		AND EventType = @EventType
+	DECLARE @BettypeIdsCheck VARCHAR(MAX)
+			,@SportTypeCheck VARCHAR(500)
+
+	--Bettype, SportType filtering
+	SELECT @BettypeIdsCheck = NULL
+			,@SportTypeCheck = NULL
+
+	CREATE TABLE #SportBetType (BetType SMALLINT, ProductID INT, EventType TINYINT)
+	CREATE CLUSTERED INDEX IX_SportBetType ON #SportBetType (BetType)
+
+	INSERT INTO #SportBetType (BetType, ProductID, EventType)
+	SELECT bm.Bettype, bm.ProductId, bm.EventType
+	FROM bodb02.dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductList, @SportTypeCheck, @BettypeIdsCheck, @SBBACheck) AS bm
+	WHERE ISNULL(bm.GroupTypeId,bm.Bettype) = @BetType
 
 	DECLARE @Data TABLE (
 		Currency	INT,
@@ -205,7 +213,7 @@ BEGIN
 				b.winlostdate,
 				COUNT(1) AS BetCount,
 				SUM(CASE
-						WHEN sbt.ProductCode = 'SB' AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29, 38)
+						WHEN sbt.ProductID = 1 AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29, 38)
 							THEN 0.5 * b.stake
 						ELSE b.stake
 					END) AS Turnover,
@@ -214,7 +222,7 @@ BEGIN
 			FROM
 				dbo.bettrans AS b WITH (NOLOCK)
 				INNER JOIN @TempAg AS a ON a.CustId = b.recommend
-				INNER JOIN @SportBetType AS sbt ON sbt.BetType = b.bettype
+				INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
@@ -239,7 +247,7 @@ BEGIN
 				b.winlostdate,
 				COUNT(1) AS BetCount,
 				SUM(CASE
-						WHEN sbt.ProductCode = 'SB' AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29, 38)
+						WHEN sbt.ProductID = 1 AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29, 38)
 							THEN 0.5 * b.stake
 						ELSE b.stake
 					END) AS Turnover,
@@ -247,7 +255,7 @@ BEGIN
 				- SUM(b.winlost - b.actual_stake) AS LicenseeWL
 			FROM
 				dbo.bettrans AS b WITH (NOLOCK)
-				INNER JOIN @SportBetType AS sbt ON sbt.BetType = b.bettype
+				INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 				AND b.custid = @CustId
@@ -299,7 +307,7 @@ BEGIN
 			FROM
 				bodb_licenseereport.dbo.rptCustomerMatch AS b WITH (NOLOCK)
 				INNER JOIN @TempAg AS a ON a.CustId = b.recommend
-				INNER JOIN @SportBetType AS sbt ON sbt.BetType = b.bettype
+				INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
 			WHERE
 				b.winlostdate BETWEEN @_FromDate AND @TempToDate
 				AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
@@ -331,7 +339,7 @@ BEGIN
 				-SUM(b.winlost) AS LicenseeWL
 			FROM
 				bodb_licenseereport.dbo.rptCustomerMatch AS b WITH (NOLOCK)
-				INNER JOIN @SportBetType AS sbt ON sbt.BetType = b.bettype
+				INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
 			WHERE
 				b.winlostdate BETWEEN @_FromDate AND @TempToDate
 				AND b.custid = @CustId
@@ -384,5 +392,7 @@ BEGIN
 				AND d.Currency = e.ExchangeId
 	GROUP BY d.Currency
 	ORDER BY d.Currency ASC
+
+	DROP TABLE IF EXISTS #SportBetType
 END
 GO
