@@ -141,6 +141,7 @@ BEGIN
 		IsNeutral		BIT,
 		VendorMatchId	VARCHAR(50),
 		Distance		VARCHAR(50),
+		KickOffTime		DATETIME,
 		WinLostDate		SMALLDATETIME,
 		Currency		INT,
 		BetCount		BIGINT,
@@ -176,6 +177,7 @@ BEGIN
 				IsNeutral,
 				VendorMatchId,
 				Distance,
+				KickOffTime,
 				WinLostDate,
 				Currency,
 				BetCount,
@@ -191,6 +193,7 @@ BEGIN
 				ext.IsNeutral,
 				ext.VendorMatchId,
 				ext.Distance,
+				ext.KickOffTime,
 				b.winlostdate,
 				b.currency,
 				COUNT(1) AS BetCount,
@@ -232,7 +235,8 @@ BEGIN
 						END AS AwayId,
 						IIF(sbt.EventType = 1, m.IsNeutral, 0) AS IsNeutral,
 						IIF(sbt.EventType = 3, r.VendorMatchId, '') AS VendorMatchId,
-						IIF(sbt.EventType = 3, r.Distance, '') AS Distance
+						IIF(sbt.EventType = 3, r.Distance, '') AS Distance,
+						IIF(sbt.EventType = 3, r.EventTime, 0) AS KickOffTime
 				) ext
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
@@ -246,6 +250,7 @@ BEGIN
 				ext.IsNeutral,
 				ext.VendorMatchId,
 				ext.Distance,
+				ext.KickOffTime,
 				b.winlostdate,
 				b.currency
 		END
@@ -259,6 +264,7 @@ BEGIN
 				IsNeutral,
 				VendorMatchId,
 				Distance,
+				KickOffTime,
 				WinLostDate,
 				Currency,
 				BetCount,
@@ -274,6 +280,7 @@ BEGIN
 				ext.IsNeutral,
 				ext.VendorMatchId,
 				ext.Distance,
+				ext.KickOffTime,
 				b.winlostdate,
 				b.currency,
 				COUNT(1) AS BetCount,
@@ -314,7 +321,8 @@ BEGIN
 						END AS AwayId,
 						IIF(sbt.EventType = 1, m.IsNeutral, 0) AS IsNeutral,
 						IIF(sbt.EventType = 3, r.VendorMatchId, '') AS VendorMatchId,
-						IIF(sbt.EventType = 3, r.Distance, '') AS Distance
+						IIF(sbt.EventType = 3, r.Distance, '') AS Distance,
+						IIF(sbt.EventType = 3, r.EventTime, 0) AS KickOffTime
 				) ext
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
@@ -329,6 +337,7 @@ BEGIN
 				ext.IsNeutral,
 				ext.VendorMatchId,
 				ext.Distance,
+				ext.KickOffTime,
 				b.winlostdate,
 				b.currency
 		END
@@ -459,7 +468,8 @@ BEGIN
 					b.AwayId = m.awayid,
 					b.IsNeutral= m.IsNeutral,
 					b.VendorMatchId = '',
-					b.Distance = ''
+					b.Distance = '',
+					b.KickOffTime = 0
 				FROM @Data AS b
 					INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON m.matchid = b.MatchId
 				WHERE b.WinLostDate BETWEEN @BalanceUpDay AND @MoveBetsDay
@@ -473,7 +483,8 @@ BEGIN
 					b.AwayId = 0,
 					b.IsNeutral= 0,
 					b.VendorMatchId = '',
-					b.Distance = ''
+					b.Distance = '',
+					b.KickOffTime = 0
 				FROM @Data AS b
 					INNER JOIN dbo.outright14 AS o WITH (NOLOCK) ON o.orid = b.MatchId
 				WHERE b.WinLostDate BETWEEN @BalanceUpDay AND @MoveBetsDay
@@ -487,7 +498,8 @@ BEGIN
 					b.AwayId = 0,
 					b.IsNeutral= 0,
 					b.VendorMatchId = r.VendorMatchId,
-					b.Distance = r.Distance
+					b.Distance = r.Distance,
+					b.KickOffTime = r.EventTime
 				FROM @Data AS b
 					INNER JOIN dbo.VSRaceInfo14 AS r WITH (NOLOCK) ON r.EventID = b.MatchId
 				WHERE b.WinLostDate BETWEEN @BalanceUpDay AND @MoveBetsDay
@@ -501,7 +513,8 @@ BEGIN
 					b.AwayId = m3rd.AwayId,
 					b.IsNeutral= 0,
 					b.VendorMatchId = '',
-					b.Distance = ''
+					b.Distance = '',
+					b.KickOffTime = 0
 				FROM @Data AS b
 					INNER JOIN dbo.Match3rd14 AS m3rd WITH (NOLOCK) ON m3rd.Match3rdId = b.MatchId
 				WHERE b.WinLostDate BETWEEN @BalanceUpDay AND @MoveBetsDay
@@ -523,7 +536,8 @@ BEGIN
 					b.AwayId = m.awayid,
 					b.IsNeutral= m.IsNeutral,
 					b.VendorMatchId = '',
-					b.Distance = ''
+					b.Distance = '',
+					b.KickOffTime = 0
 				FROM @Data AS b
 					INNER JOIN DBARC.bodb_Archive.dbo.match_bk AS m WITH (NOLOCK) ON m.matchid = b.MatchId
 				WHERE b.WinLostDate < @BalanceUpDay
@@ -537,7 +551,8 @@ BEGIN
 					b.AwayId = 0,
 					b.IsNeutral= 0,
 					b.VendorMatchId = '',
-					b.Distance = ''
+					b.Distance = '',
+					b.KickOffTime = 0
 				FROM @Data AS b
 					INNER JOIN DBARC.bodb_Archive.dbo.outright_bk AS o WITH (NOLOCK) ON o.orid = b.MatchId
 				WHERE b.WinLostDate < @BalanceUpDay
@@ -551,7 +566,8 @@ BEGIN
 					b.AwayId = 0,
 					b.IsNeutral= 0,
 					b.VendorMatchId = r.VendorMatchId,
-					b.Distance = r.Distance
+					b.Distance = r.Distance,
+					b.KickOffTime = r.EventTime
 				FROM @Data AS b
 					INNER JOIN DBARC.bodb_Archive.dbo.VSRaceInfo_bk AS r WITH (NOLOCK) ON r.EventID = b.MatchId
 				WHERE b.WinLostDate < @BalanceUpDay
@@ -565,7 +581,8 @@ BEGIN
 					b.AwayId = m3rd.AwayId,
 					b.IsNeutral= 0,
 					b.VendorMatchId = '',
-					b.Distance = ''
+					b.Distance = '',
+					b.KickOffTime = 0
 				FROM @Data AS b
 					INNER JOIN DBARC.bodb_Archive.dbo.Match3rd_bk AS m3rd WITH (NOLOCK) ON m3rd.Match3rdId = b.MatchId
 				WHERE b.WinLostDate < @BalanceUpDay
@@ -610,6 +627,7 @@ BEGIN
 		d.IsNeutral,
 		d.VendorMatchId,
 		d.Distance,
+		d.KickOffTime,
 		SUM(d.BetCount) AS BetCount,
 		CAST(SUM(d.Turnover		* e.Rate) AS MONEY) AS Turnover,
 		CAST(SUM(d.WinLost		* e.Rate) AS MONEY) AS WinLost,
@@ -625,7 +643,8 @@ BEGIN
 		d.AwayId,
 		d.IsNeutral,
 		d.VendorMatchId,
-		d.Distance
+		d.Distance,
+		d.KickOffTime
 	ORDER BY d.MatchId ASC
 
 	DROP TABLE IF EXISTS #BetTypeSel
