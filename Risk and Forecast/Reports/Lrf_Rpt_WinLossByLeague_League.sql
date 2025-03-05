@@ -174,13 +174,14 @@ BEGIN
 
 	SELECT @SportTypeCheck = IIF(@SportTypeList='ALL', NULL, @SportTypeList)
 
-	CREATE TABLE #SportBetType (BetType SMALLINT, ProductID INT, EventType TINYINT, GroupProductID INT)
+	CREATE TABLE #SportBetType (BetType SMALLINT, ProductID INT, EventType TINYINT, GroupProductCode VARCHAR(10))
 	CREATE CLUSTERED INDEX IX_SportBetType ON #SportBetType (BetType)
 
-	INSERT INTO #SportBetType (BetType, ProductID, EventType, GroupProductID)
+	INSERT INTO #SportBetType (BetType, ProductID, EventType, GroupProductCode)
 	SELECT bm.Bettype, bm.ProductId, bm.EventType
-		,CASE WHEN bm.ProductId IN (63, 69) THEN 1 ELSE bm.ProductId END AS GroupProductID
+		,CASE WHEN bm.ProductId IN (63, 69) THEN 'SB' ELSE p.ProductPrefix END AS GroupProductCode
 	FROM bodb02.dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductList, @SportTypeCheck, @BettypeIdsCheck, @SBBACheck) AS bm
+		INNER JOIN bodb02.dbo.Products AS p WITH(NOLOCK) ON p.ProductID = bm.ProductId
 	WHERE @BettypeIdsCheck IS NULL OR EXISTS (SELECT 1 FROM #BetTypeSel bts WHERE bts.ProductId = bm.ProductId AND bts.Bettype = ISNULL(bm.GroupTypeId,bm.Bettype))
 		AND BetType NOT IN (901, 902, 903, 904)
 		AND BetType NOT BETWEEN 801 AND 806
@@ -425,7 +426,7 @@ BEGIN
 	END
 
 	DECLARE @Data TABLE (
-		GroupProductID		INT,
+		GroupProductCode	VARCHAR(10),
 		LeagueId			INT,
 		LeagueGroupId		SMALLINT,
 		SportType			SMALLINT,
@@ -450,7 +451,7 @@ BEGIN
 		IF @CustId = -1		-- Licensee level
 		BEGIN
 			INSERT INTO @Data (
-				GroupProductID,
+				GroupProductCode,
 				LeagueId,
 				LeagueGroupId,
 				SportType,
@@ -462,7 +463,7 @@ BEGIN
 				LicenseeWL
 				)
 			SELECT
-				sbt.GroupProductID,
+				sbt.GroupProductCode,
 				ext.LeagueId,
 				ext.LeagueGroupId,
 				ext.SportType,
@@ -540,7 +541,7 @@ BEGIN
 				AND (ext.SportType IS NOT NULL AND (@SportTypeCheck IS NULL OR  ',' + @SportTypeCheck + ',' LIKE '%,' + CAST(ext.SportType AS VARCHAR(10)) + ',%'))
 				AND ext.LeagueId <> -1
 			GROUP BY
-				sbt.GroupProductID,
+				sbt.GroupProductCode,
 				ext.LeagueId,
 				ext.LeagueGroupId,
 				ext.SportType,
@@ -550,7 +551,7 @@ BEGIN
 		ELSE IF @CustId <> 0	-- Customer level
 		BEGIN
 			INSERT INTO @Data (
-				GroupProductID,
+				GroupProductCode,
 				LeagueId,
 				LeagueGroupId,
 				SportType,
@@ -562,7 +563,7 @@ BEGIN
 				LicenseeWL
 				)
 			SELECT
-				sbt.GroupProductID,
+				sbt.GroupProductCode,
 				ext.LeagueId,
 				ext.LeagueGroupId,
 				ext.SportType,
@@ -639,7 +640,7 @@ BEGIN
 				AND (ext.SportType IS NOT NULL AND (@SportTypeCheck IS NULL OR  ',' + @SportTypeCheck + ',' LIKE '%,' + CAST(ext.SportType AS VARCHAR(10)) + ',%'))
 				AND ext.LeagueId <> -1
 			GROUP BY
-				sbt.GroupProductID,
+				sbt.GroupProductCode,
 				ext.LeagueId,
 				ext.LeagueGroupId,
 				ext.SportType,
@@ -673,7 +674,7 @@ BEGIN
 		IF @CustId = -1		-- Licensee level
 		BEGIN
 			INSERT INTO @Data (
-				GroupProductID,
+				GroupProductCode,
 				LeagueId,
 				LeagueGroupId,
 				SportType,
@@ -689,7 +690,7 @@ BEGIN
 				#Date AS d
 				CROSS APPLY (
 					SELECT
-						sbt.GroupProductID,
+						sbt.GroupProductCode,
 						CASE
 							WHEN sbt.ProductID = 69 THEN -69 --BTC
 							WHEN b.bettype IN (2799, 10449, 11099) THEN -5 --parlay VS
@@ -717,7 +718,7 @@ BEGIN
 						AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 						AND (l.SportType IS NOT NULL AND (@SportTypeCheck IS NULL OR  ',' + @SportTypeCheck + ',' LIKE '%,' + CAST(ISNULL(saba.SabaSportType, l.Sporttype) AS VARCHAR(10)) + ',%'))
 					GROUP BY
-						sbt.GroupProductID,
+						sbt.GroupProductCode,
 						CASE
 							WHEN sbt.ProductID = 69 THEN -69 --BTC
 							WHEN b.bettype IN (2799, 10449, 11099) THEN -5 --parlay VS
@@ -732,7 +733,7 @@ BEGIN
 		ELSE IF @CustId <> 0	-- Customer level
 		BEGIN
 			INSERT INTO @Data (
-				GroupProductID,
+				GroupProductCode,
 				LeagueId,
 				LeagueGroupId,
 				SportType,
@@ -748,7 +749,7 @@ BEGIN
 				#Date AS d
 				CROSS APPLY (
 					SELECT
-						sbt.GroupProductID,
+						sbt.GroupProductCode,
 						CASE
 							WHEN sbt.ProductID = 69 THEN -69 --BTC
 							WHEN b.bettype IN (2799, 10449, 11099) THEN -5 --parlay VS
@@ -776,7 +777,7 @@ BEGIN
 						AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 						AND (l.SportType IS NOT NULL AND (@SportTypeCheck IS NULL OR  ',' + @SportTypeCheck + ',' LIKE '%,' + CAST(ISNULL(saba.SabaSportType, l.Sporttype) AS VARCHAR(10)) + ',%'))
 					GROUP BY
-						sbt.GroupProductID,
+						sbt.GroupProductCode,
 						CASE
 							WHEN sbt.ProductID = 69 THEN -69 --BTC
 							WHEN b.bettype IN (2799, 10449, 11099) THEN -5 --parlay VS
@@ -813,10 +814,10 @@ BEGIN
 
 	-- Return result
 	SELECT
-		GroupProductID ,SportType, LeagueId, BetCount, Turnover, WinLost, LicenseeWL
+		GroupProductCode ,SportType, LeagueId, BetCount, Turnover, WinLost, LicenseeWL
 	FROM 
 		(SELECT 
-			d.GroupProductID,
+			d.GroupProductCode,
 			d.SportType,
 			d.LeagueId,
 			SUM(d.BetCount) AS BetCount,
@@ -828,12 +829,12 @@ BEGIN
 				ON d.WinLostDate BETWEEN e.FromDate AND e.ToDate
 					AND d.Currency = e.ExchangeId
 			GROUP BY
-			d.GroupProductID,
+			d.GroupProductCode,
 			d.SportType,
 			d.LeagueId
 		) a
 	ORDER BY
-		GroupProductID ASC,
+		GroupProductCode ASC,
 		SportType ASC,
 		LeagueId ASC
 
