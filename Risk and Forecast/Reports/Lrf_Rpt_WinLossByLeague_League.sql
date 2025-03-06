@@ -525,13 +525,13 @@ BEGIN
 								CASE
 									WHEN b.bettype = 29 THEN 0 --parlay SB
 									WHEN b.bettype IN (2799, 10449, 11099) THEN 0 --parlay VS
-									WHEN sbt.ProductID = 63 THEN 0 --Sports Lottery
+									WHEN sbt.ProductID = 63 THEN 169 --Sports Lottery
 									ELSE NULL
 								END
 							WHEN sbt.EventType = 1 THEN ISNULL(saba.SabaSportType,l.SportType)
 							WHEN sbt.EventType = 2 THEN lo.SportType
 							WHEN sbt.EventType = 3 THEN lr.SportType
-							WHEN sbt.EventType = 5 THEN IIF(sbt.ProductID = 69, 0, l3rd.SportType)
+							WHEN sbt.EventType = 5 THEN l3rd.SportType
 							ELSE NULL
 						END AS SportType
 				) ext
@@ -623,13 +623,13 @@ BEGIN
 								CASE
 									WHEN b.bettype = 29 THEN 0 --parlay SB
 									WHEN b.bettype IN (2799, 10449, 11099) THEN 0 --parlay VS
-									WHEN sbt.ProductID = 63 THEN 0 --Sports Lottery
+									WHEN sbt.ProductID = 63 THEN 169 --Sports Lottery
 									ELSE NULL
 								END
 							WHEN sbt.EventType = 1 THEN ISNULL(saba.SabaSportType,l.SportType)
 							WHEN sbt.EventType = 2 THEN lo.SportType
 							WHEN sbt.EventType = 3 THEN lr.SportType
-							WHEN sbt.EventType = 5 THEN IIF(sbt.ProductID = 69, 0, l3rd.SportType)
+							WHEN sbt.EventType = 5 THEN l3rd.SportType
 							ELSE NULL
 						END AS SportType
 				) ext
