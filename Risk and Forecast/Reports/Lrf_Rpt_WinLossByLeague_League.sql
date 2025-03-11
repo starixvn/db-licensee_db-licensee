@@ -725,7 +725,7 @@ BEGIN
 							ELSE b.leagueid
 						END,
 						l.LeagueGroupId,
-						ISNULL(saba.SportType, l.SportType),
+						ISNULL(saba.SabaSportType, l.SportType),
 						b.winlostdate,
 						b.currency
 				) AS b
@@ -784,7 +784,7 @@ BEGIN
 							ELSE b.leagueid
 						END,
 						l.LeagueGroupId,
-						ISNULL(saba.SportType, l.SportType),
+						ISNULL(saba.SabaSportType, l.SportType),
 						b.winlostdate,
 						b.currency
 				) AS b
