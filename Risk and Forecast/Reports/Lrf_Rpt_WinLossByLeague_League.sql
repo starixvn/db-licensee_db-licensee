@@ -697,7 +697,7 @@ BEGIN
 							ELSE b.leagueid
 						END AS LeagueId,
 						l.LeagueGroupId,
-						ISNULL(saba.SportType, l.SportType) AS SportType,
+						ISNULL(saba.SabaSportType, l.SportType) AS SportType,
 						b.winlostdate,
 						b.currency,
 						SUM(b.betcount) AS BetCount,
@@ -756,7 +756,7 @@ BEGIN
 							ELSE b.leagueid
 						END AS LeagueId,
 						l.LeagueGroupId,
-						ISNULL(saba.SportType, l.SportType) AS SportType,
+						ISNULL(saba.SabaSportType, l.SportType) AS SportType,
 						b.winlostdate,
 						b.currency,
 						SUM(b.betcount) AS BetCount,
