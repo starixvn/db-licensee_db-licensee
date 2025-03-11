@@ -36,6 +36,7 @@ AS
 		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]
 		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 		- 20241107@Kelvin: Integrate VS5 [RedmineID: #207582]
+		- 20250311@Kelvin: Integrate Virtual Sports 7 - Kiron [RedmineID: #219083]
 		
 	Param's Explanation:
 		- @ProductCodes = '' - Get all
@@ -108,6 +109,9 @@ BEGIN
 		UNION ALL
 		SELECT Id, NULL, 999
 		FROM dbo.Lrf_f_GetSportTypeByProduct('VS5')
+		UNION ALL
+		SELECT Id, NULL, 999
+		FROM dbo.Lrf_f_GetSportTypeByProduct('VS7')
 	END
 
 	-- NG --
