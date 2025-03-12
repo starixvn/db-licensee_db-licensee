@@ -300,12 +300,6 @@ BEGIN
 		IF ',' + @StatusIdList + ',' LIKE '%,113,%'
 			SET @StatusIdList = @StatusIdList + ',115'
 
-		CREATE TABLE #Date (Date SMALLDATETIME PRIMARY KEY)
-
-		INSERT INTO #Date
-		SELECT [Date]
-		FROM f_GetDateBetweenTwoDates (@_FromDate, @TempToDate)
-
 		IF @CustId = -1		-- Licensee level
 		BEGIN
 			INSERT INTO @Data (
@@ -316,32 +310,27 @@ BEGIN
 				WinLost,
 				LicenseeWL
 				)
-			SELECT b.*
+			SELECT
+				b.currency,
+				b.winlostdate,
+				SUM(b.betcount) AS BetCount,
+				SUM(CASE
+						WHEN b.statusID IN (114, 115) THEN 0.5 * b.stake
+						ELSE b.stake
+					END) AS Turnover,
+				SUM(b.winlost) AS WinLost,
+				-SUM(b.winlost) AS LicenseeWL
 			FROM
-				#Date AS d
-				CROSS APPLY (
-					SELECT
-						b.currency,
-						b.winlostdate,
-						SUM(b.betcount) AS BetCount,
-						SUM(CASE
-								WHEN b.statusID IN (114, 115) THEN 0.5 * b.stake
-								ELSE b.stake
-							END) AS Turnover,
-						SUM(b.winlost) AS WinLost,
-						-SUM(b.winlost) AS LicenseeWL
-					FROM
-						bodb_licenseereport.dbo.rptCustomerMatch AS b WITH (NOLOCK)
-						INNER JOIN #TempAg AS a ON a.CustId = b.recommend
-						INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
-					WHERE
-						b.winlostdate = d.Date
-						AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
-						AND (b.leagueid = @LeagueId OR @LeagueId IN (-69, -5)) -- -69: BTC, -5: parlay VS
-					GROUP BY
-						b.currency,
-						b.winlostdate
-				) AS b
+				bodb_licenseereport.dbo.rptCustomerMatch AS b WITH (NOLOCK)
+				INNER JOIN #TempAg AS a ON a.CustId = b.recommend
+				INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
+			WHERE
+				b.winlostdate BETWEEN @_FromDate AND @TempToDate
+				AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
+				AND (b.leagueid = @LeagueId OR @LeagueId IN (-69, -5)) -- -69: BTC, -5: parlay VS
+			GROUP BY
+				b.currency,
+				b.winlostdate
 		END
 		ELSE IF @CustId <> 0	-- Customer level
 		BEGIN
@@ -353,32 +342,27 @@ BEGIN
 				WinLost,
 				LicenseeWL
 				)
-			SELECT b.*
+			SELECT
+				b.currency,
+				b.winlostdate,
+				SUM(b.betcount) AS BetCount,
+				SUM(CASE
+						WHEN b.statusID IN (114, 115) THEN 0.5 * b.stake
+						ELSE b.stake
+					END) AS Turnover,
+				SUM(b.winlost) AS WinLost,
+				-SUM(b.winlost) AS LicenseeWL
 			FROM
-				#Date AS d
-				CROSS APPLY (
-					SELECT
-						b.currency,
-						b.winlostdate,
-						SUM(b.betcount) AS BetCount,
-						SUM(CASE
-								WHEN b.statusID IN (114, 115) THEN 0.5 * b.stake
-								ELSE b.stake
-							END) AS Turnover,
-						SUM(b.winlost) AS WinLost,
-						-SUM(b.winlost) AS LicenseeWL
-					FROM
-						bodb_licenseereport.dbo.rptCustomerMatch AS b WITH (NOLOCK)
-						INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
-					WHERE
-						b.winlostdate = d.Date
-						AND b.custid = @CustId
-						AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
-						AND (b.leagueid = @LeagueId OR @LeagueId IN (-69, -5)) -- -69: BTC, -5: parlay VS
-					GROUP BY
-						b.currency,
-						b.winlostdate
-				) AS b
+				bodb_licenseereport.dbo.rptCustomerMatch AS b WITH (NOLOCK)
+				INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
+			WHERE
+				b.winlostdate BETWEEN @_FromDate AND @TempToDate
+				AND b.custid = @CustId
+				AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
+				AND (b.leagueid = @LeagueId OR @LeagueId IN (-69, -5)) -- -69: BTC, -5: parlay VS
+			GROUP BY
+				b.currency,
+				b.winlostdate
 		END
 
 		DROP TABLE #Date
