@@ -6,6 +6,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLossByLeague_League]
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
+	@BalanceUpDay	SMALLDATETIME,
 	@ProductList	VARCHAR(100)	= '',
 	@SportTypeList	VARCHAR(500)	= '',
 	@BetTypeList	XML = '',
@@ -63,13 +64,6 @@ BEGIN
 	SET NOCOUNT ON
 
 	DECLARE @sql VARCHAR(MAX)= ''
-
-	DECLARE @MBBU TABLE (BalanceUpDay SMALLDATETIME, MoveBetsDay SMALLDATETIME)
-	INSERT INTO @MBBU (BalanceUpDay, MoveBetsDay)
-	EXEC dbo.Age_SelBalanceUpDay
-
-	DECLARE @BalanceUpDay SMALLDATETIME
-	SELECT @BalanceUpDay = BalanceUpDay FROM @MBBU
 
 	-- Get agent list
 	CREATE TABLE #TempAg (CustId INT, Currency INT)
