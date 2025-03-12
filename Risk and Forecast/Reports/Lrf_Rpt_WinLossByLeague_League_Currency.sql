@@ -365,7 +365,6 @@ BEGIN
 				b.winlostdate
 		END
 
-		DROP TABLE #Date
 	END
 
 	-- Get exchange rate

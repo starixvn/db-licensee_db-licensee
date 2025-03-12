@@ -436,8 +436,6 @@ BEGIN
 				b.currency
 		END
 
-		DROP TABLE #Date
-
 		-- bettrans14 range
 		IF EXISTS (SELECT 1 FROM @Data WHERE WinLostDate BETWEEN @BalanceUpDay AND @MoveBetsDay)
 		BEGIN
