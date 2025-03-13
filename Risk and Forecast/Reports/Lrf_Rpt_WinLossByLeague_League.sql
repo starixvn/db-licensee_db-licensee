@@ -345,7 +345,7 @@ BEGIN
 		SportType,
 		LeagueGroupId
 		)
-	SELECT
+	SELECT DISTINCT
 		l.leagueid,
 		tmp.EventType,
 		l.sporttype,
