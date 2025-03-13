@@ -371,7 +371,7 @@ BEGIN
 		SportType,
 		LeagueGroupId,
 		EventType)
-	SELECT
+	SELECT DISTINCT
 		l.League3rdId,
 		l.SportType,
 		0 as LeagueGroupId,
