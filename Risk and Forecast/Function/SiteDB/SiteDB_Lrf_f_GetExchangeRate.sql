@@ -34,6 +34,7 @@ AS
 		- 20240112@Evan: Support based currency TRY & NPR [Redmine #197693]
 		- 20240507@Kelvin: LAP - Support based currency JPY, MXN, NGN [RedmineID: #200904]
 		- 20241111@Kelvin: LAP - Support BRL base currency [RedmineID: #208662]
+		- 20250314@Kelvin: LAP - Support based PKR [RedmineID: #219424]
 
 */
 
@@ -128,6 +129,7 @@ BEGIN
 				WHEN @BaseCurrency = 'MXN' THEN ex.MXN
 				WHEN @BaseCurrency = 'NGN' THEN ex.NGN
 				WHEN @BaseCurrency = 'BRL' THEN ex.BRL
+				WHEN @BaseCurrency = 'PKR' THEN ex.PKR
 				ELSE 1
 			END AS Rate,
 			CASE
@@ -155,6 +157,7 @@ BEGIN
 				WHEN @DefaultBaseCurrency = 'MXN' THEN ex.MXN
 				WHEN @DefaultBaseCurrency = 'NGN' THEN ex.NGN
 				WHEN @DefaultBaseCurrency = 'BRL' THEN ex.BRL
+				WHEN @DefaultBaseCurrency = 'PKR' THEN ex.PKR
 				ELSE 1
 			END AS DefaultRate
 		FROM CustDB.dbo.ExchangeDailyOanda ex WITH(NOLOCK)
