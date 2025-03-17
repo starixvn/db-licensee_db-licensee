@@ -28,6 +28,7 @@ AS
 		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
 		- 20240830@Lewis: BaseBallAIO - phase 2 [RedmineID: #209344]
 		- 20250217@Kelvin: Win Loss By League - Support Virtual Sports [RedmineID: #217407]
+		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 
 	Param's Explanation:
 		- @BetTypeList: bettype list separated by ','
@@ -88,8 +89,10 @@ BEGIN
 	DECLARE @SBBACheck TINYINT;
 	SELECT @SBBACheck = (POWER(2*1, 1)
 				+ POWER(2*CASE WHEN ISNULL(@ProductList, 'ALL') = 'ALL'  OR ',' + @ProductList + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 2))
+
 	DECLARE @IsTest BIT = 0
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
+
 	CREATE TABLE #BetTypeSel (ProductCode VARCHAR(10), Bettype INT, ProductId INT);
 	--Bettype selection
 	;WITH BettypeSel AS (
@@ -103,6 +106,7 @@ BEGIN
 	CROSS APPLY (
 		SELECT value FROM STRING_SPLIT (a.Bettype,',') 
 	) b;
+
 	UPDATE a
 	SET a.ProductId = IIF(a.ProductCode = 'VS', 5, t.ProductId)
 	FROM #BetTypeSel a

@@ -27,6 +27,7 @@ AS
 		- 20241701@Evan: Update f_GroupBettype to Lrf_f_GroupBettype [RedmineID: #199523]
 		- 20240830@Lewis: BaseBallAIO - phase 2 [RedmineID: #209344]
 		- 20250217@Kelvin: Win Loss By League - Support Virtual Sports [RedmineID: #217407]
+		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 
 	Param's Explanation:
 		- @StatusIdList: status ID list separated by ','
