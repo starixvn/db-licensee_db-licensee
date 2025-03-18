@@ -63,11 +63,12 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20240722@Kelvin: Integrate FA CHAI [RedmineID: #207100]
 		- 20240723@Kelvin: Integrate Nextspin [RedmineID: #207884]
 		- 20240916@Kelvin: Integrate ON Casino [RedmineID: #210601]
-		- 20241018@Kelvin: LAP - Integrate Playtech [RedmineID: #210659]
-		- 20241018@Kelvin: LAP - Integrate GPI [RedmineID: #209082]
-		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]
-		- 20241202@Kelvin: LAP - Integrate GPI Live Casino [RedmineID: #214458]
-		- 20241230@Kelvin: LAP - Integrate PLAY STAR RNG [RedmineID: #216058]
+		- 20241018@Kelvin: Integrate Playtech [RedmineID: #210659]
+		- 20241018@Kelvin: Integrate GPI [RedmineID: #209082]
+		- 20241024@Kelvin: Integrate Betby (VS6) [RedmineID: #212446]
+		- 20241202@Kelvin: Integrate GPI Live Casino [RedmineID: #214458]
+		- 20241230@Kelvin: Integrate PLAY STAR RNG [RedmineID: #216058]
+		- 20250213@Kelvin: Integrate ASKMESLOT [RedmineID: #217785]
 
 */
 RETURNS TABLE
@@ -131,8 +132,9 @@ RETURN
 					(100, 'PTRNG', 148, 0),	-- Playtech 
 					(48, 'GPIRNG', 145, 0),	-- GPI
 					(71, 'VS6', 134, 0),	-- VS6
-					(90, 'GPILC', 144, 0),  -- GPI Live Casino,
-					(91, 'PS', 143, 0)		-- PLAY STAR
+					(90, 'GPILC', 144, 0),  -- GPI Live Casino
+					(91, 'PS', 143, 0),		-- PLAY STAR
+					(103, 'ASK', 130, 0)	-- ASKMESLOT
 			) d(ProductID, ProductCode, SportType, BetType)
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'
 GO
