@@ -58,9 +58,10 @@ AS
 		- 20240725@Kelvin: Comment out redundant code  [RedmineID: #208144]
 		- 20241113@Kelvin: Fix issue show VS tickets although only select all bettypes of Sportsbook  [RedmineID: #213614]
 		- 20241206@Kelvin: LAP - Enhance reports showing betfrom data [Redmine: #214849]
+		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 
 	Param's Explanation:
-		- @SortKey: 0:GroupBy, 1:BetCount, 2:Turnover, 3:NetTurnover, 4:MemWinloss, 5:MemComm, 6:LicWinloss, 7:LicComm, 8:AmtDueToBA, 9:BetEffective, 10:Margin
+		- @SortKey: 0:GroupBy, 1:BetCount, 2:Turnover, 3:NetTurnover, 4:MemWinloss, 5:MemComm, 6:LicWinloss, 7:LicComm, 8:(not use), 9:BetEffective, 10:Margin
 		- @SortType: 0:ASC,1:DESC
 		- @SearchMode: TINYINT
 			+ 1: Match Precise
@@ -143,7 +144,6 @@ BEGIN
 		MemComm		DECIMAL(19,8),
 		LicWinloss	DECIMAL(19,8), 
 		LicComm		DECIMAL(19,8),
-		AmtDueToBA	DECIMAL(19,8), 
 		BetEffective	DECIMAL(19,8),
 		Margin		SMALLMONEY,
 		------------BASE
@@ -153,7 +153,6 @@ BEGIN
 		BaseMemComm		DECIMAL(19,8),
 		BaseLicWinloss	DECIMAL(19,8), 
 		BaseLicComm		DECIMAL(19,8),
-		BaseAmtDueToBA	DECIMAL(19,8), 
 		BaseBetEffective	DECIMAL(19,8)
 	);
 	CREATE CLUSTERED INDEX CIX_rptData ON #rptData(GroupBy, BreakBy);
@@ -262,8 +261,7 @@ BEGIN
 	--TODO: BA/SLT/BTC products
 	DECLARE @SBBACheck TINYINT;
 	SELECT @SBBACheck = (POWER(2*1, 1)
-				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 2) 
-				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,BA,%' THEN 1 ELSE 0 END, 3)),
+				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 2)),
 			@ProductCheck = @ProductCodes;
 
 	--TODO: Bettype filtering
@@ -305,7 +303,6 @@ BEGIN
 	FROM CTE_ProductMap t
 	CROSS APPLY (
 		VALUES (IIF(@SBBACheck & 4 = 4, 0, -1))
-			,(IIF(@SBBACheck & 8 = 8, 3, -1))
 	) 
 	AS ck (Product3rdId)
 	WHERE t.ProductId IN (1, 63, 69)
@@ -368,9 +365,9 @@ BEGIN
 			, @rptToDate	= @ToDate;
 
 		INSERT INTO #rptData (GroupBy, BreakBy, ParentKey,
-			BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective
+			BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, BetEffective
 			,------BASE
-			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
+			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseBetEffective
 		)
 		SELECT 
 			CASE 
@@ -400,7 +397,6 @@ BEGIN
 			,SUM(b.playercomm) AS [MemComm]
 			,SUM(ck.LicWinloss) AS LicWinloss
 			,SUM(b.comm) AS [LicComm]
-			,SUM(ck.AmtDueToBA) AS AmtDueToBA
 			,SUM(ABS(ck.MemWinloss)) AS BetEffective
 			,---------BASE
 			SUM(ck.Turnover * e.Rate) AS BaseTurnover
@@ -409,7 +405,6 @@ BEGIN
 			,SUM(b.playercomm * e.Rate) AS [BaseMemComm]
 			,SUM(ck.LicWinloss * e.Rate) AS BaseLicWinloss
 			,SUM(b.comm * e.Rate) AS [BaseLicComm]
-			,SUM(ck.AmtDueToBA * e.Rate) AS BaseAmtDueToBA
 			,SUM(ABS(ck.MemWinloss) * e.Rate) AS BaseBetEffective
 		FROM [bodb02].[dbo].[bettrans] b WITH(NOLOCK)
 			INNER JOIN #playerSel a WITH(NOLOCK) on a.custid = b.custid
@@ -421,11 +416,9 @@ BEGIN
 			LEFT JOIN [bodb02].dbo.outright o WITH(NOLOCK) ON b.matchid = o.orid
 			LEFT JOIN [bodb02].dbo.League lo WITH (NOLOCK) ON lo.leagueid = o.leagueid
 			LEFT JOIN [bodb02].dbo.VSRaceInfo vs WITH(NOLOCK) ON b.matchid = vs.EventID
-			LEFT JOIN [bodb_licensee].dbo.LicenseeBATransaction_active AS lba WITH (NOLOCK) ON b.transid = lba.transid
 			LEFT JOIN #tmpSabaSporttype saba ON s.ProductId = 1 AND saba.Sporttype = l.Sporttype AND saba.LeagueGroupID = l.LeagueGroupID
 			OUTER APPLY (
 				SELECT 
-					IIF(lba.TransID IS NOT NULL, 1, 0) AS IsBA,
 					CASE
 						WHEN s.ProductId = 1 AND s.EventType = 1 AND b.betdaqid = -2 THEN 1 -- Castout
 						ELSE 0
@@ -441,17 +434,11 @@ BEGIN
 						ELSE ABS(b.stake)
 					END AS NetTurnover,
 					(b.winlost-b.actual_stake) AS MemWinloss,
-					CASE WHEN ba.IsBA = 0 THEN -(b.winlost-b.actual_stake) ELSE 0 END AS LicWinloss,
-					-(CASE
-						WHEN ba.IsBA = 1 THEN (b.winlost - b.actual_stake + b.awinlost + b.comm) --COUNT for BA's tickets
-						ELSE 0
-					END) AS AmtDueToBA,
+					-(b.winlost-b.actual_stake) AS LicWinloss,
 					CASE 
 							WHEN s.ProductId NOT IN (1,63,69) THEN s.Product3rdID
-							WHEN @IsViewCOOnlyCheck = 1 AND s.ProductId = 1 AND @SBBACheck & 4 = 4 AND ba.IsBA = 0 AND ba.TicketType = 1 THEN -99 --Cashout 
-							WHEN @IsViewCOOnlyCheck = 1 AND s.ProductId = 1 AND @SBBACheck & 8 = 8 AND ba.IsBA = 1 AND ba.TicketType = 1 THEN -99 --Cashout 
-							WHEN s.ProductId IN (1,63,69) AND @SBBACheck & 4 = 4 AND ba.IsBA = 0 THEN 0 
-							WHEN s.ProductId IN (1,63,69) AND @SBBACheck & 8 = 8 AND ba.IsBA = 1 THEN 3
+							WHEN @IsViewCOOnlyCheck = 1 AND s.ProductId = 1 AND @SBBACheck & 4 = 4 AND ba.TicketType = 1 THEN -99 --Cashout 
+							WHEN s.ProductId IN (1,63,69) AND @SBBACheck & 4 = 4 THEN 0 
 							END AS Product3rdIdMix,
 					CASE 
 						WHEN s.EventType = 0 THEN
@@ -475,7 +462,7 @@ BEGIN
 			AND (',' + @LiveIds + ',' LIKE '%,' + CAST(ck.liveindicator AS VARCHAR(3)) + ',%')
 			AND (ck.sporttype <> 0 AND (@SportIDs IS NULL OR  ',' + @SportIDs + ',' LIKE '%,' + CAST(ck.sporttype AS VARCHAR(10)) + ',%'))
 			AND (',' + @strProduct3rd + ',' LIKE '%,' + CAST(ck.Product3rdIdMix AS VARCHAR(3)) + ',%')
-			AND NOT (ck.Product3rdIdMix IN (0, 3) AND ba.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB & BA
+			AND NOT (ck.Product3rdIdMix = 0 AND ba.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB
 			AND (bf.IsSelect = 1 OR (bf.IsSelect IS NULL AND @IsSelectOthersPlatform = 1))
 		GROUP BY CASE 
 				WHEN @GroupBy = 1 THEN DATEDIFF(HOUR, @BaseDate, b.winlostdate)
@@ -503,9 +490,9 @@ BEGIN
 
 		;----TODO: get data from bettransLC/RnG for 3rd Products
 		INSERT INTO #rptData (GroupBy, BreakBy, ParentKey,
-			BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA,BetEffective
+			BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, BetEffective
 			,------BASE
-			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
+			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseBetEffective
 		)
 		SELECT 
 			CASE 
@@ -535,7 +522,6 @@ BEGIN
 			,SUM(b.playercomm) AS [MemComm]
 			,-SUM(b.winlost-b.actual_stake) AS LicWinloss
 			,SUM(b.comm) AS [LicComm]
-			,0 AS AmtDueToBA
 			,SUM(ABS(b.winlost-b.actual_stake)) AS BetEffective
 			---------BASE
 			,SUM(ABS(b.stake) * e.Rate) AS BaseTurnover
@@ -544,7 +530,6 @@ BEGIN
 			,SUM(b.playercomm * e.Rate) AS [BaseMemComm]
 			,-SUM((b.winlost-b.actual_stake) * e.Rate) AS BaseLicWinloss
 			,SUM(b.comm * e.Rate) AS [BaseLicComm]
-			,0 AS BaseAmtDueToBA
 			,SUM(ABS(b.winlost-b.actual_stake) * e.Rate) AS BaseBetEffective
 				
 		FROM (
@@ -619,9 +604,9 @@ BEGIN
 			, @rptToDate	= IIF(@ToDate >= @MovebetDay, @MovebetDay, @ToDate);
 
 		INSERT INTO #rptData (GroupBy, BreakBy, ParentKey,
-			BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective
+			BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, BetEffective
 			,------BASE
-			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
+			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseBetEffective
 		)
 		SELECT 
 			CASE 
@@ -651,7 +636,6 @@ BEGIN
 			,SUM(b.[PComm]) AS [MemComm]
 			,SUM(ck.[LicWinloss]) AS LicWinloss
 			,SUM(b.[AComm]) AS [LicComm]
-			,SUM(ck.AmtDueToBA) AS AmtDueToBA
 			,SUM(ABS(b.Winlost)) AS BetEffective
 			,---------BASE
 			SUM(b.Turnover * e.Rate) AS BaseTurnover
@@ -660,7 +644,6 @@ BEGIN
 			,SUM(b.[PComm] * e.Rate) AS [BaseMemComm]
 			,SUM(ck.[LicWinloss] * e.Rate) AS BaseLicWinloss
 			,SUM(b.[AComm] * e.Rate) AS [BaseLicComm]
-			,SUM(ck.AmtDueToBA * e.Rate) AS BaseAmtDueToBA
 			,SUM(ABS(b.Winlost) * e.Rate) AS BaseBetEffective
 		 FROM bodb_LicenseeReport.dbo.rptLicenseeWinloss b WITH(NOLOCK)
 			INNER JOIN #playerSel a ON a.custid = b.CustId
@@ -668,17 +651,13 @@ BEGIN
 			INNER JOIN #tmpExchange e on e.ExchangeID =  a.Currency AND b.winlostdate BETWEEN e.FromDate AND e.ToDate
 			LEFT JOIN #tmpSabaSporttype saba ON saba.Sporttype = b.Sporttype AND saba.LeagueGroupID = b.LeagueGroupId
 			OUTER APPLY (
-				SELECT -(CASE
-						WHEN b.Product3rdId = 3 THEN (b.Winlost + b.AWinlost + b.AComm) --COUNT for BA's tickets
-						ELSE 0
-					END) AS AmtDueToBA,
-					-(CASE WHEN b.Product3rdId = 3 THEN 0 ELSE b.winlost END) AS [LicWinloss],
+				SELECT 
+					-(b.winlost) AS [LicWinloss],
 					ISNULL(CASE WHEN b.winlostdate < saba.CutOffDate THEN b.Sporttype
 								ELSE saba.SabaSportType END, b.Sporttype) AS Sporttype,
 					CASE 
 						WHEN b.Product3rdId IN (63,69) THEN 0 
 						WHEN @IsViewCOOnlyCheck = 1 AND b.Product3rdId = 0 AND @SBBACheck & 4 = 4 AND b.TicketType = 1 THEN -99 --Cashout 
-						WHEN @IsViewCOOnlyCheck = 1 AND b.Product3rdId = 3 AND @SBBACheck & 8 = 8 AND b.TicketType = 1 THEN -99 --Cashout 
 						WHEN bt.ProductId = 1 THEN b.Product3rdId
 						ELSE bt.Product3rdId
 					END AS Product3rdIdMix
@@ -696,7 +675,7 @@ BEGIN
 			--			WHEN bt.IsPriceBettype > 0 THEN 0
 			--			ELSE 1
 			--		END
-			AND NOT (b.Product3rdId IN (0, 3) AND b.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB & BA
+			AND NOT (b.Product3rdId = 0 AND b.TicketType = 1 AND @CashoutModeCheck = 1) --- exclude CO from SB
 			AND (bf.IsSelect = 1 OR (bf.IsSelect IS NULL AND @IsSelectOthersPlatform = 1))
 		GROUP BY 
 			CASE 
@@ -720,13 +699,13 @@ BEGIN
 			CASE WHEN @GroupMode IN (4,5) OR @IsViewCOOnlyCheck = 1 THEN ck.Product3rdIdMix ELSE -1 END
 	END
 	
-	-- TODO: Cashout separate from SB&BA
+	-- TODO: Cashout separate from SB
 	DELETE rpt
 	FROM #rptData rpt
-	WHERE @IsViewCOOnlyCheck = 1 AND ParentKey IN(0,3);
+	WHERE @IsViewCOOnlyCheck = 1 AND ParentKey = 0;
 
 	-- TODO: Sorting all columns
-	--BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective, Margin
+	--BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, BetEffective, Margin
 	DROP TABLE IF EXISTS #tmpSortValue;
 	CREATE TABLE #tmpSortValue (ParentKey INT, GroupKey INT, GroupValue VARCHAR(100), SortValue MONEY, PRIMARY KEY(ParentKey, GroupKey));
 
@@ -744,7 +723,6 @@ BEGIN
 			WHEN @SortKey = 5 THEN SUM(MemComm)
 			WHEN @SortKey = 6 THEN SUM(LicWinloss)
 			WHEN @SortKey = 7 THEN SUM(LicComm)
-			WHEN @SortKey = 8 THEN SUM(AmtDueToBA)
 			WHEN @SortKey = 9 THEN SUM(BetEffective)
 			WHEN @SortKey = 10 THEN IIF(SUM(NetTurnover)=0, 0, SUM(LicWinloss)/SUM(NetTurnover))
 			ELSE GroupBy END
@@ -791,14 +769,14 @@ BEGIN
 				LEFT JOIN bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK) ON p3.ProductID = rpt.GroupBy
 				WHERE @GroupBy = 3
 				UNION ALL
-				SELECT DISTINCT CONCAT(ISNULL(p3.ProductPrefix, IIF(rpt.ParentKey=0,IIF(@SBBACheck=14, 'SB,BA','SB'),IIF(rpt.ParentKey=-99,'CO','N/A'))), '#', rpt.GroupBy) AS GroupBy, rpt.GroupBy AS GroupKey, rpt.ParentKey
+				SELECT DISTINCT CONCAT(ISNULL(p3.ProductPrefix, IIF(rpt.ParentKey=0,'SB',IIF(rpt.ParentKey=-99,'CO','N/A'))), '#', rpt.GroupBy) AS GroupBy, rpt.GroupBy AS GroupKey, rpt.ParentKey
 					,ISNULL(saba.SportOrder, rpt.GroupBy)
 				FROM #rptData rpt
 				LEFT JOIN bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK) ON p3.ProductID = rpt.ParentKey
 				LEFT JOIN #tmpSabaSporttype saba ON saba.SabaSportType = rpt.GroupBy
 				WHERE @GroupBy = 4
 				UNION ALL
-				SELECT DISTINCT CONCAT(ISNULL(p3.ProductPrefix, IIF(rpt.ParentKey=0,IIF(@SBBACheck=14, 'SB,BA','SB'),IIF(rpt.ParentKey=-99,'CO','N/A'))), '#', rpt.GroupBy) AS GroupBy, rpt.GroupBy AS GroupKey, rpt.ParentKey
+				SELECT DISTINCT CONCAT(ISNULL(p3.ProductPrefix, IIF(rpt.ParentKey=0,'SB',IIF(rpt.ParentKey=-99,'CO','N/A'))), '#', rpt.GroupBy) AS GroupBy, rpt.GroupBy AS GroupKey, rpt.ParentKey
 					,rpt.GroupBy
 				FROM #rptData rpt
 				LEFT JOIN bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK) ON p3.ProductID = rpt.ParentKey
@@ -837,21 +815,21 @@ BEGIN
 			SUM(BetCount) AS BetCount, SUM(Turnover) AS Turnover, SUM(NetTurnover) AS NetTurnover, 
 			SUM(MemWinloss) AS MemWinloss, SUM(MemComm) AS MemComm, 
 			SUM(LicWinloss) AS LicWinloss, SUM(LicComm) AS LicComm, 
-			SUM(AmtDueToBA) AS AmtDueToBA, SUM(BetEffective) AS BetEffective, 
+			SUM(BetEffective) AS BetEffective, 
 			IIF(SUM(BaseNetTurnover)=0,0,SUM(BaseLicWinloss)/SUM(BaseNetTurnover)) AS [Margin]
 			,----BASE
 			SUM(BaseTurnover) AS BaseTurnover, SUM(BaseNetTurnover) AS BaseNetTurnover, 
 			SUM(BaseMemWinloss) AS BaseMemWinloss, SUM(BaseMemComm) AS BaseMemComm, 
 			SUM(BaseLicWinloss) AS BaseLicWinloss, SUM(BaseLicComm) AS BaseLicComm,
-			SUM(BaseAmtDueToBA) AS BaseAmtDueToBA, SUM(BaseBetEffective) AS BaseBetEffective
+			SUM(BaseBetEffective) AS BaseBetEffective
 		FROM paging p
 		INNER JOIN #rptData rpt ON rpt.GroupBy = p.GroupKey AND 1 = CASE WHEN @GroupMode IN (4,5) AND rpt.ParentKey <> p.ParentKey THEN 0 ELSE 1 END
 		GROUP BY p.rIdx, p.rTotal, p.GroupBy, p.GroupKey, rpt.BreakBy
 	)
 	SELECT rIdx, GroupBy, GroupKey, BreakBy, BetCount, 
-		Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective, Margin
+		Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, BetEffective, Margin
 		,----BASE
-		BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
+		BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseBetEffective
 		,rTotal
 	INTO #result
 	FROM result rs
@@ -862,29 +840,29 @@ BEGIN
 
 	-- TOTO: output GRID
 	SELECT rIdx, GroupBy, BreakBy,
-		BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective, Margin
+		BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, BetEffective, Margin
 		, ----BASE
-		BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
+		BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseBetEffective
 	FROM (
 		SELECT rs.rIdx, rs.GroupBy, rs.GroupKey, CAST(rs.BreakBy AS NVARCHAR(100)) AS BreakBy, rs.BreakBy AS BreakOrder,
-			BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective, Margin
+			BetCount, Turnover, NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, BetEffective, Margin
 			,-----BASE
-			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
+			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseBetEffective
 		FROM #result rs
 		WHERE @BreakBy = 1
 		UNION ALL
 		SELECT rs.rIdx, rs.GroupBy,	rs.GroupKey, IIF(rs.BreakBy = 0, 'SB', IIF(rs.BreakBy = -99, 'CO', p3.ProductPrefix)) AS BreakBy, rs.BreakBy AS BreakOrder,
-			BetCount, Turnover,	NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective, Margin
+			BetCount, Turnover,	NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, BetEffective, Margin
 			,-----BASE
-			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
+			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseBetEffective
 		FROM #result rs
 			LEFT JOIN bodb_licensee.dbo.Product3rd p3 WITH(NOLOCK) ON p3.ProductID = rs.BreakBy
 		WHERE @BreakBy = 2
 		UNION ALL
 		SELECT rs.rIdx, rs.GroupBy,	rs.GroupKey, CONCAT(ci.username,'#',ck.ExternalID) AS BreakBy, rs.BreakBy AS BreakOrder,
-			BetCount, Turnover,	NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, AmtDueToBA, BetEffective, Margin
+			BetCount, Turnover,	NetTurnover, MemWinloss, MemComm, LicWinloss, LicComm, BetEffective, Margin
 			,-----BASE
-			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseAmtDueToBA, BaseBetEffective
+			BaseTurnover, BaseNetTurnover, BaseMemWinloss, BaseMemComm, BaseLicWinloss, BaseLicComm, BaseBetEffective
 		FROM #result rs
 			INNER JOIN bodb02.dbo.vw_Customer ci WITH(NOLOCK) ON ci.custid = rs.BreakBy
 			CROSS APPLY (SELECT SUBSTRING(ci.username2,CHARINDEX('$',ci.username2)+1,100) AS ExternalID) AS ck
@@ -900,13 +878,13 @@ BEGIN
 		SUM(BetCount) AS BetCount, SUM(Turnover) AS Turnover, SUM(NetTurnover) AS NetTurnover, 
 		SUM(MemWinloss) AS MemWinloss, SUM(MemComm) AS MemComm, 
 		SUM(LicWinloss) AS LicWinloss, SUM(LicComm) AS LicComm, 
-		SUM(AmtDueToBA) AS AmtDueToBA, SUM(BetEffective) AS BetEffective, 
+		SUM(BetEffective) AS BetEffective, 
 		IIF(SUM(BaseNetTurnover)=0,0,SUM(BaseLicWinloss)/SUM(BaseNetTurnover)) AS [Margin]
 		,----BASE
 		SUM(BaseTurnover) AS BaseTurnover, SUM(BaseNetTurnover) AS BaseNetTurnover, 
 		SUM(BaseMemWinloss) AS BaseMemWinloss, SUM(BaseMemComm) AS BaseMemComm, 
-		SUM(BaseLicWinloss) AS BaseLicWinloss, SUM(BaseLicComm) AS BaseLicComm
-		,SUM(BaseAmtDueToBA) AS BaseAmtDueToBA, SUM(BaseBetEffective) AS BaseBetEffective
+		SUM(BaseLicWinloss) AS BaseLicWinloss, SUM(BaseLicComm) AS BaseLicComm,
+		SUM(BaseBetEffective) AS BaseBetEffective
 	FROM #result rs
 	GROUP BY rs.rIdx, rs.GroupBy
 	ORDER BY rs.rIdx
@@ -915,13 +893,13 @@ BEGIN
 		SUM(BetCount) AS BetCount, SUM(Turnover) AS Turnover, SUM(NetTurnover) AS NetTurnover, 
 		SUM(MemWinloss) AS MemWinloss, SUM(MemComm) AS MemComm, 
 		SUM(LicWinloss) AS LicWinloss, SUM(LicComm) AS LicComm, 
-		SUM(AmtDueToBA) AS AmtDueToBA, SUM(BetEffective) AS BetEffective, 
+		SUM(BetEffective) AS BetEffective, 
 		IIF(SUM(BaseNetTurnover)=0,0,SUM(BaseLicWinloss)/SUM(BaseNetTurnover)) AS [Margin]
 		,-----BASE
 		SUM(BaseTurnover) AS BaseTurnover, SUM(BaseNetTurnover) AS BaseNetTurnover, 
 		SUM(BaseMemWinloss) AS BaseMemWinloss, SUM(BaseMemComm) AS BaseMemComm, 
 		SUM(BaseLicWinloss) AS BaseLicWinloss, SUM(BaseLicComm) AS BaseLicComm,
-		SUM(BaseAmtDueToBA) AS BaseAmtDueToBA, SUM(BaseBetEffective) AS BaseBetEffective
+		SUM(BaseBetEffective) AS BaseBetEffective
 	FROM #rptData
 
 	SELECT DATEDIFF(MILLISECOND, @startTime, CURRENT_TIMESTAMP) AS Duration_Ms

@@ -22,15 +22,11 @@ AS
 		- 20240306@Evan: Remove checking Enabled in SportBettypeMatrix [RedmineID: #201944]
 		- 20240816@Kelvin: Hide BetType in Lrf_f_SelExcludedBetType [RedmineID: #208144]
 		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
+		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 */
 
 BEGIN
 	SET NOCOUNT ON
-
-	IF @ProductCode = 'BA'
-	BEGIN
-		SET @ProductCode = 'SB'
-	END
 
 	SELECT @ProductCode = STRING_AGG(b.ProductPrefix, ',')
 	FROM (

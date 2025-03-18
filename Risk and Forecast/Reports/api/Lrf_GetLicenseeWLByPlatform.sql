@@ -45,6 +45,7 @@ AS
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240311@Eddie: Change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
 		- 20241206@Kelvin: LAP - Enhance reports showing betfrom data [Redmine: #214849]
+		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 		
 	Param explanation:
 		- @ProductList: SB and all products grouped under SB (SB,SLT,...)
@@ -104,7 +105,7 @@ BEGIN
 	INSERT INTO @BetType (BetType)
 	SELECT DISTINCT BetType
 	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
-	WHERE BetType NOT IN (901, 902, 903, 904)
+	WHERE BetType NOT IN (901, 902, 903, 904, 997, 999)
 
 	-- Set default Others PlatformType, 88: (Normal licensee), 99: (Jollysports licensee), -1: N/A
 	DECLARE @OthersPlatformType INT
@@ -156,7 +157,6 @@ BEGIN
 			OUTER APPLY (SELECT TOP 1 bf.PlatformType FROM #PlatformList bf WHERE b.betfrom = bf.BetFrom) AS pl
 		WHERE b.statusID IN (111, 112, 113)
 			AND b.winlostdate BETWEEN @TempFromDate AND @TDate
-			AND b.tpositiontaking <> 0
 		GROUP BY
 			b.winlostdate,
 			tma.currency,
@@ -188,7 +188,6 @@ BEGIN
 			AND b.roleid = 1
 			AND b.statusID <> 101 --exclude REJECT bets
 			AND b.bettype IN (0, -29)
-			AND (b.isBA = 0 OR b.isBA IS NULL)
 		GROUP BY
 			b.currency,
 			b.winlostdate,

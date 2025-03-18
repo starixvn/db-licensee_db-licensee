@@ -34,6 +34,7 @@ AS
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only  + Remove VS3 (old) [RedmineID: #199523]
 		- 20242901@Evan: Integrate VS4 [RedmineID: #199347]
 		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]
+		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 		
 	Param's Explanation:
 		- @ProductCodes = '' - Get all
@@ -49,7 +50,7 @@ BEGIN
 	FROM dbo.Product3rd AS p WITH (NOLOCK)
 		INNER JOIN dbo.LicenseeProduct3rd AS l WITH (NOLOCK) ON p.Productid = l.ProductID
 	WHERE l.LicenseeID = @LicenseeID
-		AND p.ProductPrefix IN ('BA', 'NG', 'VS', 'KN', 'LT', 'CO', 'TG', 'I4D')
+		AND p.ProductPrefix IN ('NG', 'VS', 'KN', 'LT', 'CO', 'TG', 'I4D')
 		AND (@ProductCodes = ''
 			OR ',' + @ProductCodes + ',' LIKE '%,' + p.ProductPrefix + ',%')
 
@@ -81,16 +82,6 @@ BEGIN
 		SELECT Id, NULL, 0
 		FROM dbo.Lrf_f_GetSportTypeByProduct('BTC')
 		WHERE ',' + @ProductCodes + ',' LIKE '%,BTC,%'
-	END
-
-	-- BA --
-	IF EXISTS (SELECT 1 FROM @Product3rds WHERE Code = 'BA')
-	BEGIN
-		INSERT INTO @ProductSport(Id, Name, ParentId)
-		SELECT 3, 'BA', NULL
-		UNION ALL
-		SELECT Id, NULL, 0
-		FROM dbo.Lrf_f_GetSportTypeByProduct('BA')
 	END
 
 	-- VS --

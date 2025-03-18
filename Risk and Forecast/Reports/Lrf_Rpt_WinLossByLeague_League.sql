@@ -35,6 +35,7 @@ AS
 		- 20240508@Bobby: Integrate Saba Kabaddi [RedmineID: #203612]
 		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
 		- 20250217@Kelvin: Win Loss By League - Support Virtual Sports [RedmineID: #217407]
+		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 
 	Param's Explanation:
 		- @SportTypeList: sporttype list separated by ','

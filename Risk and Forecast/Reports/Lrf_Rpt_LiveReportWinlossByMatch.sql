@@ -6,7 +6,6 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_LiveReportWinlossByMatch]
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
 	@ProductList	VARCHAR(500),
-	@ShowBA			BIT				= 0,
 	@SportId		INT				= 0,
 	@LiveIndicator	INT				= 1,
 	@BaseCurrency	VARCHAR(12)		= ''
@@ -56,6 +55,7 @@ AS
 		- 20240830@Lewis: BaseBallAIO - phase 2 [RedmineID: #209344]
 		- 20241001@Kelvin: LAP - Integrate BetRadar Virtual Horses & Dogs Racing [RedmineID: #210808]
 		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]
+		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -93,14 +93,6 @@ BEGIN
 
 		RETURN
 	END CATCH;
-
-	DECLARE @ShowSB	BIT = 0
-
-	IF ',' + @ProductList + ',' LIKE '%,SB,%'
-		SET @ShowSB = 1
-
-	IF @ShowBA = 1
-		SET @ProductList = @ProductList + ',SB'
 		
 	SELECT @ProductList = STRING_AGG(b.ProductPrefix, ',')
 	FROM (
@@ -182,10 +174,7 @@ BEGIN
 			COUNT(b.transid) AS BetCount,
 			SUM(b.stake) AS Turnover,
 			SUM(b.winlost - b.actual_stake) AS WinLost,
-			-SUM(CASE
-					WHEN bt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
-					ELSE b.winlost - b.actual_stake
-				END) AS LicenseeWL,
+			-SUM(b.winlost - b.actual_stake) AS LicenseeWL,
 			SUM(b.comm) AS Comm,
 			SUM(b.playercomm) AS PlayerComm
 		FROM dbo.bettrans AS b WITH (NOLOCK)
@@ -204,11 +193,6 @@ BEGIN
 			AND ((@LiveIndicator = 0 AND b.liveindicator = 0)
 				OR (@LiveIndicator = 1 AND b.liveindicator = 1)
 				OR (@LiveIndicator = 2))
-			AND CASE
-					WHEN @ShowBA = 0 AND bt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
-					WHEN @ShowSB = 0 AND bt.ProductCode = 'SB' AND b.tpositiontaking <> 0 THEN 0
-					ELSE 1
-				END <> 0
 		GROUP BY
 			b.winlostdate,
 			b.currency,
@@ -266,10 +250,7 @@ BEGIN
 			COUNT(b.transid) AS BetCount,
 			SUM(b.stake) AS Turnover,
 			SUM(b.winlost - b.actual_stake) AS WinLost,
-			-SUM(CASE
-					WHEN bt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
-					ELSE b.winlost - b.actual_stake
-				END) AS LicenseeWL,
+			-SUM(b.winlost - b.actual_stake) AS LicenseeWL,
 			SUM(b.comm) AS Comm,
 			SUM(b.playercomm) AS PlayerComm
 		FROM dbo.bettrans14 AS b WITH (NOLOCK)
@@ -288,11 +269,6 @@ BEGIN
 			AND ((@LiveIndicator = 0 AND b.liveindicator = 0)
 				OR (@LiveIndicator = 1 AND b.liveindicator = 1)
 				OR (@LiveIndicator = 2))
-			AND CASE
-					WHEN @ShowBA = 0 AND bt.ProductCode = 'SB' AND b.tpositiontaking = 0 THEN 0
-					WHEN @ShowSB = 0 AND bt.ProductCode = 'SB' AND b.tpositiontaking <> 0 THEN 0
-					ELSE 1
-				END <> 0
 		GROUP BY
 			b.winlostdate,
 			b.currency,

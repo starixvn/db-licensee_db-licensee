@@ -2,7 +2,6 @@
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_Outstanding]
 	@ProductList	VARCHAR(500),
-	@ShowBA			BIT				= 0,
 	@PageSize		INT				= 1000,
 	@PageIndex		INT				= 1,
 	@AgentList		VARCHAR(MAX),
@@ -72,6 +71,7 @@ AS
 		- 20220126@Kos: Integrate Spadegaming Jackpot [RedmineID: #167035]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
+		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 
 	Param's Explanation:
 		@OrderItem:
@@ -114,7 +114,6 @@ BEGIN
 		Currency	INT,
 		Outstanding MONEY,
 		BetCounts	INT,
-		IsBA		BIT DEFAULT (0),
 		ProductId	INT
 	)
 
@@ -123,14 +122,6 @@ BEGIN
 	DECLARE @IsTest BIT = 0
 
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
-
-	DECLARE @ShowSB BIT = 0
-
-	IF ',' + @ProductList + ',' LIKE '%,SB,%'
-		SET @ShowSB = 1
-
-	IF @ShowBA = 1
-		SET @ProductList = @ProductList + ',SB'
 
 	SELECT @ProductList = STRING_AGG(b.ProductPrefix, ',')
 	FROM (
@@ -153,37 +144,21 @@ BEGIN
 		Currency,
 		Outstanding,
 		BetCounts,
-		IsBA,
 		ProductId )
 	SELECT
 		b.custid,
 		b.currency,
 		SUM(b.actual_stake) AS Outstanding,
 		COUNT(1) AS BetCount,
-		CASE WHEN BA.TransID IS NULL THEN 0 ELSE 1 END AS IsBA,
 		s.ProductId
 	FROM dbo.bettrans AS b WITH (NOLOCK)
 		INNER JOIN #SportBettype AS s ON s.bettype = b.bettype
 		INNER JOIN @TempAg AS a ON b.recommend = a.CustId
-		LEFT JOIN bodb_Licensee.dbo.LicenseeBATransaction_active BA WITH (NOLOCK) ON b.transid = BA.transid
 	WHERE b.statusID IN (0, 1) AND s.RefTable = 0
 	GROUP BY
 		b.custid,
 		b.currency,
-		CASE WHEN BA.TransID IS NULL THEN 0 ELSE 1 END,
 		s.ProductID
-
-	IF @ShowSB = 0
-	BEGIN
-		DELETE @Outstanding
-		WHERE IsBA = 0 AND ProductID = 1
-	END
-
-	IF @ShowBA = 0
-	BEGIN
-		DELETE @Outstanding
-		WHERE IsBA = 1
-	END
 
 	--2. translog --
 	INSERT INTO @Outstanding (

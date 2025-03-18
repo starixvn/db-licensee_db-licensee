@@ -13,14 +13,14 @@ AS
 		- 20230702@Evan: Support Saba Virtual Tennis [RedmineID: #190465]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240304@Evan: Grant execute new acc [RedmineID: #201283]
-
+		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 		
 */
 BEGIN
 	WITH CTE_Code AS (
 		SELECT t.Code 
 		FROM (
-			SELECT ProductCodes =  CONCAT(@ProductCodes, IIF(((',' + @ProductCodes + ',' LIKE '%,SB,%') OR (',' + @ProductCodes + ',' LIKE '%,BA,%')), ',SLT,BTC',''))
+			SELECT ProductCodes =  CONCAT(@ProductCodes, IIF((',' + @ProductCodes + ',' LIKE '%,SB,%'), ',SLT,BTC',''))
 		) AS c
 		CROSS APPLY (
 			SELECT DISTINCT value AS Code
@@ -29,13 +29,13 @@ BEGIN
 	),
 	CTE_SportbookBA AS (
 			SELECT DISTINCT 0 AS ProductID, p.ProductName, 
-				s.SportType, s.SportName, CONCAT(p.ProductPrefix,',BA') AS ProductCode, s.SportType AS SportOrder
+				s.SportType, s.SportName, p.ProductPrefix AS ProductCode, s.SportType AS SportOrder
 			FROM bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK)
 			INNER JOIN bodb02.dbo.Products p WITH(NOLOCK) ON p.ProductID = m.ProductID
 			INNER JOIN bodb02.dbo.Sports s WITH(NOLOCK) ON S.SportType = m.SportType
 			WHERE p.ProductID = 1
 			UNION ALL
-			SELECT 0 AS ProductID, ProductName, SabaSportType AS SportType, SportName, CONCAT(ProductCode,',BA') AS ProductCode, SportOrder
+			SELECT 0 AS ProductID, ProductName, SabaSportType AS SportType, SportName, ProductCode, SportOrder
 			FROM bodb02.[dbo].[LAP_f_WinlossAnalysis_SabaSportSel] ()
 			WHERE IsShowUI = 1
 	),
@@ -62,9 +62,7 @@ BEGIN
 			CASE WHEN p.ProductID IN (0,63,69) THEN 0 ELSE p.ProductID END AS ProductID,
 			CASE WHEN p.ProductID IN (0,63,69) THEN 'Sportsbook' ELSE ProductName END AS ProductName,
 			CASE 
-				WHEN p.ProductID IN (0, 63,69) AND sbba.SBBACheck & 6 = 6 THEN 'SB,BA' 
 				WHEN p.ProductID IN (0, 63,69) AND sbba.SBBACheck & 2 = 2 THEN 'SB' 
-				WHEN p.ProductID IN (0, 63,69) AND sbba.SBBACheck & 4 = 4 THEN 'BA' 
 				ELSE ProductCode END AS ProductCode,
 			SportType, SportName, SportOrder
 		FROM CTE_Product3rd AS p 
@@ -78,7 +76,6 @@ BEGIN
 			SELECT 
 				( 
 					POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 1) 
-					+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,BA,%' THEN 1 ELSE 0 END, 2)
 				) AS SBBACheck
 		) AS sbba 
 		WHERE p.SportType NOT IN (150, 173, 27) --exclude free games & hide Cricket(27)
