@@ -30,6 +30,8 @@ AS
 	  - 20201214@Winfred: Adjust SP to cut off spaces for licensee name  [redmine: #147233]
 	  - 20230207@Danny: reseek LicenseeID when creating new  [redmine: #183209]	
 	  - 20230814@Winfred: Integrate MaxGame, VS3 new products - remove VS3 Old [redmine:#183802]
+	  - 20250227@Virgil: Drop BA functions [RedmineID: #216882]
+
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -383,31 +385,6 @@ BEGIN
 	END CATCH	
 	--- END: ENABLE PLAYER COMM
 
-	------------------------------------------------------  
-	-- Map Licencee to LicenseeBAConfig  
-	------------------------------------------------------  
-	BEGIN TRY
-		SET @SPErrMsg = ''
-		EXEC Nap_LM_LicenseeBAConfig_Ins @LicenseeID = @licenseeid
-			, @groupa		= 0.0025
-			, @groupb		= 0.005
-			, @groupc		= 0.0075
-			, @groupd		= 0.01
-			, @1x2Comm		= 0.005
-			, @OtherComm	= 0.005
-			, @EnableBA		= 0
-			, @UserID		= 862400 --pgmViet
-			, @ErrMsg		= @SPErrMsg OUTPUT
-			
-		INSERT INTO @Error (Msg)
-		VALUES (@SPErrMsg)
-	END TRY
-	BEGIN CATCH
-		SELECT @ErrCode = 50108
-			, @ErrMsg = 'Fail to add BA configuration. Process has stopped. Error: ' + CAST(ERROR_NUMBER() AS NVARCHAR(10)) + ' - ' + ERROR_MESSAGE()
-		
-		RETURN
-	END CATCH
 	
 	IF EXISTS (SELECT 1 FROM @Error WHERE ISNULL(Msg, '') <> '')
 	BEGIN

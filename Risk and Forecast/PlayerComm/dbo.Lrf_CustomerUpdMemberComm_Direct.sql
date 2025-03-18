@@ -40,6 +40,8 @@ AS
 		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 		- 20240221@Johnson: Restructure Commission [redmine:#179088]
 		- 20240709@Johnson: Apply In-house Replication for Deposit Customer Setting [redmine:#207025]
+		- 20250227@Virgil: Drop BA functions [RedmineID: #216882]
+
 	Param's Explanation:	
 
 */
@@ -75,23 +77,6 @@ BEGIN
 	SELECT @AgentID = recommend 
 	FROM CustInfo WITH(NOLOCK)
 	WHERE CustID = @CustID
-	
-	IF EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeBAHistory WITH (NOLOCK) WHERE CustID = @CustID AND Status = 'running')
-	BEGIN 
-		IF NOT EXISTS ( SELECT 1 
-						FROM bodb_licensee.dbo.Licensees l WITH (NOLOCK) 
-							INNER JOIN bodb_licensee.dbo.LicenseeCust lc WITH (NOLOCK) ON l.licenseeId = lc.LicenseeId
-							INNER JOIN Customer lci WITH (NOLOCK) ON lc.CustId=lci.Recommend
-						WHERE l.LicenseeName = 'Macaubet' AND lci.CustID = @CustID 																
-						)
-		BEGIN
-			--Update SBComm = 0, ParlayComm = 0
-			UPDATE t
-			SET Discount = 0
-			FROM @tblSettings t
-			WHERE SportType IN (1,2)
-		END
-	END
 	
 	IF EXISTS(SELECT TOP (1) 1 FROM @tblSettings)
 	BEGIN

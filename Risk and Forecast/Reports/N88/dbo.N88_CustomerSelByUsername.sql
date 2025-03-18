@@ -5,8 +5,7 @@ ALTER PROCEDURE [dbo].[N88_CustomerSelByUsername]
 	@username2 		VARCHAR(50) = NULL,
 	@SearchOption	TINYINT = 0,
 	@PageSize		INT = 50,
-	@PageIndex		INT = 1,
-	@BAFilter		SMALLINT = 0,	
+	@PageIndex		INT = 1,	
 	@TotalRows		INT = 0  OUTPUT,
 	@SpecialLevel	VARCHAR(100) = '', 
 	@OddsGroups		VARCHAR(100) = '',
@@ -21,11 +20,11 @@ AS
 	
 	Revisions:
 		- 20200313@Johnson: initial sp [redmine: #129873]
+		- 20250227@Virgil: Drop BA functions [RedmineID: #216882]
 	
 	Parameter's explanations:
 		+ @username: systemID
 		+ @username2: nickname
-		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: '1,2,3,4,5,6,7,8,9,10' (all)
 		+ @OddsGroups: Member's Odds Group
 		+ @searchOption: 1- basic search
@@ -63,7 +62,7 @@ BEGIN
 
 	BEGIN CATCH
 		SELECT ErrCode = 100
-			,ErrMsg = N'Paramter invalid.'
+			,ErrMsg = N'Parameter invalid.'
 
 		RETURN
 	END CATCH;
@@ -79,9 +78,7 @@ BEGIN
 		closed					BIT,
 		suspended				BIT,
 		nickname				NVARCHAR (50),
-		BAStatus				BIT,
 		SpecialLevel			INT,
-		IsPowerBAUserTurnoff	BIT,
 		ugroup					VARCHAR(3),
 		RowNumber				INT
 	)
@@ -119,12 +116,7 @@ BEGIN
 		Id				INT PRIMARY KEY,
 		Name			VARCHAR(50),
 	)
-	
-	DECLARE @TempBACust TABLE
-	(
-		ID		INT IDENTITY(1, 1),
-		CustID	INT
-	)
+
 	
 	DECLARE @tmpSpecial TABLE (Level TINYINT)
 	
@@ -144,143 +136,48 @@ BEGIN
 	
 	IF @Username IS NULL AND @Username2 IS NULL AND @SearchOption = 2
 	BEGIN
-		IF @BAFilter = 0 
-		BEGIN	
-			INSERT INTO #tmpCust(custid, closed, reject, ugroup)
-			SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1)
-			FROM #TempAg t 
-				 INNER JOIN custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
-				 INNER JOIN Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
-			WHERE ci.roleid=1
-					AND c.username  NOT LIKE '%CASHOUT%'
-					AND (@OddsGroups = '' OR RIGHT(c.ugroup,1) IN (SELECT OddsGroup FROM @tmpOddsGroups) )
+		INSERT INTO #tmpCust(custid, closed, reject, ugroup)
+		SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1)
+		FROM #TempAg t 
+				INNER JOIN custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
+				INNER JOIN Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
+		WHERE ci.roleid=1 
+				AND c.username NOT LIKE '%CashOut%'				
+				AND (@OddsGroups = '' OR RIGHT(c.ugroup,1) IN (SELECT OddsGroup FROM @tmpOddsGroups) )
 		
-			INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject)
-			SELECT c.CustID, lc.currency, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject
-			FROM
-				#tmpCust c
-				INNER JOIN 
-				(SELECT lci.custid, lci.currency, ISNULL(lc.speciallevel,0) as speciallevel , lci.username, lci.username2 
-				 FROM dbo.Customer lci WITH(NOLOCK) 
-					 INNER JOIN #TempAg t ON lci.recommend = t.custid
-					 LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH (NOLOCK) ON lc.CustID = lci.CustID
-				 WHERE lci.RoleID = 1 
-				 ) lc ON lc.custid = c.custid				
-			WHERE 
-				ISNULL(lc.speciallevel,0) IN  (SELECT level FROM @tmpSpecial)
-			
-			IF ISNULL(@TotalRows, 0) = 0
-				SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
+		INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject)
+		SELECT c.CustID, lc.currency, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject
+		FROM
+			#tmpCust c
+			INNER JOIN 
+			(SELECT c.custid, c.currency, ISNULL(lc.speciallevel,0) as speciallevel , c.username, c.username2 
+				FROM bodb02.dbo.Customer c WITH (NOLOCK)
+				LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.CustID = lc.CustID			 
+				INNER JOIN #TempAg t ON c.recommend = t.custid
+				WHERE c.RoleID = 1
+				) lc ON lc.custid = c.custid			
+		WHERE ISNULL(lc.speciallevel,0) IN (SELECT level FROM @tmpSpecial)				
+		
+		IF ISNULL(@TotalRows, 0) = 0
+			SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
 						
-			INSERT INTO #Temp (custid, currency, username, closed, suspended, nickname, BAStatus, SpecialLevel, ugroup, RowNumber)
-			SELECT t.custid, t.currency, t.username, t.closed, t.suspended, t.nickname, CASE WHEN lb.CustID IS NULL THEN 0 ELSE 1 END AS BAStatus, t.speciallevel, t.ugroup, t.RowNumber  
+		INSERT INTO #Temp (custid, currency, username, closed, suspended, nickname, SpecialLevel, ugroup, RowNumber)
+		SELECT * FROM 
+		(
+			SELECT 
+				m.custid, 
+				m.currency,
+				m.username, 
+				m.closed,
+				ISNULL(m.reject,0) AS suspended,
+				SUBSTRING(m.username2, CHARINDEX('$',m.username2)+1, LEN(m.username2)-CHARINDEX('$',m.username2)) AS nickname,
+				m.SpecialLevel, 
+				m.ugroup,
+				ROW_NUMBER() OVER (ORDER BY m.custid ASC) AS RowNumber 
 			FROM
-				(
-					SELECT a.custid, a.currency, a.username, a.closed, a.suspended, a.nickname, a.speciallevel, a.ugroup, a.RowNumber  
-					FROM
-					(
-						SELECT 
-							m.custid, 
-							m.currency,
-							m.username, 
-							m.closed,
-							ISNULL(m.reject,0) AS suspended,
-							SUBSTRING(m.username2,  CHARINDEX('$',m.username2)+1, LEN(m.username2)-CHARINDEX('$',m.username2)) AS nickname,
-							m.SpecialLevel,
-							m.ugroup,
-							ROW_NUMBER() OVER (ORDER BY m.custid ASC) AS RowNumber 
-						FROM
-							#TempMember m
-					) a 
-					WHERE a.rownumber BETWEEN @rowstart AND @rowend
-				) t
-				LEFT JOIN bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) ON LicenseeID = @LicenseeID AND t.CustID = lb.CustID AND lb.[Status] = 'Running'
-		END
-		ELSE IF @BAFilter = 1
-		BEGIN
-			INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject)
-			SELECT ci.CustID, ci.currency, ISNULL(lc.speciallevel,0)  as speciallevel, cu.username2, cu.username, RIGHT(cu.ugroup, 1), ci.closed, ci.reject
-			FROM bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK)
-				INNER JOIN CustInfo ci (NOLOCK) ON lb.custid = ci.custid
-				INNER JOIN Customer cu WITH (NOLOCK) ON ci.CustID = cu.custid 
-				INNER JOIN #TempAg t ON ci.recommend = t.custid
-				LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON ci.custid = lc.custid								
-			WHERE lb.LicenseeID = @LicenseeID
-				AND lb.[Status] = 'Running'								  
-				AND (@OddsGroups = '' OR RIGHT(cu.ugroup,1) IN (SELECT OddsGroup FROM @tmpOddsGroups) )
-				AND ISNULL(lc.speciallevel,0) IN  (SELECT level FROM @tmpSpecial)
-			
-			IF ISNULL(@TotalRows, 0) = 0
-				SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
-			
-			
-			INSERT INTO #Temp (custid, currency, username, closed, suspended, nickname, BAStatus, SpecialLevel, ugroup, RowNumber)
-			SELECT * FROM 
-			(
-				SELECT 
-					m.custid, 
-					m.currency,
-					m.username,						
-					m.closed,
-					ISNULL(m.reject, 0) AS suspended,
-					SUBSTRING(m.username2, CHARINDEX('$',m.username2)+1, LEN(m.username2)-CHARINDEX('$',m.username2)) AS nickname,
-					1 AS BAStatus, 
-					m.SpecialLevel, 
-					m.ugroup,
-					ROW_NUMBER() OVER (ORDER BY m.custid ASC) AS RowNumber 
-				FROM
-					#TempMember m 
-			) a 
-			WHERE a.rownumber BETWEEN @rowstart AND @rowend
-		END 
-		ELSE IF @BAFilter = 2
-		BEGIN
-			INSERT INTO #tmpCust(custid, closed, reject, ugroup)
-			SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1)
-			FROM #TempAg t 
-				 INNER JOIN custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
-				 INNER JOIN Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
-			WHERE ci.roleid=1 
-					AND c.username NOT LIKE '%CashOut%'				
-					AND (@OddsGroups = '' OR RIGHT(c.ugroup,1) IN (SELECT OddsGroup FROM @tmpOddsGroups) )
-		
-			INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject)
-			SELECT c.CustID, lc.currency, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject
-			FROM
-				#tmpCust c
-				INNER JOIN 
-				(SELECT c.custid, c.currency, ISNULL(lc.speciallevel,0) as speciallevel , c.username, c.username2 
-				 FROM bodb02.dbo.Customer c WITH (NOLOCK)
-					LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.CustID = lc.CustID			 
-					INNER JOIN #TempAg t ON c.recommend = t.custid
-				 WHERE c.RoleID = 1
-				 ) lc ON lc.custid = c.custid
-				LEFT JOIN bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) ON lb.LicenseeID = @LicenseeID AND c.custid = lb.custid AND lb.[Status] = 'Running'				
-			WHERE ISNULL (lb.CustID, 0) = 0
-				AND ISNULL(lc.speciallevel,0) IN (SELECT level FROM @tmpSpecial)				
-		
-			IF ISNULL(@TotalRows, 0) = 0
-				SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
-						
-			INSERT INTO #Temp (custid, currency, username, closed, suspended, nickname, BAStatus, SpecialLevel, ugroup, RowNumber)
-			SELECT * FROM 
-			(
-				SELECT 
-					m.custid, 
-					m.currency,
-					m.username, 
-					m.closed,
-					ISNULL(m.reject,0) AS suspended,
-					SUBSTRING(m.username2, CHARINDEX('$',m.username2)+1, LEN(m.username2)-CHARINDEX('$',m.username2)) AS nickname,
-					0 AS BAStatus, 
-					m.SpecialLevel, 
-					m.ugroup,
-					ROW_NUMBER() OVER (ORDER BY m.custid ASC) AS RowNumber 
-				FROM
-					#TempMember m 
-			) a 
-			WHERE a.rownumber BETWEEN @rowstart AND @rowend
-		END
+				#TempMember m 
+		) a 
+		WHERE a.rownumber BETWEEN @rowstart AND @rowend
 	END -- end LEN(username) = 0
 	ELSE
 	BEGIN
@@ -290,58 +187,32 @@ BEGIN
 		SELECT @username = REPLACE(@username,'',''''),
 				@username2 = REPLACE(@username2,'','''')
 		
-		IF @BAFilter = 0
-		BEGIN
-				INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject)
-				SELECT ci.custid, ci.currency, ISNULL(lc.SpecialLevel,0) as speciallevel , c.username2, c.username, RIGHT(c.ugroup, 1), ci.closed, ci.reject
-				FROM #TempAg t
-					INNER JOIN dbo.Customer c WITH (NOLOCK) ON c.recommend = t.custid
-					INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid					
-					LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.custid = lc.custid					
-				WHERE 
-					c.RoleID = 1
-					AND (1= @searchOption AND (c.username LIKE ISNULL(@Username,c.username) 
-												AND (SUBSTRING(c.username2,CHARINDEX('$',c.username2)+1,len(c.username2))) LIKE ISNULL(@username2,(SUBSTRING(c.username2,CHARINDEX('$',c.username2)+1,len(c.username2)))) 
-												)
-						OR (2= @searchOption AND ((SUBSTRING(c.username2,CHARINDEX('$',c.username2)+1,len(c.username2)) LIKE ISNULL(@Username2,'') + '%') 
-													AND c.username LIKE ISNULL(@Username,'') + '%')
-							)
-						)	
-					AND c.username NOT LIKE '%CashOut%'				
-					AND (@OddsGroups = '' OR RIGHT(c.ugroup,1) IN (SELECT OddsGroup FROM @tmpOddsGroups) )
-					AND ISNULL(lc.speciallevel,0) IN (SELECT level FROM @tmpSpecial)				
-		END
-		ELSE
-		BEGIN
-			INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject)
-				SELECT ci.custid, ci.currency, ISNULL(lc.SpecialLevel,0) as speciallevel, c.username2, c.username, RIGHT(c.ugroup, 1), ci.closed, ci.reject
-				FROM #TempAg t
-					INNER JOIN dbo.Customer c WITH (NOLOCK) ON c.recommend = t.custid
-					INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
-					LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.custid = lc.custid					
-					LEFT JOIN bodb_Licensee.dbo.LicenseeBAHistory lb WITH(NOLOCK) ON lb.LicenseeID = @LicenseeID 
-																					AND ci.custid = lb.custid AND lb.[Status] = 'Running'
-				WHERE 
-					c.roleId = 1 
-					AND (1= @searchOption AND (c.username LIKE ISNULL(@Username,c.username) 
-												AND (SUBSTRING(c.username2,CHARINDEX('$',c.username2)+1,len(c.username2))) LIKE ISNULL(@username2,(SUBSTRING(c.username2,CHARINDEX('$',c.username2)+1,len(c.username2)))) 
-												)
-						OR (2= @searchOption AND ((SUBSTRING(c.username2,CHARINDEX('$',c.username2)+1,len(c.username2)) LIKE ISNULL(@Username2,'') + '%') 
-													AND c.username LIKE ISNULL(@Username,'') + '%')
-							)
-						)
-					AND c.username NOT LIKE '%CashOut%'					
-					AND (@OddsGroups = '' OR RIGHT(c.ugroup,1) IN (SELECT OddsGroup FROM @tmpOddsGroups) )
-					AND ISNULL(lc.speciallevel,0) IN (SELECT level FROM @tmpSpecial)			
-					AND ((@BAFilter = 1 AND ISNULL(lb.[Status],'') = 'Running')
-						OR (@BAFilter = 2 AND ISNULL(lb.[Status],'') != 'Running'))
-		END			
+
+		INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject)
+		SELECT ci.custid, ci.currency, ISNULL(lc.SpecialLevel,0) as speciallevel , c.username2, c.username, RIGHT(c.ugroup, 1), ci.closed, ci.reject
+		FROM #TempAg t
+			INNER JOIN dbo.Customer c WITH (NOLOCK) ON c.recommend = t.custid
+			INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid					
+			LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.custid = lc.custid					
+		WHERE 
+			c.RoleID = 1
+			AND (1= @searchOption AND (c.username LIKE ISNULL(@Username,c.username) 
+										AND (SUBSTRING(c.username2,CHARINDEX('$',c.username2)+1,len(c.username2))) LIKE ISNULL(@username2,(SUBSTRING(c.username2,CHARINDEX('$',c.username2)+1,len(c.username2)))) 
+										)
+				OR (2= @searchOption AND ((SUBSTRING(c.username2,CHARINDEX('$',c.username2)+1,len(c.username2)) LIKE ISNULL(@Username2,'') + '%') 
+											AND c.username LIKE ISNULL(@Username,'') + '%')
+					)
+				)	
+			AND c.username NOT LIKE '%CashOut%'				
+			AND (@OddsGroups = '' OR RIGHT(c.ugroup,1) IN (SELECT OddsGroup FROM @tmpOddsGroups) )
+			AND ISNULL(lc.speciallevel,0) IN (SELECT level FROM @tmpSpecial)				
+		
 															
 		IF ISNULL(@TotalRows, 0) = 0
 			SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
 				
-		INSERT INTO #Temp (custid, currency, username, closed, suspended, nickname, BAStatus, SpecialLevel, ugroup, RowNumber)
-		SELECT a.custid, a.currency, a.username, a.closed, a.suspended, a.nickname, a.BAStatus, a.SpecialLevel, a.ugroup, a.RowNumber
+		INSERT INTO #Temp (custid, currency, username, closed, suspended, nickname, SpecialLevel, ugroup, RowNumber)
+		SELECT a.custid, a.currency, a.username, a.closed, a.suspended, a.nickname, a.SpecialLevel, a.ugroup, a.RowNumber
 		FROM 
 			(
 				SELECT m.custid,
@@ -350,73 +221,15 @@ BEGIN
 					m.closed,
 					ISNULL(m.reject, 0) AS suspended,
 					SUBSTRING(m.username2,  CHARINDEX('$',m.username2)+1, LEN(m.username2)-CHARINDEX('$',m.username2)) AS nickname,
-					CASE WHEN lb.CustID IS NULL THEN 0 ELSE 1 END AS BAStatus, 
 					m.SpecialLevel,
 					m.ugroup,
 					ROW_NUMBER() OVER (ORDER BY ci.currency ASC, ci.custid ASC) AS RowNumber 
 				FROM #TempMember m
 				INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON m.CustID = ci.custid
-				LEFT JOIN bodb_Licensee.dbo.LicenseeBAHistory lb WITH (nolock) ON LicenseeID = @LicenseeID AND m.custid = lb.custid AND lb.[Status] = 'Running'
 			) a 
 		WHERE a.rownumber BETWEEN @rowstart AND @rowend
 	END
 
-	--Case 1: BA is ON
-	UPDATE #Temp SET IsPowerBAUserTurnoff = 0
-	WHERE BAStatus = 1
-
-	--Case 2: BA is OFF
-	--Case 2.1: never turn-off BA
-	UPDATE #Temp SET IsPowerBAUserTurnoff = 0
-	WHERE
-		BAStatus = 0
-		AND CustID NOT IN (
-			SELECT DISTINCT CustID FROM bodb_Licensee.dbo.LicenseeBAHistory lb WITH (nolock)
-			WHERE LicenseeID = @LicenseeID AND Status = 'Done'
-		)
-
-	--Case 2.2 turned on BA before
-	INSERT INTO @TempBACust (CustID)
-	SELECT CustID FROM #Temp
-	WHERE BAStatus = 0 AND IsPowerBAUserTurnoff IS NULL
-
-	IF (SELECT COUNT(*) FROM @TempBACust) > 0
-	BEGIN
-		SELECT @i = 0
-		SELECT @max = MAX(id) FROM @TempBACust
-
-		WHILE @i < @MAX
-		BEGIN
-			SET @i = @i + 1
-			SET @LastOffBy = 0
-			SELECT @CustID = CustID FROM @TempBACust WHERE id = @i
-		
-			--Get last turn-off BA UserID
-			SELECT TOP 1 @LastOffBy = OffBy
-			FROM bodb_licensee.dbo.[LicenseeBAHistory] WITH (NOLOCK)
-			WHERE
-				[LicenseeID] = @LicenseeID AND
-				[CustID] = @CustID AND
-				[Status] = 'Done'
-			ORDER BY ID DESC
-
-			--Check whether the Last turn-off BA is Power BA user or not
-			--If is Power BA User then only Power BA Users can turn-on again
-			IF ISNULL(@LastOffBy, 0) <> 0 AND EXISTS (
-				SELECT 1 FROM bodb_licensee.dbo.LicenseeUserFunctions WITH (NOLOCK)
-				WHERE
-					FunctionID = 54
-					AND UserID = ISNULL(@LastOffBy, 0)
-					AND LicenseeID = @LicenseeID
-			) 
-			BEGIN
-				UPDATE #Temp SET IsPowerBAUserTurnoff = 1 WHERE CustID = @CustID
-			END
-		END			
-	END
-
-	--Case 3 update the rest
-	UPDATE #Temp SET IsPowerBAUserTurnoff = 0 WHERE IsPowerBAUserTurnoff IS NULL
 	
 	DECLARE @sporttype	TABLE (SportType INT)
 
@@ -480,9 +293,7 @@ BEGIN
 		closed,
 		suspended,
 		nickname,
-		BAStatus,
 		SpecialLevel,
-		IsPowerBAUserTurnoff,
 		RowNumber,
 		CAST((ISNULL(d.TotalBalance, 0)	- isnULL(tl.actual_stake,0)) AS MONEY) AS TotalBalance ,
 		CAST((ISNULL(d.Outstanding, 0)	+ ISNULL(tl.actual_stake,0)) AS MONEY) AS Outstanding,

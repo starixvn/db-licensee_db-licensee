@@ -61,6 +61,8 @@ AS
 		- 20230814@Luke: LAP - SEA Localization [Redmine: #187132]
 		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 		- 20240220@Johnson: Restructure Commission [redmine:#179088]
+		- 20250227@Virgil: Drop BA functions [RedmineID: #216882]
+
 	Param's Explanation:
 		1. To update a member/batch members without GroupCommID
 EXEC [Lrf_CustomerUpdMemberComm_907] @LicenseeID=xx,@strCustID,xx,@UserID=xx,@SBComm=xx,@NGComm=xx,@RNGComm=xx, @IsUpdateNG=xx,@IsUpdateRNG=xx,@IP=xx,@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
@@ -145,8 +147,6 @@ BEGIN
 		RETURN
 	END
 	
-	DECLARE @TempLicenseeBA AS TABLE (CustID INT)
-	
 	DECLARE @TempCustID AS TABLE (CustID INT, AgentID INT, IsGroupedComm BIT, IsFinished BIT)
 	DECLARE @TempList_batch AS TABLE (CustID INT, AgentID INT, IsGroupedComm BIT)
 	
@@ -210,45 +210,11 @@ BEGIN
 		END		
 		ELSE
 		BEGIN	
-			--- separate BA member with Non-BA
-			--BA and not belong Macaubet have got SBcomm=0	
-			
-			DECLARE @strBA 	VARCHAR(MAX)
-			
-			IF @LicenseeID <> @MacauLicenseeID
-			BEGIN 
-				INSERT INTO @TempLicenseeBA (CustID)
-				SELECT t.CustID 
-				FROM @TempCustID  t
-					INNER JOIN dbo.LicenseeBAHistory ba WITH (NOLOCK) ON t.CustID=ba.CustID
-				WHERE ba.Status ='Running' AND ba.LicenseeID = @LicenseeID 
-				ORDER BY t.[CustID]
-			END	 
-				 
-			SELECT @strBA = STUFF((SELECT ',' + CAST(CustID AS VARCHAR(20))
-							FROM @TempLicenseeBA
-							FOR XML PATH('')
-							),1,1,'')
-			IF @strBA  <> ''
-			BEGIN				
-				SELECT @DiscountSettings = CAST((SELECT SportType,BetType,
-												CASE WHEN SportType = 1 THEN 0 ELSE Discount END Discount
-									FROM @tblSettings
-									FOR XML RAW('r'), ROOT('Root')		
-									) AS VARCHAR(MAX))
-									
-				EXEC CustDB.dbo.[Lrf_CustomerUpdMemberComm_Main] 
-					@strCustID=@strBA,
-					@DiscountSettings = @DiscountSettings
-					
-			END					
 			-- Non-BA and BA under Macaubet have got SBcomm=@SBcomm
 			DECLARE  @strNonBA 	VARCHAR(MAX)
 			
 			SELECT @strNonBA = STUFF((SELECT ',' + CAST(t.[CustID] AS VARCHAR(20))
 								FROM @TempCustID  t
-									LEFT JOIN @TempLicenseeBA ba ON t.CustID = ba.CustID
-								WHERE ba.CustID IS NULL
 								ORDER BY t.[CustID]
 								FOR XML PATH('')
 							),1,1,'')

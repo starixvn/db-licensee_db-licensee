@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="bodbLicenseeNet" viewers="vnteam" isFunction="0"></info>*/
+﻿/*<info serverAlias="DBCUST-bodb_Licensee" executers="wsv_lap" viewers="vnteam" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_UserLogin]
 	@UserName		VARCHAR(50),
 	@UserPwd		VARCHAR(50)		= '',	
@@ -28,6 +28,7 @@ AS
 		- 20141028@Florent: support new way to check User Login
 		- 20171002@Percy: Write more password into log [RedmineID: #83692]
 		- 20180925@Joseph: Migrate to DBCUST [Feature #99855]
+		- 20250227@Virgil: Drop BA functions [RedmineID: #216882]
 
 */
 
@@ -69,7 +70,7 @@ BEGIN
 	END
 	ELSE
 	BEGIN
-		DECLARE @LicenseeID INT, @RowCnt INT, @EnableBA BIT, @IsAllowedMemberComm BIT
+		DECLARE @LicenseeID INT, @RowCnt INT, @IsAllowedMemberComm BIT
 		
 		IF @UserRole = 'Admin'
 		BEGIN
@@ -110,7 +111,6 @@ BEGIN
 				END
 				ELSE
 				BEGIN
-					SELECT @EnableBA = EnableBA FROM dbo.LicenseeBAConfig WITH (NOLOCK) WHERE LicenseeID = @LicenseeID
 					SELECT @IsAllowedMemberComm = IsAllowedMemberComm FROM dbo.Licensees WITH (NOLOCK) WHERE LicenseeID = @LicenseeID
 
 					SELECT
@@ -122,7 +122,6 @@ BEGIN
 						@Email							AS Email,
 						@Status							AS Status,
 						@LicenseeID						AS LicenseeID,
-						ISNULL(@EnableBA, 0)			AS EnableBA,
 						ISNULL(@IsAllowedMemberComm, 0) AS IsAllowedMemberComm,
 						0								AS IsInternal
 					
