@@ -5,7 +5,6 @@ ALTER PROCEDURE [dbo].[SiteDB_Lrf_CustomerSelByCustid]
 	@custids		VARCHAR(MAX)	= NULL,
 	@PageSize		INT				= 50,
 	@PageIndex		INT				= 1,
-	@BAFilter		SMALLINT		= 0,
 	@TotalRows		INT				= 0 OUTPUT,
 	@SpecialLevel	VARCHAR(100)	= '',
 	@OddsGroups		VARCHAR(100)	= '',
@@ -29,8 +28,9 @@ AS
 		- 20240318@Bobby: HF - Filter SpecialLevel - [RedmineID: #208328]
 		- 20240618@Johnson: Restructure Commission [redmine:#179088]
 		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
+		- 20250227@Virgil: Drop BA functions [RedmineID: #216882]
+
 	Parameter's explanations:
-		+ @BAFilter: support filter BA members (0: both BA + non BA, 1: BA Members only, 2: non-BA members)
 		+ @SpecialLevel: default value '1,2,3,4,5,6,7,8,9,10' (all)
 		+ @CustomerClass: '0,1,2,3,4,5,6,7,8,9,10,11,12,13' (all)
 		+ @FullCustomerClass: '0,1,2,3,4,5,6,7,8,9,10,11,12,13' (all)
@@ -72,13 +72,11 @@ BEGIN
 	DROP TABLE IF EXISTS #TotalBalance
 	DROP TABLE IF EXISTS #LicenseeCustComm
 	DROP TABLE IF EXISTS #Dep_CustSpecialLevel
-	DROP TABLE IF EXISTS #LicenseeBAHistory
 
 	CREATE TABLE #TempAg (custid INT)
 	CREATE TABLE #tblCustList (custid INT PRIMARY KEY)
 	CREATE TABLE #LicenseeCustDiscount (LicenseeID INT, GroupDiscountID INT, CustID INT PRIMARY KEY, GroupName VARCHAR(100))
 	CREATE TABLE #Dep_CustSpecialLevel(CustID INT PRIMARY KEY, SpecialLevel INT)
-	CREATE TABLE #LicenseeBAHistory(CustID INT, Status VARCHAR(50), OffBy INT, ID INT)
 	
 	CREATE TABLE #Exchange
 	(
@@ -113,16 +111,6 @@ BEGIN
 	INSERT INTO  #Dep_CustSpecialLevel(CustID, SpecialLevel)
 	EXEC( @SQL)
 
-	SELECT @SQL = ' SELECT CustID, status, OffBy, ID
-						FROM OPENQUERY (DBCUST, '' SELECT CustID, status, OffBy, ID
-													FROM bodb_licensee.dbo.LicenseeBAHistory lc WITH(NOLOCK)
-													WHERE LicenseeID = ' +CAST(@LicenseeID AS VARCHAR(50)) + '
-															AND CustID IN (SELECT value FROM STRING_SPLIT('''''+@custids+''''','''',''''))
-												''
-						)
-					'
-	INSERT INTO  #LicenseeBAHistory(CustID, status, OffBy, ID)
-	EXEC( @SQL)
 
 	DECLARE @sporttype	TABLE (SportType INT)
 
@@ -161,9 +149,7 @@ BEGIN
 		Closed					BIT,
 		suspended				BIT,
 		nickname				NVARCHAR (50),
-		BAStatus				BIT,
 		SpecialLevel			INT,
-		IsPowerBAUserTurnoff	BIT,
 		ugroup					VARCHAR(3),
 		RowNumber				INT,
 		CustomerClass			SMALLINT		
@@ -206,12 +192,6 @@ BEGIN
 		Outstanding MONEY
 	)
 
-	DECLARE @TempBACust TABLE
-	(
-		ID		INT IDENTITY(1, 1),
-		CustID	INT
-	)
-
 	DECLARE @CustID INT, @i INT, @max INT, @LastOffBy INT
 
 	SET @OddsGroups = ISNULL(@OddsGroups, '')
@@ -220,272 +200,75 @@ BEGIN
 	SELECT @OddsGroupsC = '''' + REPLACE(@OddsGroups, ',', ''',''') + ''''
 	DECLARE @strSQL NVARCHAR(MAX)
 
-	IF @BAFilter = 0 
-	BEGIN	
-		SELECT @strSQL = 'INSERT INTO #tmpCust(custid, closed, reject, ugroup,CustomerClass)
-		SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1),ci.CustomerClass
-		FROM #TempAg t 
-			 INNER JOIN CustDB.dbo.custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
-			 INNER JOIN CustDB.dbo.Customer c WITH(NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
-		WHERE ci.roleid=1
-				AND ci.custid IN (SELECT custid FROM #tblCustList)
-				AND c.username  NOT LIKE ''%CASHOUT%''
-				AND c.username  NOT LIKE ''%01OddsAdj%''
-				AND c.username  NOT LIKE ''%01OddsBoostAdj%''
-				AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))'
+	SELECT @strSQL = 'INSERT INTO #tmpCust(custid, closed, reject, ugroup,CustomerClass)
+	SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1),ci.CustomerClass
+	FROM #TempAg t 
+			INNER JOIN CustDB.dbo.custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
+			INNER JOIN CustDB.dbo.Customer c WITH(NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
+	WHERE ci.roleid=1 
+			AND ci.custid IN (SELECT custid FROM #tblCustList)
+			AND c.username NOT LIKE ''%CashOut%''
+			AND c.username  NOT LIKE ''%01OddsAdj%''
+			AND c.username  NOT LIKE ''%01OddsBoostAdj%''
+			AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + ')) '
 				
-		IF ISNULL(@CustomerClass, '') <> ''
-		BEGIN
-			SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')' +
-							CASE WHEN @IsUncategorizedCC = 1 THEN ' OR ISNULL(ci.CustomerClass,0) NOT IN ('+  @FullCustomerClass + ')'
-										ELSE '' END
-		END 		
-			
-		--EXEC sp_executesql @strSQL
-		EXEC (@strSQL)
-
-		SELECT @strSQL = 'INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
-		SELECT c.CustID, lc.currency, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject,c.CustomerClass
-		FROM
-			#tmpCust c
-			INNER JOIN 
-			(SELECT lci.custid, lci.currency, ISNULL(lc.speciallevel,0) as speciallevel, lci.username, lci.username2 
-			 FROM CustDB.dbo.Customer lci WITH(NOLOCK) 
-				 INNER JOIN #TempAg t ON lci.recommend = t.custid
-				 LEFT JOIN #Dep_CustSpecialLevel lc ON lc.CustID = lci.CustID
-			 WHERE lci.RoleID = 1 
-			 ) lc ON lc.custid = c.custid
-		WHERE 
-			ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')'
-
-		--EXEC sp_executesql @strSQL
-		EXEC (@strSQL)
-		
-		IF @CommGroups IS NOT NULL
-		BEGIN
-			DELETE t
-			FROM #TempMember t
-				LEFT JOIN #LicenseeCustDiscount lc ON t.custid=lc.custid 
-			WHERE ISNULL(lc.GroupDiscountID,0) NOT IN (SELECT value FROM STRING_SPLIT(@CommGroups,','))		
-		END 
-		
-		IF ISNULL(@TotalRows, 0) = 0
-			SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
-
-		INSERT INTO #Temp (custid, currency, username, closed, suspended, nickname, BAStatus, SpecialLevel, ugroup, RowNumber,CustomerClass)
-		SELECT t.custid, t.currency, t.username, t.closed, t.suspended, t.nickname, CASE WHEN lb.CustID IS NULL THEN 0 ELSE 1 END AS BAStatus, t.speciallevel, t.ugroup, t.RowNumber ,t.CustomerClass 
-		FROM
-			(
-				SELECT a.custid, a.currency, a.username, a.closed, a.suspended, a.nickname, a.speciallevel, a.ugroup, a.CustomerClass, a.RowNumber  
-				FROM
-				(
-					SELECT 
-						m.custid, 
-						m.currency,
-						m.username, 
-						m.closed,
-						ISNULL(m.reject,0) AS suspended,
-						SUBSTRING(m.username2,  CHARINDEX('$',m.username2)+1, LEN(m.username2)-CHARINDEX('$',m.username2)) AS nickname,
-						m.SpecialLevel,
-						m.ugroup,
-						m.CustomerClass,
-						ROW_NUMBER() OVER (ORDER BY m.custid ASC) AS RowNumber 
-					FROM
-						#TempMember m
-				) a 
-				WHERE a.rownumber BETWEEN @rowstart AND @rowend
-			) t
-			LEFT JOIN #LicenseeBAHistory lb ON t.CustID = lb.CustID AND lb.[Status] = 'Running'
-	END
-	ELSE IF @BAFilter = 1
+	IF ISNULL(@CustomerClass, '') <> ''
 	BEGIN
-		SELECT @strSQL = 'INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
-						  SELECT ci.CustID, ci.currency, ISNULL(lc.speciallevel,0)  as speciallevel, cu.username2, cu.username, RIGHT(cu.ugroup, 1), ci.closed, ci.reject,ci.CustomerClass
-						  FROM #LicenseeBAHistory lb
-							INNER JOIN CustDB.dbo.CustInfo ci WITH(NOLOCK) ON lb.custid = ci.custid
-							INNER JOIN CustDB.dbo.Customer cu WITH(NOLOCK) ON ci.CustID = cu.custid 
-							INNER JOIN #TempAg t ON ci.recommend = t.custid
-							LEFT JOIN #Dep_CustSpecialLevel lc ON ci.custid = lc.custid								
-						 WHERE  lb.[Status] = ''Running''
-							AND ci.custid IN (SELECT custid FROM #tblCustList)		
-							AND (''' + @OddsGroups + ''' = '''' OR RIGHT(cu.ugroup,1) IN (' + @OddsGroupsC + '))
-							AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ') '
-							
-		IF ISNULL(@CustomerClass, '') <> ''
-		BEGIN
-			SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')' +
-							CASE WHEN @IsUncategorizedCC = 1 THEN ' OR ISNULL(ci.CustomerClass,0) NOT IN ('+  @FullCustomerClass + ')'
-										ELSE '' END
-		END 
-		
-		--EXEC sp_executesql @strSQL
-		EXEC (@strSQL)
-		
-		IF @CommGroups IS NOT NULL
-		BEGIN
-			DELETE t
-			FROM #TempMember t
-				LEFT JOIN #LicenseeCustDiscount lc WITH(NOLOCK) ON t.custid=lc.custid
-			WHERE ISNULL(lc.GroupDiscountID,0) NOT IN (SELECT value FROM STRING_SPLIT(@CommGroups,','))		
-		END
-		
-		IF ISNULL(@TotalRows, 0) = 0
-			SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
-
-		INSERT INTO #Temp (custid, currency, username, closed, suspended, nickname, BAStatus, SpecialLevel, ugroup,CustomerClass, RowNumber)
-		SELECT * FROM 
-		(
-			SELECT 
-				m.custid, 
-				m.currency,
-				m.username, 
-				m.closed,
-				ISNULL(m.reject, 0) AS suspended,
-				SUBSTRING(m.username2, CHARINDEX('$',m.username2)+1, LEN(m.username2)-CHARINDEX('$',m.username2)) AS nickname,
-				1 AS BAStatus, 
-				m.SpecialLevel, 
-				m.ugroup,
-				m.CustomerClass,
-				ROW_NUMBER() OVER (ORDER BY m.custid ASC) AS RowNumber 
-			FROM
-				#TempMember m 
-		) a 
-		WHERE a.rownumber BETWEEN @rowstart AND @rowend
-	END 
-	ELSE IF @BAFilter = 2
-	BEGIN
-		SELECT @strSQL = 'INSERT INTO #tmpCust(custid, closed, reject, ugroup,CustomerClass)
-		SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1),ci.CustomerClass
-		FROM #TempAg t 
-			 INNER JOIN CustDB.dbo.custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
-			 INNER JOIN CustDB.dbo.Customer c WITH(NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
-		WHERE ci.roleid=1 
-				AND ci.custid IN (SELECT custid FROM #tblCustList)
-				AND c.username NOT LIKE ''%CashOut%''
-				AND c.username  NOT LIKE ''%01OddsAdj%''
-				AND c.username  NOT LIKE ''%01OddsBoostAdj%''
-				AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + ')) '
-				
-		IF ISNULL(@CustomerClass, '') <> ''
-		BEGIN
-			SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')' +
-							CASE WHEN @IsUncategorizedCC = 1 THEN ' OR ISNULL(ci.CustomerClass,0) NOT IN ('+  @FullCustomerClass + ')'
-										ELSE '' END
-		END 		
+		SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')' +
+						CASE WHEN @IsUncategorizedCC = 1 THEN ' OR ISNULL(ci.CustomerClass,0) NOT IN ('+  @FullCustomerClass + ')'
+									ELSE '' END
+	END 		
 			
 	
-		--EXEC sp_executesql @strSQL
-		EXEC (@strSQL)
+	--EXEC sp_executesql @strSQL
+	EXEC (@strSQL)
 
-		SELECT @strSQL = 'INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
-		SELECT c.CustID, lc.currency, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject,c.CustomerClass
-		FROM
-			#tmpCust c
-			INNER JOIN 
-			(SELECT c.custid, c.currency, ISNULL(lc.speciallevel,0) as speciallevel, c.username, c.username2 
-			 FROM CustDB.dbo.Customer c WITH(NOLOCK)
-				LEFT JOIN #Dep_CustSpecialLevel lc ON c.CustID = lc.CustID			 
-				INNER JOIN #TempAg t ON c.recommend = t.custid
-			 WHERE c.RoleID = 1
-			 ) lc ON lc.custid = c.custid
-			LEFT JOIN #LicenseeBAHistory lb ON c.custid = lb.custid AND lb.[Status] = ''Running''				
-		WHERE ISNULL (lb.CustID, 0) = 0
-			AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')'
+	SELECT @strSQL = 'INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
+	SELECT c.CustID, lc.currency, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject,c.CustomerClass
+	FROM
+		#tmpCust c
+		INNER JOIN 
+		(SELECT c.custid, c.currency, ISNULL(lc.speciallevel,0) as speciallevel, c.username, c.username2 
+			FROM CustDB.dbo.Customer c WITH(NOLOCK)
+			LEFT JOIN #Dep_CustSpecialLevel lc ON c.CustID = lc.CustID			 
+			INNER JOIN #TempAg t ON c.recommend = t.custid
+			WHERE c.RoleID = 1
+			) lc ON lc.custid = c.custid			
+	WHERE ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')'
 
-		--EXEC sp_executesql @strSQL
-		EXEC (@strSQL)
+	--EXEC sp_executesql @strSQL
+	EXEC (@strSQL)
 		
-		IF @CommGroups IS NOT NULL
-		BEGIN
-			DELETE t
-			FROM #TempMember t
-				LEFT JOIN #LicenseeCustDiscount lc ON t.custid=lc.custid 
-			WHERE ISNULL(lc.GroupDiscountID,0) NOT IN (SELECT value FROM STRING_SPLIT(@CommGroups,','))		
-		END
-		
-		IF ISNULL(@TotalRows, 0) = 0
-			SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
-
-		INSERT INTO #Temp (custid, currency, username, closed, suspended, nickname, BAStatus, SpecialLevel, ugroup ,CustomerClass , RowNumber)
-		SELECT * FROM 
-		(
-			SELECT 
-				m.custid, 
-				m.currency,
-				m.username, 
-				m.closed,
-				ISNULL(m.reject,0) AS suspended,
-				SUBSTRING(m.username2, CHARINDEX('$',m.username2)+1, LEN(m.username2)-CHARINDEX('$',m.username2)) AS nickname,
-				0 AS BAStatus, 
-				m.SpecialLevel, 
-				m.ugroup,
-				m.CustomerClass,
-				ROW_NUMBER() OVER (ORDER BY m.custid ASC) AS RowNumber 
-			FROM
-				#TempMember m 
-		) a 
-		WHERE a.rownumber BETWEEN @rowstart AND @rowend
-	END
-
-	--Case 1: BA is ON
-	UPDATE #Temp SET IsPowerBAUserTurnoff = 0
-	WHERE BAStatus = 1
-
-	--Case 2: BA is OFF
-	--Case 2.1: never turn-off BA
-	UPDATE #Temp SET IsPowerBAUserTurnoff = 0
-	WHERE
-		BAStatus = 0
-		AND CustID NOT IN (
-			SELECT DISTINCT CustID 
-			FROM #LicenseeBAHistory lb
-			WHERE Status = 'Done'
-		)
-
-	--Case 2.2 turned on BA before
-	INSERT INTO @TempBACust (CustID)
-	SELECT CustID FROM #Temp
-	WHERE BAStatus = 0 AND IsPowerBAUserTurnoff IS NULL
-
-	IF (SELECT COUNT(*) FROM @TempBACust) > 0
+	IF @CommGroups IS NOT NULL
 	BEGIN
-		SELECT @i = 0
-		SELECT @max = MAX(id) FROM @TempBACust
-
-		WHILE @i < @MAX
-		BEGIN
-			SET @i = @i + 1
-			SET @LastOffBy = 0
-
-			SELECT @CustID = CustID 
-			FROM @TempBACust WHERE id = @i
-		
-			--Get last turn-off BA UserID
-			SELECT TOP 1 @LastOffBy = OffBy
-			FROM #LicenseeBAHistory l WITH(NOLOCK)
-			WHERE
-				[CustID] = @CustID AND
-				[Status] = 'Done'
-			ORDER BY ID DESC
-
-			--Check whether the Last turn-off BA is Power BA user or not
-			--If is Power BA User then only Power BA Users can turn-on again
-			IF ISNULL(@LastOffBy, 0) <> 0 AND EXISTS (
-				SELECT 1 
-				FROM DBCUST.bodb_licensee.dbo.LicenseeUserFunctions l WITH(NOLOCK)
-				WHERE
-					FunctionID = 54
-					AND UserID = ISNULL(@LastOffBy, 0)
-					AND LicenseeID = @LicenseeID
-			) 
-			BEGIN
-				UPDATE #Temp SET IsPowerBAUserTurnoff = 1 WHERE CustID = @CustID
-			END
-		END
+		DELETE t
+		FROM #TempMember t
+			LEFT JOIN #LicenseeCustDiscount lc ON t.custid=lc.custid 
+		WHERE ISNULL(lc.GroupDiscountID,0) NOT IN (SELECT value FROM STRING_SPLIT(@CommGroups,','))		
 	END
+		
+	IF ISNULL(@TotalRows, 0) = 0
+		SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
 
-	--Case 3 update the rest
-	UPDATE #Temp SET IsPowerBAUserTurnoff = 0 WHERE IsPowerBAUserTurnoff IS NULL
+	INSERT INTO #Temp (custid, currency, username, closed, suspended, nickname, SpecialLevel, ugroup ,CustomerClass , RowNumber)
+	SELECT * FROM 
+	(
+		SELECT 
+			m.custid, 
+			m.currency,
+			m.username, 
+			m.closed,
+			ISNULL(m.reject,0) AS suspended,
+			SUBSTRING(m.username2, CHARINDEX('$',m.username2)+1, LEN(m.username2)-CHARINDEX('$',m.username2)) AS nickname,
+			m.SpecialLevel, 
+			m.ugroup,
+			m.CustomerClass,
+			ROW_NUMBER() OVER (ORDER BY m.custid ASC) AS RowNumber 
+		FROM
+			#TempMember m 
+	) a 
+	WHERE a.rownumber BETWEEN @rowstart AND @rowend
+
 
 	-- translog
 	INSERT INTO #OutstandingTranslog
@@ -596,9 +379,7 @@ BEGIN
 		t.Closed,
 		t.suspended,
 		t.nickname,
-		t.BAStatus,
 		t.SpecialLevel,
-		t.IsPowerBAUserTurnoff,
 		t.RowNumber,
 		t.CustomerClass,
 		ISNULL(lc.GroupName, '') AS GroupName,	

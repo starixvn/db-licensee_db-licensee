@@ -19,7 +19,9 @@ AS
 	Revisions:
 		- 20150211@Jim: check isBA condition
 		- 20180924@Elodie: Migrate bodb_Licensee to DBCUST [Redmine:#99855]
-		- 20241213@Johnson: Apply In-house replication for Credit Setting [RedmineID: #212684]		
+		- 20241213@Johnson: Apply In-house replication for Credit Setting [RedmineID: #212684]
+		- 20250227@Virgil: Drop BA functions [RedmineID: #216882]
+
 	Param's Explanation:
 		--@ErrCode = 100: Wrong odds group,please have a check'
 		--@ErrCode = 101: Could not update odds group for this member 
@@ -45,12 +47,6 @@ BEGIN
 					 , @ErrCode = 100
 	RETURN				 
 END
-ELSE IF EXISTS (SELECT 1 FROM bodb_licensee.dbo.LicenseeBAHistory WITH (NOLOCK) WHERE CustID = @CustID AND Status = 'Running')
-	  BEGIN 
-			SELECT @ErrMsg = 'This is BA member, please check again'
-					 , @ErrCode = 102
-					RETURN	
-	  END
 ELSE
 BEGIN
 	IF LEFT (@OldUgroup,2) = 'hk'

@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+﻿/*<info serverAlias="DBLIC-bodb_Licensee" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER  PROCEDURE [dbo].[Lrf_LicenseeSel]
 	@UserID INT	
@@ -14,11 +14,12 @@ AS
 		- 20120723@Henry: add column IsAllowedMemberComm
 		- 20121024@Henry: add column ResellerID + ResellerName
 		- 20220803@Elodie: add column SiteDBGroupID
+		- 20250227@Virgil: Drop BA functions [RedmineID: #216882]
 */
 BEGIN
 	SET NOCOUNT ON
 	SELECT 
-		l.LicenseeID, l.LicenseeName, isnull(lb.EnableBA,0) EnableBA, l.IsAllowedMemberComm , r.ResellerID, r.ResellerName, si.SiteDBGroupID
+		l.LicenseeID, l.LicenseeName, l.IsAllowedMemberComm , r.ResellerID, r.ResellerName, si.SiteDBGroupID
 	FROM 
 		Licensees l with (NOLOCK)
 		INNER JOIN SystemLicensee sl (NOLOCK) ON l.LicenseeID=sl.LicenseeID 
@@ -27,7 +28,6 @@ BEGIN
 		INNER JOIN bodb02.dbo.Site si WITH (NOLOCK) ON l.LicenseeName = si.site
 		INNER JOIN (SELECT * FROM LicenseeReseller WITH (NOLOCK) WHERE ResellerID <> 3) lr  ON l.LicenseeID = lr.LicenseeID
 		INNER JOIN Resellers r WITH (NOLOCK) ON r.ResellerID = lr.ResellerID
-		LEFT JOIN LicenseeBAConfig lb with (nolock) ON lb.licenseeID = l.licenseeID
 	WHERE 
 		lu.UserID = @UserID
 		AND lu.isActive = 1

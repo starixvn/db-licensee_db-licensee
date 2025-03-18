@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+﻿/*<info serverAlias="DBEXT-bodb02" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Lrf_CustomerLoginInfo]
 	@LicenseeID		INT = 0,
 	@CustID			INT,
@@ -20,6 +20,9 @@ AS
 		- 20190411@Lukas: archive a part of old log records to new database
 		- 20190830@Johnson: Get licenseeID from sitename for LAP [redmine:#112658]
 		- 20220818@Hogan: Update bettype range to get Last Transaction [redmine:#176515]
+		- 20190830@Johnson: Get licenseeID from sitename for LAP [redmine:#112658]
+		- 20250227@Virgil: Drop BA functions [RedmineID: #216882]
+
 	Param's Explanation:	
 */
 BEGIN
@@ -64,44 +67,6 @@ BEGIN
 		END
 	END
 
------------ get last updated BA status---------------
-	DECLARE @LastUpdatedBaById INT, @LastUpdatedBaByName VARCHAR(50), @LastUpdatedBaDate DATETIME
-
-	--Running
-	SELECT TOP 1 @LastUpdatedBaDate = OnDate, @LastUpdatedBaById = OnBy
-	FROM bodb_Licensee.dbo.LicenseeBAHistory WITH (NOLOCK)
-	WHERE	LicenseeID = @LicenseeID
-			AND CustID = @CustID
-			AND [Status] = 'Running'
-	ORDER BY OnDate DESC
-		
-	IF ISNULL(@LastUpdatedBaById,0) = 0
-	BEGIN
-		--Done
-		SELECT TOP 1 @LastUpdatedBaDate = OffDate, @LastUpdatedBaById = OffBy 
-		FROM bodb_Licensee.dbo.LicenseeBAHistory WITH (NOLOCK) 
-		WHERE	LicenseeID = @LicenseeID
-				AND CustID = @CustID
-				AND [Status] = 'Done'
-		ORDER BY OffDate DESC
-	END
-
-	IF ISNULL(@LastUpdatedBaById,0) <> 0
-	BEGIN
-		IF @LastUpdatedBaDate >= @LapLaunchDate -- LAP USER
-		BEGIN
-			SELECT @LastUpdatedBaByName = UserID
-			FROM DBCUST.SiteConfig.dbo.Users WITH (NOLOCK)
-			WHERE UserSEQ = @LastUpdatedBaById AND SiteName = @SiteName
-		END
-		ELSE -- LRF USER
-		BEGIN
-			SELECT @LastUpdatedBaByName = Username 
-			FROM bodb_Licensee.dbo.Users WITH (NOLOCK)
-			WHERE UserID = @LastUpdatedBaById
-		END
-	END
-
 ----------- get last transfer date ---------------
 	DECLARE @LastTransferDate DATETIME
 
@@ -138,8 +103,6 @@ BEGIN
 		lastlogged,
 		creatdate AS createdate,
 		@LastTransferDate AS LastTransferDate,
-		@LastUpdatedBaDate AS LastUpdateBA,
-		@LastUpdatedBaByName AS BAUpdatedBy,
 		@SpecialLevelUpdateByName AS SpecialLevelUpdateBy,
 		@SpecialLevelUpdateDate AS SpecialLevelUpdateDate
 	FROM dbo.Customer WITH(NOLOCK)

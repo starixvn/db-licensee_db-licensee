@@ -15,6 +15,7 @@ AS
 		
 	Revisions:
 	- 20241101@Johnson: initial sp [redmine:#199306]
+	- 20250227@Virgil: Drop BA functions [RedmineID: #216882]
 	
 	Param's Explanation:
 */
@@ -64,7 +65,6 @@ BEGIN
 	WHERE recommend = @custid
 		AND roleid = 1
 		AND custid NOT IN (SELECT custid FROM [bodb_licensee].dbo.[LicenseeSpecialCust] WITH(NOLOCK))
-		AND custid NOT IN (SELECT custid FROM dbo.[Dep_CustBAActive] WITH(NOLOCK))
 		AND ugroup <> @oddsGroup
 	
 	BEGIN TRY			
