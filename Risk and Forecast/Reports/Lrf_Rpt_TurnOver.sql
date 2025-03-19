@@ -74,7 +74,7 @@ AS
 		- 20231127@Evan: Enhance performance [Redmine #198479]
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20240311@Eddie: Change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
-		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
+		- 20250319@Kelvin: Enhance perf [RedmineID: #207582]
 */
 
 BEGIN
@@ -493,6 +493,7 @@ BEGIN
 					FROM
 						bodb_Report.dbo.rptDepWinlostByProduct AS p WITH (NOLOCK)
 						INNER JOIN dbo.Customer AS c WITH (NOLOCK) ON p.custid = c.custid
+						CROSS APPLY (SELECT TOP 1 a.Currency FROM #TempAg AS a WHERE a.CustId = c.Recommend) a
 						INNER JOIN #TempAg AS a ON a.CustId = c.Recommend
 					WHERE p.winlostdate BETWEEN @tmpdate and @tdate
 						AND c.roleid = 1
