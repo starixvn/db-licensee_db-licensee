@@ -14,6 +14,7 @@ AS
 		- 20241701@Evan: Merge VS, VS2, VS3 as VS only [RedmineID: #199523]
 		- 20242901@Evan: Integrate VS4 [RedmineID: #199347]
 		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]
+		- 20241107@Kelvin: Integrate VS5 [RedmineID: #207582]
 */
 
 RETURN
@@ -26,5 +27,7 @@ RETURN
 	SELECT 83, 5, 'VS4' , 'VS'
 	UNION ALL
 	SELECT 71, 5, 'VS6' , 'VS'
+	UNION ALL
+	SELECT 88, 5, 'VS5' , 'VS'
 
 GO

@@ -46,6 +46,7 @@ AS
 	Revisions:
 		- 20240915@Bobby: Created [RedmineID: #209631]
 		- 20241206@Kelvin: LAP - Enhance reports showing betfrom data [Redmine: #214849]
+		- 20241107@Kelvin: Integrate VS5 [RedmineID: #207582]
 
 	Param's Explanation:
 		- @SortKey: 0:GroupBy, 1:BetCount, 2:Turnover, 3:NetTurnover, 4:MemWinloss, 5:MemComm, 6:LicWinloss, 7:LicComm, 8:(not use), 9:BetEffective, 10:Margin
@@ -507,7 +508,7 @@ BEGIN
 						WHEN s.EventType = 0 THEN
 							CASE 
 								WHEN b.matchid = 29 THEN -1 --Parlay Sport
-								WHEN b.matchid IN (2799,10449,11099) THEN b.oddsid --VS Sports
+								WHEN b.matchid IN (2799, 10449, 11099) THEN b.oddsid --VS Sports
 								ELSE ISNULL(b.matchid, @NASporttype)
 							END
 						WHEN s.EventType = 1 THEN ISNULL(saba.SabaSportType, m.sporttype)
@@ -516,7 +517,7 @@ BEGIN
 						WHEN s.EventType = 5 THEN m3rd.SportType --175-BTC Sport
 						ELSE @NASporttype
 					END AS SportType,
-					ISNULL(CASE WHEN b.bettype IN(29,2799,10449) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
+					ISNULL(CASE WHEN b.bettype IN(29, 2799, 10449, 11099) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 			) AS ck
 			OUTER APPLY (SELECT TOP 1 bf.PlatformId, IsSelect FROM @PlatformSel bf WHERE b.betfrom = bf.BetFrom) AS bf
 			INNER JOIN #tmpSettleTime st ON b.SettlementTime >= st.SettlementTime AND b.SettlementTime < st.SettlementTimeEnd

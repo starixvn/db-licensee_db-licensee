@@ -50,6 +50,7 @@ AS
 		- 20241113@Kelvin: Fix issue show VS tickets although only select all bettypes of Sportsbook  [RedmineID: #213614]
 		- 20241206@Kelvin: LAP - Enhance reports showing betfrom data [Redmine: #214849]
 		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
+		- 20241107@Kelvin: Integrate VS5 [RedmineID: #207582]
 		
 
 	Param's Explanation:
@@ -499,9 +500,8 @@ BEGIN
 						CASE 
 							WHEN s.EventType = 0 THEN
 								CASE 
-									WHEN b.matchid = 29 THEN -1 --Parlay Sport
-									WHEN b.matchid = 2799 THEN b.oddsid --VS Sports
-									WHEN b.matchid = 10449 THEN 188 --VS4 
+									WHEN b.matchid = 29 THEN -1 --Parlay Sport									
+									WHEN b.matchid in (2799,10449,11099) THEN b.oddsid --VS Sports
 									ELSE b.matchid
 								END
 							WHEN s.EventType = 1 THEN ISNULL(saba.SabaSportType, m.sporttype)
@@ -510,7 +510,7 @@ BEGIN
 							WHEN s.EventType = 5 THEN m3rd.SportType --175-BTC Sport
 							ELSE @NASporttype
 						END AS SportType,
-						ISNULL(CASE WHEN b.bettype IN(29,2799,10449) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
+						ISNULL(CASE WHEN b.bettype IN(29,2799,10449,11099) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 				) AS ck
 				OUTER APPLY (SELECT TOP 1 bf.PlatformId, IsSelect FROM @PlatformSel bf WHERE b.betfrom = bf.BetFrom) AS bf
 			WHERE b.winlostdate BETWEEN @rptFromDate AND @rptToDate

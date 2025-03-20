@@ -35,6 +35,7 @@ AS
 		- 20242901@Evan: Integrate VS4 [RedmineID: #199347]
 		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]
 		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
+		- 20241107@Kelvin: Integrate VS5 [RedmineID: #207582]
 		
 	Param's Explanation:
 		- @ProductCodes = '' - Get all
@@ -104,6 +105,9 @@ BEGIN
 		UNION ALL
 		SELECT Id, NULL, 999
 		FROM dbo.Lrf_f_GetSportTypeByProduct('VS6')
+		UNION ALL
+		SELECT Id, NULL, 999
+		FROM dbo.Lrf_f_GetSportTypeByProduct('VS5')
 	END
 
 	-- NG --
