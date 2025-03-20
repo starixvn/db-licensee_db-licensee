@@ -491,9 +491,9 @@ BEGIN
 						SUM(ISNULL(p.drawTO, 0)) AS DrawGame,
 						SUM(ISNULL(p.playercomm, 0)) AS PlayerComm
 					FROM
-						bodb_Report.dbo.rptDepWinlostByProduct AS p WITH (NOLOCK)
-						INNER JOIN dbo.Customer AS c WITH (NOLOCK) ON p.custid = c.custid
-						CROSS APPLY (SELECT TOP 1 a.Currency FROM #TempAg AS a WHERE a.CustId = c.Recommend) a
+						#TempAg a
+						INNER JOIN dbo.Customer AS c WITH (NOLOCK) ON c.Recommend = a.custid
+						INNER JOIN bodb_Report.dbo.rptDepWinlostByProduct AS p WITH (NOLOCK) ON p.CustID = c.custid
 					WHERE p.winlostdate BETWEEN @tmpdate and @tdate
 						AND c.roleid = 1
 						AND p.sporttype IN (SELECT SportType FROM @SportType)
