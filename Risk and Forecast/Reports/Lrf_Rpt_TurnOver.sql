@@ -483,21 +483,22 @@ BEGIN
 				;WITH sourceDATA AS
 				(
 					SELECT
-						p.winlostdate,
+						t.winlostdate,
 						a.currency,
-						SUM(ISNULL(p.Turnover, 0)) AS Turnover,
-						SUM(ISNULL(p.OutStanding, 0)) AS PendingFund,
-						SUM(ISNULL(p.winlost, 0)) AS Winloss,
-						SUM(ISNULL(p.drawTO, 0)) AS DrawGame,
-						SUM(ISNULL(p.playercomm, 0)) AS PlayerComm
+						SUM(ISNULL(t.Turnover, 0)) AS Turnover,
+						SUM(ISNULL(t.OutStanding, 0)) AS PendingFund,
+						SUM(ISNULL(t.Winloss, 0)) AS Winloss,
+						SUM(ISNULL(t.DrawGame, 0)) AS DrawGame,
+						SUM(ISNULL(t.playercomm, 0)) AS PlayerComm
 					FROM
-						#TempAg a
-						INNER JOIN dbo.Customer AS c WITH (NOLOCK) ON c.Recommend = a.custid
-						INNER JOIN bodb_Report.dbo.rptDepWinlostByProduct AS p WITH (NOLOCK) ON p.CustID = c.custid
-					WHERE p.winlostdate BETWEEN @tmpdate and @tdate
-						AND c.roleid = 1
-						AND p.sporttype IN (SELECT SportType FROM @SportType)
-					GROUP BY p.winlostdate,
+						bodb_Report.dbo.rptDepWinlost_Trans t WITH (NOLOCK)
+						INNER JOIN bodb_Report.dbo.rptDepWinlost_Main m WITH (NOLOCK)
+							ON t.Winlostdate = m.Winlostdate AND t.CustID = m.CustID
+						INNER JOIN #TempAg a ON a.custid = m.recommend
+					WHERE t.winlostdate BETWEEN @tmpdate and @tdate
+						AND t.SportType != -1 AND t.PartnerID = -1
+						AND t.sporttype IN (SELECT SportType FROM @SportType)
+					GROUP BY t.winlostdate,
 						a.currency
 				)
 				UPDATE #tmpRpt
