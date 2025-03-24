@@ -52,3 +52,11 @@ Risk and Forecast\Reports\Winloss Analysis\dbo.LAP_Rpt_WinlossAnalysis_PlayerSel
 Risk and Forecast\Statement\dbo.LAP_Statement_Mem_Product.sql
 Risk and Forecast\Statement\dbo.Lrf_Statement_Mem.sql
 Risk and Forecast\Reports\Winloss Analysis\SettlementTime\dbo.LAP_Rpt_WinlossAnalysis_SettleTimeSel.sql
+Risk and Forecast\Reports\Lrf_Rpt_CustomerTurnOver.sql
+Risk and Forecast\Reports\Lrf_Rpt_CustomerTurnOver_MonthlyPagination.sql
+Risk and Forecast\Reports\Lrf_Rpt_CustomerTurnOver_Pagination.sql
+Risk and Forecast\Reports\Lrf_Rpt_CustomerTurnOver_SumMember.sql
+Risk and Forecast\Reports\Lrf_Rpt_CustomerTurnOver_SumTotal.sql
+Risk and Forecast\Reports\Common\Lrf_SelBetTypesByProduct.sql
+Risk and Forecast\Reports\Winloss Analysis\dbo.LAP_f_WinlossAnalysis_BettypeMatrix.sql
+Risk and Forecast\Reports\Winloss Analysis\dbo.LAP_Rpt_WInlossAnalysis_BettypeSel.sql

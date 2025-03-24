@@ -30,6 +30,7 @@ AS
 		- 20240416@Evan: Integrate Saba Coins - add param @ReportViewType [RedmineID: #202281]
 		- 20240808@Kelvin: Add new bettype 11009 for "Saba Nickname Edited" - change bettype range [11001 -> 11049] [RedmineID: #209038]
 		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
+		- 20250314@Kelvin: Integrate Saba Promotion - Number Game Lucky Draw Promotion [RedmineID: #219835]
 
 	Param's Explanation:
 		- @ModeView: TINYINT
@@ -78,7 +79,7 @@ BEGIN
     
     INSERT INTO @PROMO_BETTPE (betTypeId)
 	SELECT b.typeid FROM bettype b WITH(NOLOCK) 
-	WHERE b.typeid BETWEEN 17000 AND 17010
+	WHERE b.typeid BETWEEN 17000 AND 17099
 		OR b.typeid BETWEEN 11001 AND 11049
 
 	SELECT @_custID		= @CustID
