@@ -10,9 +10,6 @@ Risk and Forecast\Reports\LRF_Rpt_AGCasinoWinloss_Mem.sql
 Risk and Forecast\Reports\Lrf_Rpt_ExchangeWinloss.sql
 Risk and Forecast\Reports\Lrf_Rpt_ExchangeWinloss_Ag.sql
 Risk and Forecast\Reports\Lrf_Rpt_ExchangeWinloss_Mem.sql
-Risk and Forecast\Reports\Lrf_Rpt_ExtraPayout.sql
-Risk and Forecast\Reports\Lrf_Rpt_ExtraPayout_Mem.sql
-Risk and Forecast\Reports\Lrf_Rpt_ExtraPayout_Mem_Detail.sql
 Risk and Forecast\Reports\Lrf_Rpt_LicWinlossByTimeZone.sql
 Risk and Forecast\Reports\Lrf_Rpt_LiveReportBySport.sql
 Risk and Forecast\Reports\Lrf_Rpt_LiveReportSummary.sql
@@ -49,8 +46,6 @@ Risk and Forecast\Reports\LiveReport\Lrf_Rpt_LiveReportDetail.sql
 Risk and Forecast\Reports\SiteDB\SiteDB_Lrf_Rpt_Outstanding.sql
 Risk and Forecast\Reports\Winloss Analysis\dbo.LAP_Rpt_WinlossAnalysis_AgencySel.sql
 Risk and Forecast\Reports\Winloss Analysis\dbo.LAP_Rpt_WinlossAnalysis_PlayerSel.sql
-Risk and Forecast\Statement\dbo.LAP_Statement_Mem_Product.sql
-Risk and Forecast\Statement\dbo.Lrf_Statement_Mem.sql
 Risk and Forecast\Reports\Winloss Analysis\SettlementTime\dbo.LAP_Rpt_WinlossAnalysis_SettleTimeSel.sql
 Risk and Forecast\Reports\Lrf_Rpt_CustomerTurnOver.sql
 Risk and Forecast\Reports\Lrf_Rpt_CustomerTurnOver_MonthlyPagination.sql
