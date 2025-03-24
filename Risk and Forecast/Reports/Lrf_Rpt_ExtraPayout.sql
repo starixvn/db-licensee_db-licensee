@@ -36,6 +36,7 @@ AS
 		- 20250213@Kelvin: Integrate ASKMESLOT [RedmineID: #217785]
 		- 20250314@Kelvin: Integrate Saba Promotion - Number Game Lucky Draw Promotion [RedmineID: #219835]
 		- 20250326@Kelvin: Add new Saba Promotion for Sportsbook - NBA event [RedmineID: #221485]
+		- 20250320@Kelvin: Integrate HOTDOG [RedmineID: #219979]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -77,6 +78,7 @@ AS
 			- 8901: FACHAI - Promotion Prize (BetType: 11399)
 			- 101: Sportsbook - Odds Boost Adjustment (BetType: 997)
 			- 10301: ASKMESLOT - Promotion Prize (BetType: 15199)
+			- 9501: HOTDOG - Promotion Prize (BetType: 11999)
 
 		+ @ReportType: 1: Daily, 2: Monthly
 */
@@ -180,6 +182,7 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,8901,%' AND BetType = 11399 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,101,%'  AND BetType = 997 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10301,%' AND BetType = 15199 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,9501,%' AND BetType = 11999 THEN 1
 				ELSE 0
 			END
 
