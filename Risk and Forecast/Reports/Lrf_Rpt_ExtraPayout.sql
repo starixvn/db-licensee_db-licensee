@@ -35,6 +35,7 @@ AS
 		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
 		- 20250213@Kelvin: Integrate ASKMESLOT [RedmineID: #217785]
 		- 20250314@Kelvin: Integrate Saba Promotion - Number Game Lucky Draw Promotion [RedmineID: #219835]
+		- 20250326@Kelvin: Add new Saba Promotion for Sportsbook - NBA event [RedmineID: #221485]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -57,6 +58,8 @@ AS
 			- 3709: Promotion Jackpot Prize (BetType: 17009)
 			- 3710: Promotion Cash Prize (BetType: 17010)
 			- 3711: Number Game Lucky Draw Promotion (BetType: 17031)
+			- 3712: NBA Playoffs Lottery (BetType: 17011)
+			- 3713: Balance Adjustment (BetType: 17012)
 			- 3901: SA Gaming - Tip (BetType: 3007)
 			- 4201: Saba.club - Free Bets (SportType: 150)
 			- 4202: Saba.club - Jackpot Prize (BetType: 1699)
@@ -159,6 +162,8 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3709,%' AND BetType = 17009 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3710,%' AND BetType = 17010 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3711,%' AND BetType = 17031 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3712,%' AND BetType = 17011 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3713,%' AND BetType = 17012 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3901,%' AND BetType = 3007 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4201,%' AND ProductPrefix = 'SBC' AND BetType NOT IN (1698, 1699) THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4202,%' AND BetType = 1699 THEN 1
