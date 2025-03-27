@@ -29,6 +29,7 @@ RETURNS TABLE
 		- 20240812@Bobby: Grant wsv_lap permission [RedmineID: #209041]
 		- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #199292]
 		- 20250213@Kelvin: Integrate ASKMESLOT [RedmineID: #217785]
+		- 20250314@Kelvin: Integrate Saba Promotion - Number Game Lucky Draw Promotion [RedmineID: #219835]
 
 */
 
@@ -60,6 +61,8 @@ RETURN
 	SELECT 'SPR', 17009									-- Promotion Jackpot Prize
 	UNION ALL
 	SELECT 'SPR', 17010									-- Promotion Cash Prize
+	UNION ALL
+	SELECT 'SPR', 17031									-- Number Game Lucky Draw Promotion
 	UNION ALL
 	SELECT 'SAG', 3007									-- SA Gaming Tip ticket
 	UNION ALL
