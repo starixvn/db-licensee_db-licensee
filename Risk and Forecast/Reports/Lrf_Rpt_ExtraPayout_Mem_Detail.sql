@@ -34,6 +34,7 @@ AS
 		- 20250314@Kelvin: Integrate Saba Promotion - Number Game Lucky Draw Promotion [RedmineID: #219835]
 		- 20250326@Kelvin: Add new Saba Promotion for Sportsbook - NBA event [RedmineID: #221485]
 		- 20250320@Kelvin: Integrate HOTDOG [RedmineID: #219979]
+		- 20250402@Kelvin: Integrate Microgaming Live product [RedmineID: #222437]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -75,6 +76,7 @@ AS
 			- 8901: FACHAI - Promotion Prize (BetType: 11399)
 			- 10301: ASKMESLOT - Promotion Prize (BetType: 15199)
 			- 9501: HOTDOG - Promotion Prize (BetType: 11999)
+			- 10701: Microgaming Live - Promotion Prize (BetType: 13995)
 */
 
 BEGIN
@@ -151,6 +153,7 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,8901,%' AND BetType = 11399 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10301,%' AND BetType = 15199 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,9501,%' AND BetType = 11999 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10701,%' AND BetType = 13995 THEN 1
 				ELSE 0
 			END
 
@@ -230,6 +233,7 @@ BEGIN
 				WHEN b.bettype = 11399 THEN 8901
 				WHEN b.bettype = 15199 THEN 10301
 				WHEN b.bettype = 11999 THEN 9501
+				WHEN b.bettype = 13995 THEN 10701
 				ELSE 0
 			END AS PromotionType,
 			CASE
@@ -317,6 +321,7 @@ BEGIN
 				WHEN b.bettype = 11399 THEN 8901
 				WHEN b.bettype = 15199 THEN 10301
 				WHEN b.bettype = 11999 THEN 9501
+				WHEN b.bettype = 13995 THEN 10701
 				ELSE 0
 			END AS PromotionType,
 			CASE
@@ -398,6 +403,7 @@ BEGIN
 				WHEN b.bettype = 11399 THEN 8901
 				WHEN b.bettype = 15199 THEN 10301
 				WHEN b.bettype = 11999 THEN 9501
+				WHEN b.bettype = 13995 THEN 10701
 				ELSE 0
 			END AS PromotionType,
 			CASE

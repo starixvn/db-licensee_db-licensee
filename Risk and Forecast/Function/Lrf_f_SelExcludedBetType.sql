@@ -32,6 +32,7 @@ RETURNS TABLE
 		- 20250314@Kelvin: Integrate Saba Promotion - Number Game Lucky Draw Promotion [RedmineID: #219835]
 		- 20250213@Kelvin: Add new Saba Promotion for Sportsbook - NBA event [RedmineID: #221485]
 		- 20250320@Kelvin: Integrate HOTDOG [RedmineID: #219979]
+		- 20250402@Kelvin: Integrate Microgaming Live product [RedmineID: #222437]
 
 
 */
@@ -106,4 +107,6 @@ RETURN
 	SELECT 'ASK', 15199									-- ASKMESLOT promotion prize
 	UNION ALL
 	SELECT 'HOT', 11999									-- HOTDOG promotion prize
+	UNION ALL
+	SELECT 'MGLC', 13995								-- Microgaming Live promotion prize
 GO
