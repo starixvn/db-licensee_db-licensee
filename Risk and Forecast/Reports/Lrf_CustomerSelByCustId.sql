@@ -36,6 +36,7 @@ AS
 		- 20240614@Johnson: Restructure Commission [redmine:#179088]
 		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
 		- 20250227@Virgil: Drop BA functions [RedmineID: #216882]
+		- 20250408@Kelvin: Upgrade ExchangeId Datatype [RedmineID: #222339]
 
 	Parameter's explanations:
 		+ @SpecialLevel: default value '1,2,3,4,5,6,7,8,9,10' (all)
@@ -93,7 +94,7 @@ BEGIN
 	
 		INSERT INTO #TempAg(CustId)
 		SELECT AgentId
-		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [INT], Currency INT) AS Data
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [INT], Currency SMALLINT) AS Data
 
 		EXEC sp_xml_removedocument @DocHandler
 	END TRY
@@ -112,7 +113,7 @@ BEGIN
 	CREATE TABLE #Temp
 	(
 		CustId					INT PRIMARY KEY,
-		Currency				TINYINT,
+		Currency				SMALLINT,
 		Username				NVARCHAR (50),
 		Closed					BIT,
 		suspended				BIT,
@@ -135,7 +136,7 @@ BEGIN
 	CREATE TABLE #OutstandingTranslog
 	(
 		Custid			INT,
-		Currency		INT,
+		Currency		SMALLINT,
 		statusID		TINYINT,
 		actual_stake	MONEY
 	)
@@ -143,7 +144,7 @@ BEGIN
 	CREATE TABLE #TempMember
 	(
 		CustID			INT PRIMARY KEY CLUSTERED,
-		currency		TINYINT,
+		currency		SMALLINT,
 		speciallevel	INT,
 		username2		VARCHAR(50),
 		username		VARCHAR(50),
