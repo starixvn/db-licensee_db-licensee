@@ -30,6 +30,7 @@ RETURNS TABLE
 		- 20240910@Kelvin: Support Odds Boost Voucher [RedmineID: #199292]
 		- 20250213@Kelvin: Integrate ASKMESLOT [RedmineID: #217785]
 		- 20250314@Kelvin: Integrate Saba Promotion - Number Game Lucky Draw Promotion [RedmineID: #219835]
+		- 20250213@Kelvin: Add new Saba Promotion for Sportsbook - NBA event [RedmineID: #221485]
 
 */
 
@@ -63,6 +64,10 @@ RETURN
 	SELECT 'SPR', 17010									-- Promotion Cash Prize
 	UNION ALL
 	SELECT 'SPR', 17031									-- Number Game Lucky Draw Promotion
+	UNION ALL
+	SELECT 'SPR', 17011									-- NBA Playoffs Lottery
+	UNION ALL
+	SELECT 'SPR', 17012									-- Balance Adjustment
 	UNION ALL
 	SELECT 'SAG', 3007									-- SA Gaming Tip ticket
 	UNION ALL
