@@ -5,7 +5,7 @@ ALTER PROCEDURE [dbo].[Lrf_GetLicenseeWLByPlatform]
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
-	@ProductList	VARCHAR(100),
+	@ProductList	VARCHAR(1000),
 	@BaseCurrency	VARCHAR(12) = '',
 	@SpecialPlatform TINYINT = 0
 AS
@@ -46,6 +46,7 @@ AS
 		- 20240311@Eddie: Change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
 		- 20241206@Kelvin: LAP - Enhance reports showing betfrom data [Redmine: #214849]
 		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
+		- 20250311@Kelvin: Integrate Virtual Sports 7 - Kiron [RedmineID: #219083]
 		
 	Param explanation:
 		- @ProductList: SB and all products grouped under SB (SB,SLT,...)
