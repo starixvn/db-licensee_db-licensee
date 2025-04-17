@@ -59,6 +59,7 @@ AS
 		- 20241001@Kelvin: LAP - Integrate BetRadar Virtual Horses & Dogs Racing [RedmineID: #210808]
 		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]
 		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
+		- 20250417@Kelvin: LAP - Support Commission for ASKMESLOT, Funky Games, HOTDOG [RedmineID: #221461]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -342,7 +343,7 @@ BEGIN
 			b.currency,
 			bt.ProductCode
 
-		IF @_Date BETWEEN @MoveBetsDay AND @BalanceUpDay	-- bettrans14
+		IF @_Date BETWEEN @BalanceUpDay AND @MoveBetsDay -- bettrans14
 		BEGIN
 			IF EXISTS(SELECT TOP(1) 1 FROM @Data WHERE EventType = 1)
 			BEGIN
