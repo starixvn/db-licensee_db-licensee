@@ -32,10 +32,14 @@ AS
 	 - 20230804@Tacy: LAP - Offer Player Commission to Yeebet, MG-RNG [redmine: #192203]
 	 - 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 	 - 20240408@Johnson: Restructure Commission [redmine:#179088]
+	 - 20250408@Tacy: Tuning SP [redmine:#221461]
+
 	Parameter's Explaination: 
 */  
 BEGIN  
 	SET NOCOUNT ON;  
+
+	CREATE TABLE #TmpDiscountGroup (GroupDiscountID INT PRIMARY KEY, NumberOfCustomer INT)
 	CREATE TABLE #Result (GroupDiscountID INT PRIMARY KEY, GroupName VARCHAR(100), GroupColor VARCHAR(20),NumberOfCustomer INT,IsDefault BIT)
 	DECLARE @SportBetype TABLE (sporttype SMALLINT, bettype INT, ProductPrefix VARCHAR(20))
 	
@@ -44,8 +48,8 @@ BEGIN
 		CASE WHEN SportType = 1 AND Bettype = 1 THEN 'SB'
 			WHEN SportType = 1 AND Bettype = 9 THEN 'Parlay'
 			WHEN SportType = 161 AND Bettype = 81 THEN 'NG' ELSE p.ProductPrefix END
-	FROM CustDB.dbo.Dep_ProductSetting d WITH(NOLOCK)
-		INNER JOIN CustDB.dbo.Dep_ProductSettingDetail dp WITH(NOLOCK) 
+	FROM GlobCustDB.dbo.Dep_ProductSetting d WITH(NOLOCK)
+		INNER JOIN GlobCustDB.dbo.Dep_ProductSettingDetail dp WITH(NOLOCK) 
 			ON d.ProductSettingID = dp.ProductSettingID
 		LEFT JOIN Product3rd p WITH(NOLOCK) ON d.ProductID = p.ProductID
 	WHERE SettingType = 9
@@ -54,6 +58,12 @@ BEGIN
 				
 	SELECT @GroupName = ltrim(rtrim(@GroupName))
 	
+	INSERT INTO #TmpDiscountGroup (GroupDiscountID, NumberOfCustomer)
+	SELECT GroupDiscountID, COUNT(1) AS NumberOfCustomer
+	FROM LicenseeCustDiscount WITH (NOLOCK)
+	WHERE LicenseeID = @LicenseeID
+	GROUP BY GroupDiscountID
+
 	INSERT INTO #Result(GroupDiscountID,GroupName,GroupColor,NumberOfCustomer,IsDefault)
 	SELECT g.GroupDiscountID
 		,g.GroupName		
@@ -61,10 +71,7 @@ BEGIN
 		,ISNULL(c.NumberOfCustomer,0) AS NumberOfCustomer
 		,g.IsDefault 
 	FROM dbo.LicenseeGroupDiscount g WITH (NOLOCK)   
-		LEFT JOIN (	SELECT COUNT(1) AS NumberOfCustomer, GroupDiscountID
-					FROM LicenseeCustDiscount (NOLOCK)
-					WHERE LicenseeID = @LicenseeID
-					GROUP BY GroupDiscountID) c ON g.GroupDiscountID=c.GroupDiscountID  
+		LEFT JOIN #TmpDiscountGroup c ON g.GroupDiscountID=c.GroupDiscountID  
 	WHERE   
 		IsActive = 1   
 		AND (@GroupName='' OR (@GroupName<>'' AND GroupName LIKE '%' + @GroupName + '%'))  
