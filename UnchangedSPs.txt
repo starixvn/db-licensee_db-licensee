@@ -22,7 +22,6 @@ Risk and Forecast\Reports\api\LAP_API_PlayerWinlossByProduct.sql
 Risk and Forecast\Reports\Lrf_Rpt_LiveReportBySport.sql
 Risk and Forecast\Reports\LiveReport\Lrf_Rpt_LiveReportBySportType.sql
 Risk and Forecast\Reports\Winloss Analysis\SettlementTime\dbo.LAP_Rpt_WinlossAnalysis_SettleTimeSel.sql
-Risk and Forecast\Reports\Lrf_Rpt_CustomerTurnOver.sql
 Risk and Forecast\Reports\Lrf_Rpt_MatchWinLoss.sql
 Risk and Forecast\Reports\Lrf_Rpt_MatchWinLossByBettype.sql
 Risk and Forecast\Reports\Lrf_Rpt_MatchWinLossDetail.sql
