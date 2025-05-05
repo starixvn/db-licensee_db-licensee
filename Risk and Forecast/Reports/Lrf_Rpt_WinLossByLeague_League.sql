@@ -7,7 +7,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_WinLossByLeague_League]
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME,
 	@BalanceUpDay	SMALLDATETIME,
-	@ProductList	VARCHAR(100)	= '',
+	@ProductList	VARCHAR(1000)	= '',
 	@SportTypeList	VARCHAR(500)	= '',
 	@BetTypeList	XML = '',
 	@LeagueName		NVARCHAR(100)	= N'',
@@ -36,6 +36,7 @@ AS
 		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
 		- 20250217@Kelvin: Win Loss By League - Support Virtual Sports [RedmineID: #217407]
 		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
+		- 20250311@Kelvin: Integrate Virtual Sports 7 - Kiron [RedmineID: #219083]
 
 	Param's Explanation:
 		- @SportTypeList: sporttype list separated by ','

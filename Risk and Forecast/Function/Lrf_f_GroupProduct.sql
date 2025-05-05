@@ -15,6 +15,7 @@ AS
 		- 20242901@Evan: Integrate VS4 [RedmineID: #199347]
 		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]
 		- 20241107@Kelvin: Integrate VS5 [RedmineID: #207582]
+		- 20250311@Kelvin: Integrate Virtual Sports 7 - Kiron [RedmineID: #219083]
 */
 
 RETURN
@@ -29,5 +30,7 @@ RETURN
 	SELECT 71, 5, 'VS6' , 'VS'
 	UNION ALL
 	SELECT 88, 5, 'VS5' , 'VS'
+	UNION ALL
+	SELECT 106, 5, 'VS7' , 'VS'
 
 GO

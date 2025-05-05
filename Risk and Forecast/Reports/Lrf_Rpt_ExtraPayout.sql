@@ -6,7 +6,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_ExtraPayout]
 	@FromDate			SMALLDATETIME,
 	@ToDate				SMALLDATETIME,
 	@MoveBetsDay		SMALLDATETIME,
-	@ProductList		VARCHAR(100)	= '',
+	@ProductList		VARCHAR(1000)	= '',
 	@PromotionTypeList	VARCHAR(500)	= '',
 	@ReportType			TINYINT			= 1,
 	@BaseCurrency		VARCHAR(12)		= ''
@@ -38,6 +38,7 @@ AS
 		- 20250326@Kelvin: Add new Saba Promotion for Sportsbook - NBA event [RedmineID: #221485]
 		- 20250320@Kelvin: Integrate HOTDOG [RedmineID: #219979]
 		- 20250402@Kelvin: Integrate Microgaming Live product [RedmineID: #222437]
+		- 20250311@Kelvin: Integrate Virtual Sports 7 - Kiron [RedmineID: #219083]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','

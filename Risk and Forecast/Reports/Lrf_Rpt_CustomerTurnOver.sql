@@ -100,6 +100,7 @@ AS
 		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]
 		- 20250117@Kelvin: BetBy - Change from Multiple Odds to Decimal Odds (VS6) [RedmineID: #216783]
 		- 20241107@Kelvin: Integrate VS5 [RedmineID: #207582]
+		- 20250311@Kelvin: Remove multi odds VS2 [RedmineID: #219083]
 		
 	Parameter's Explanation:
 		- @ReportBy: 1: daily, 2: monthly
@@ -404,7 +405,6 @@ BEGIN
 			OR bettype = 428 -- 2H Odd/Even
 			OR (bettype BETWEEN 603 AND 607 OR bettype BETWEEN 609 AND 613 OR bettype BETWEEN 615 AND 617) -- Basketball bettypes
 			OR bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
-			OR bettype BETWEEN 2770 AND 2789 -- Virtual Sport 2: Virtual Horses & Dogs Racing
 			OR bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
 			OR bettype BETWEEN 5302 AND 5399 -- Virtual Sport 3 (LG)
 			OR bettype BETWEEN 10400 AND 10448 -- Virtual Sport 4

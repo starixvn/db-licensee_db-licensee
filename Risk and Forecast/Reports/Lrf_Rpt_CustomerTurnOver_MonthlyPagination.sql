@@ -55,6 +55,7 @@ AS
 		- 20241001@Kelvin: LAP - Integrate BetRadar Virtual Horses & Dogs Racing [RedmineID: #210808]
 		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]
 		- 20250117@Kelvin: BetBy - Change from Multiple Odds to Decimal Odds (VS6) [RedmineID: #216783]
+		- 20250311@Kelvin: Remove multi odds VS2 [RedmineID: #219083]
 */
 
 BEGIN
@@ -179,7 +180,6 @@ BEGIN
 									OR b.bettype = 428 -- 2H Odd/Even
 									OR (b.bettype BETWEEN 603 AND 607 OR b.bettype BETWEEN 609 AND 613 OR b.bettype BETWEEN 615 AND 617) -- Basketball bettypes
 									OR b.bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
-									OR b.bettype BETWEEN 2770 AND 2789 -- Virtual Sport 2: Virtual Horses & Dogs Racing
 									OR b.bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
 									OR b.bettype BETWEEN 5302 AND 5399 -- Virtual Sport 3 (LG)
 									OR b.bettype BETWEEN 10400 AND 10448 -- Virtual Sport 4
@@ -312,7 +312,6 @@ BEGIN
 										OR b.bettype = 428 -- 2H Odd/Even
 										OR (b.bettype BETWEEN 603 AND 607 OR b.bettype BETWEEN 609 AND 613 OR b.bettype BETWEEN 615 AND 617) -- Basketball bettypes
 										OR b.bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
-										OR b.bettype BETWEEN 2770 AND 2789 -- Virtual Sport 2: Virtual Horses & Dogs Racing
 										OR b.bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
 										OR b.bettype BETWEEN 5302 AND 5399 -- Virtual Sport 3 (LG)
 										OR b.bettype BETWEEN 10400 AND 10448 -- Virtual Sport 4
