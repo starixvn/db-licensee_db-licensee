@@ -9,6 +9,7 @@ AS
 
 	Revisions:
 		- 20240915@Bobby: Created [RedmineID: #209631]
+		- 20250311@Kelvin: Integrate Virtual Sports 7 - Kiron [RedmineID: #219083]
 */
 
 RETURN
@@ -26,6 +27,8 @@ RETURN
 			SELECT 'VS5', 'VS'
 			UNION ALL
 			SELECT 'VS6', 'VS'
+			UNION ALL
+			SELECT 'VS7', 'VS'
 			UNION ALL
 			SELECT 'SB', 'SB'
 			UNION ALL
