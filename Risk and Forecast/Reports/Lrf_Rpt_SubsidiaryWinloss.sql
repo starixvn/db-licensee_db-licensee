@@ -44,6 +44,7 @@ AS
 		- 20240311@Eddie: Change 'bodbLicenseeNet' to 'wsv_lap' account [RedmineID: #201098]
 		- 20240508@Bobby: Integrate Saba Kabaddi [RedmineID: #203612]
 		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
+		- 20250425@Kelvin: Integrate Saba Soccer Marble [RedmineID: #225015]
 
 	Param's Explanation:
 		+ @MoveBetsDay: The day we move tickets to bettrans14
@@ -110,11 +111,6 @@ BEGIN
 	DECLARE @IsTest BIT = 0
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
-	DECLARE @CutoffDate SMALLDATETIME;
-	SELECT @CutoffDate = CutoffDate
-	FROM dbo.Lrf_f_GetCutOffDate()
-	WHERE TypeName = 'SabaTennis'
-
 	DECLARE @ShowSB BIT = 0
 
 	SELECT @ShowSB = CASE WHEN ',' + @ProductList + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END
@@ -142,6 +138,25 @@ BEGIN
 	WHERE SportType NOT IN (150, 173)
 	-----End Get SportBettypeMatrix
 
+	/* Get Saba Sport */
+	-----------------------------------------------------------------------------------------------------------------------------------------------------------
+	CREATE TABLE #SabaSporttype (SabaSportType INT, SportType INT, LeagueGroupID INT, CutOffDate SMALLDATETIME);
+
+	INSERT INTO #SabaSporttype (SabaSportType, SportType, LeagueGroupID, CutOffDate)
+	SELECT saba.SabaSportType, t.SportType, t.LeagueGroupID, saba.CutOffDate
+	FROM bodb02.[dbo].[LAP_f_WinlossAnalysis_SabaSportSel] () AS saba
+	OUTER APPLY
+	(
+		SELECT Sporttype, LeagueGroupID
+		FROM OPENJSON(saba.SporttypeRef)
+		WITH (Sporttype INT '$.Sporttype', 
+			LeagueGroupIDs NVARCHAR(MAX) '$.LeagueGroupID' AS JSON
+		)
+		OUTER APPLY OPENJSON(LeagueGroupIDs) WITH (LeagueGroupID INT '$')
+	) AS t
+	WHERE saba.IsShowUI = 1
+	-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
 	-- Group products under SB into SB
 	DECLARE @SBProductList VARCHAR(100) = 'SB'
 
@@ -157,18 +172,12 @@ BEGIN
 	WHERE ProductCode <> 'SB'
 		AND ',' + @SBProductList + ',' LIKE '%,' + ProductCode + ',%'
 
-	CREATE TABLE #SabaVirtualSportsLeague (LeagueId INT, PRIMARY KEY (LeagueId), SportType TINYINT, LeagueGroupID SMALLINT)
+	CREATE TABLE #SabaVirtualSportsLeague (LeagueId INT, PRIMARY KEY (LeagueId), SportType TINYINT, LeagueGroupID SMALLINT, CutOffDate SMALLDATETIME)
 
-	INSERT INTO #SabaVirtualSportsLeague
-	SELECT LeagueId, SportType, LeagueGroupID
-	FROM dbo.League WITH (NOLOCK)
-	WHERE (sporttype = 1 AND LeagueGroupID IN (42, 74, 108, 113))
-		OR (sporttype = 2 AND LeagueGroupID IN (42, 122))
-		OR (sporttype = 50 AND LeagueGroupID IN (42))
-		OR (sporttype = 43 AND LeagueGroupID IN (151))
-		OR (sporttype = 5 AND LeagueGroupID IN (42))
-		OR (sporttype = 4 AND LeagueGroupID IN (42))
-		OR (sporttype = 47 AND LeagueGroupID IN (42))
+	INSERT INTO #SabaVirtualSportsLeague (LeagueId, SportType, LeagueGroupID, CutOffDate)
+	SELECT l.LeagueId, l.SportType, l.LeagueGroupID, sb.CutOffDate
+	FROM dbo.League l WITH (NOLOCK)
+		INNER JOIN #SabaSporttype sb ON sb.SportType = l.sporttype AND sb.LeagueGroupID = l.LeagueGroupID
 
 	IF @ToDate > @MoveBetsDay
 	BEGIN
@@ -389,16 +398,12 @@ BEGIN
 						- SUM(b.winlost) AS LicenseeWL
 					FROM bodb_LicenseeReport.dbo.rptWinlostbyLeague AS b WITH (NOLOCK)
 						INNER JOIN #TempAg AS a ON b.recommend = a.custid
-						INNER JOIN #SabaVirtualSportsLeague AS l ON l.LeagueId = b.leagueid
+						INNER JOIN #SabaVirtualSportsLeague AS l ON l.LeagueId = b.leagueid AND b.winlostdate >= ISNULL(l.CutOffDate, b.winlostdate)
 					WHERE
 						b.winlostdate = d.Date
 						AND b.bettype NOT IN (901, 902, 903, 904, 914, 9, 29)
 						AND (b.statusID IN (112, 113, 114, 115)
 							OR (@IncludeRaw = 1 AND b.statusID = 111)) --exclude REJECT bets
-						AND 1 = CASE 
-									WHEN l.SportType = 5 AND l.LeagueGroupID = 42 AND b.winlostdate < @CutoffDate THEN 0 
-									ELSE 1
-								END
 					GROUP BY
 						b.Winlostdate,
 						b.recommend,
@@ -479,5 +484,6 @@ BEGIN
 	DROP TABLE #TempAg
 	DROP TABLE #SabaVirtualSportsLeague
 	DROP TABLE #Date
+	DROP TABLE #SabaSporttype
 END
 GO
