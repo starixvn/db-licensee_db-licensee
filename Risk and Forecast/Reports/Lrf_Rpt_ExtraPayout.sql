@@ -39,6 +39,7 @@ AS
 		- 20250320@Kelvin: Integrate HOTDOG [RedmineID: #219979]
 		- 20250402@Kelvin: Integrate Microgaming Live product [RedmineID: #222437]
 		- 20250311@Kelvin: Integrate Virtual Sports 7 - Kiron [RedmineID: #219083]
+		- 20250421@Kelvin: Integrate RichGaming [RedmineID: #224191]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -82,6 +83,7 @@ AS
 			- 10301: ASKMESLOT - Promotion Prize (BetType: 15199)
 			- 9501: HOTDOG - Promotion Prize (BetType: 11999)
 			- 10701: Microgaming Live - Promotion Prize (BetType: 13995)
+			- 10801: RichGaming - Promotion Prize (BetType: 15899)
 
 		+ @ReportType: 1: Daily, 2: Monthly
 */
@@ -187,6 +189,7 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10301,%' AND BetType = 15199 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,9501,%' AND BetType = 11999 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10701,%' AND BetType = 13995 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10801,%' AND BetType = 15899 THEN 1
 				ELSE 0
 			END
 

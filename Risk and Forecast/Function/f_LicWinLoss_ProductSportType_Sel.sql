@@ -74,6 +74,8 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20250320@Kelvin: Integrate HOTDOG [RedmineID: #219979]
 		- 20250402@Kelvin: Integrate Microgaming Live product [RedmineID: #222437]
 		- 20250311@Kelvin: Integrate Virtual Sports 7 - Kiron [RedmineID: #219083]
+		- 20250421@Kelvin: Integrate Playtech Live Casino [RedmineID: #224192]
+		- 20250421@Kelvin: Integrate RichGaming [RedmineID: #224191]
 
 */
 RETURNS TABLE
@@ -144,7 +146,9 @@ RETURN
 					(104, 'FG', 131, 0),	-- Funky Games
 					(95, 'HOT', 139, 0),	-- HOTDOG 
 					(107, 'MGLC', 124, 0),	-- Microgaming Live
-					(106, 'VS7', 125, 0)	-- VS7
+					(106, 'VS7', 125, 0),	-- VS7
+					(101, 'PTLC', 129, 0),	-- Playtech Live
+					(108, 'RGRNG', 123, 0)	-- RichGaming
 
 			) d(ProductID, ProductCode, SportType, BetType)
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'
