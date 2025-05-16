@@ -13,6 +13,7 @@ AS
 		- 20240304@Evan: Integrate Saba Ice Hockey [RedmineID: #201283]
 		- 20240508@Bobby: Integrate Saba Kabaddi [RedmineID: #203612]
 		- 20240915@Bobby: Deploy WL SettleTime [RedmineID: #209631]
+		- 20250425@Kelvin: Integrate Saba Soccer Marble [RedmineID: #225015]
 */
 RETURN
 	WITH cteProduct AS (
@@ -47,13 +48,16 @@ RETURN
 		SELECT 1, 'Sportsbook', -4, 'SABA Soccer PinGoal', 'SB', 909,
 			'{"Sporttype":1, "LeagueGroupID": [113]}', 1, NULL
 		UNION ALL
-		SELECT 1, 'Sportsbook', -6, 'SABA Basketball PinGoal', 'SB', 910,
+		SELECT 1, 'Sportsbook', -12, 'SABA Soccer Marble ', 'SB', 910,
+			'{"Sporttype":1, "LeagueGroupID": [252]}', 1, NULL
+		UNION ALL
+		SELECT 1, 'Sportsbook', -6, 'SABA Basketball PinGoal', 'SB', 911,
 			'{"Sporttype":2, "LeagueGroupID": [122]}', 1, NULL
 		UNION ALL
-		SELECT 1, 'Sportsbook', -7, 'SABA ESports PinGoal', 'SB', 911,
+		SELECT 1, 'Sportsbook', -7, 'SABA ESports PinGoal', 'SB', 912,
 			'{"Sporttype":43, "LeagueGroupID": [151]}', 1, NULL
 		UNION ALL
-		SELECT 1, 'Sportsbook', -1, 'Parlay', 'SB', 912, 
+		SELECT 1, 'Sportsbook', -1, 'Parlay', 'SB', 913, 
 			'{"Sporttype":1, "LeagueGroupID": []}', 1, NULL
 	)
 	SELECT ProductID, SabaSportType, ProductName, SportName, ProductCode, SportOrder, SporttypeRef, IsShowUI, CutOffDate
