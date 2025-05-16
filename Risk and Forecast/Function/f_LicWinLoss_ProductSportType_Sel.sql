@@ -76,6 +76,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20250311@Kelvin: Integrate Virtual Sports 7 - Kiron [RedmineID: #219083]
 		- 20250421@Kelvin: Integrate Playtech Live Casino [RedmineID: #224192]
 		- 20250421@Kelvin: Integrate RichGaming [RedmineID: #224191]
+		- 20250508@Kelvin: Integrate W Casino [RedmineID: #226289]
 
 */
 RETURNS TABLE
@@ -148,7 +149,8 @@ RETURN
 					(107, 'MGLC', 124, 0),	-- Microgaming Live
 					(106, 'VS7', 125, 0),	-- VS7
 					(101, 'PTLC', 129, 0),	-- Playtech Live
-					(108, 'RGRNG', 123, 0)	-- RichGaming
+					(108, 'RGRNG', 123, 0),	-- RichGaming
+					(98, 'WLC', 136, 0)		-- W Casino
 
 			) d(ProductID, ProductCode, SportType, BetType)
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'
