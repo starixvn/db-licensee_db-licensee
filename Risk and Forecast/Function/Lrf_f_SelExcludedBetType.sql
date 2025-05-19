@@ -34,6 +34,7 @@ RETURNS TABLE
 		- 20250320@Kelvin: Integrate HOTDOG [RedmineID: #219979]
 		- 20250402@Kelvin: Integrate Microgaming Live product [RedmineID: #222437]
 		- 20250421@Kelvin: Integrate RichGaming [RedmineID: #224191]
+		- 20250519@Kelvin: Add new Saba Promotion - FIFA CWC Score Challenge [RedmineID: #227537]
 
 */
 
@@ -71,6 +72,8 @@ RETURN
 	SELECT 'SPR', 17011									-- NBA Playoffs Lottery
 	UNION ALL
 	SELECT 'SPR', 17012									-- Balance Adjustment
+	UNION ALL
+	SELECT 'SPR', 17013									-- FIFA CWC Score Challenge
 	UNION ALL
 	SELECT 'SAG', 3007									-- SA Gaming Tip ticket
 	UNION ALL
