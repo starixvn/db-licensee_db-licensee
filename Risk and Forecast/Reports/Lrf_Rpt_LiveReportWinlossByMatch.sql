@@ -56,6 +56,7 @@ AS
 		- 20241001@Kelvin: LAP - Integrate BetRadar Virtual Horses & Dogs Racing [RedmineID: #210808]
 		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]
 		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
+		- 20250408@Kelvin: Upgrade ExchangeId Datatype [RedmineID: #222339]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -74,7 +75,7 @@ BEGIN
 	SET NOCOUNT ON
 
 	-- Get agent list
-	DECLARE @TempAg AS TABLE (CustId INT, Currency INT)
+	DECLARE @TempAg AS TABLE (CustId INT, Currency SMALLINT)
 	DECLARE @DocHandler INT
 
 	BEGIN TRY
@@ -82,7 +83,7 @@ BEGIN
 
 		INSERT INTO @TempAg (CustId, currency)
 		SELECT AgentId, Currency
-		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency SMALLINT) AS Data
 
 		EXEC sp_xml_removedocument @DocHandler
 	END TRY
@@ -125,7 +126,7 @@ BEGIN
 
 	CREATE TABLE #Data (
 		WinLostDate		SMALLDATETIME,
-		Currency		TINYINT,
+		Currency		SMALLINT,
 		Bettype			INT,
 		EventType		TINYINT,
 		MatchId			INT,

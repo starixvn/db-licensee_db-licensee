@@ -21,6 +21,7 @@ AS
 	Revisions:
 		- 20200313@Johnson: initial sp [redmine: #129873]
 		- 20250227@Virgil: Drop BA functions [RedmineID: #216882]
+		- 20250408@Kelvin: Upgrade ExchangeId Datatype [RedmineID: #222339]
 	
 	Parameter's explanations:
 		+ @username: systemID
@@ -55,7 +56,7 @@ BEGIN
 	
 		INSERT INTO #TempAg(CustId)
 		SELECT AgentId
-		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency INT) AS Data
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId [int], Currency SMALLINT) AS Data
 
 		EXEC sp_xml_removedocument @DocHandler
 	END TRY
@@ -73,7 +74,7 @@ BEGIN
 	CREATE TABLE #Temp
 	(
 		custid					INT PRIMARY KEY,
-		currency 				TINYINT,
+		currency 				SMALLINT,
 		username				NVARCHAR (50),
 		closed					BIT,
 		suspended				BIT,
@@ -94,7 +95,7 @@ BEGIN
 	CREATE TABLE #OutstandingTranslog
 	(
 		Custid			INT,
-		Currency		INT,
+		Currency		SMALLINT,
 		statusID		tinyint,
 		actual_stake	money
 	)
@@ -102,7 +103,7 @@ BEGIN
 	CREATE TABLE #TempMember
 	(
 		CustID			INT PRIMARY KEY CLUSTERED,
-		currency 		TINYINT,
+		currency 		SMALLINT,
 		speciallevel	int,
 		username2		VARCHAR(50),
 		username		VARCHAR(50),

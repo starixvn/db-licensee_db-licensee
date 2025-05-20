@@ -16,6 +16,7 @@ AS
 		- 20231025@Bobby: Customer Admin - [redmine: #195850]
 		- 20231109@Evan: 12B - Adjust rate show real figures for currency cut off 000 [Redmine #196557]
 		- 20231211@Bobby: Ivory Player Report - [redmine: #197945]
+		- 20250408@Kelvin: Upgrade ExchangeId Datatype [RedmineID: #222339]
 
     Param's Explanation:  
 	  
@@ -25,18 +26,18 @@ BEGIN
 	SET NOCOUNT ON;
 	
 	DECLARE @tmpFromDate	SMALLDATETIME
-		,@tmpToDate		SMALLDATETIME
+			,@tmpToDate		SMALLDATETIME
 	;
 
 	DROP TABLE IF EXISTS #TransResult;
 
 	CREATE TABLE #TransResult
 	(
-		TransId	BIGINT PRIMARY KEY
+		TransId		BIGINT PRIMARY KEY
 		,TransDate	DATETIME
 		,Amount		MONEY
 		,Remark		NVARCHAR(1000)
-		,Currency		TINYINT
+		,Currency	SMALLINT
 	);
 
 	-- Brand mapping

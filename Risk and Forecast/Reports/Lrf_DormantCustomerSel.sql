@@ -23,6 +23,8 @@ AS
 		- 20211222@Johnson: support search by option for dormant accounts [RedmineID: #164294]
 		- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
 		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
+		- 20250408@Kelvin: Upgrade ExchangeId Datatype [RedmineID: #222339]
+
 	Parameter's Explanation:
 		@searchOption: 0- default search on LRF
 						1- Match prefix
@@ -43,7 +45,7 @@ BEGIN
 
 		INSERT INTO @TempAg (CustId)
 		SELECT AgentId
-		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency INT) AS Data
+		FROM OPENXML(@DocHandler, '/ROOT/Agent', 1) WITH (AgentId INT, Currency SMALLINT) AS Data
 
 		EXEC sp_xml_removedocument @DocHandler
 	END TRY
@@ -62,7 +64,7 @@ BEGIN
 		Nickname		NVARCHAR(50),
 		Balance			MONEY,
 		ArchivedDate	DATE,
-		Currency		TINYINT,
+		Currency		SMALLINT,
 		RowNumber		INT
 	)
 
