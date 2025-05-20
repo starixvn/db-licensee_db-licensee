@@ -1,9 +1,9 @@
-/*<info serverAlias="DBACC-bodb02" executers="wsv_lap" viewers="" isFunction="0"></info>*/
-CREATE PROCEDURE Lrf_MemberCustomerClassPolicySel
+﻿/*<info serverAlias="DBACC-bodb02" executers="wsv_lap" viewers="" isFunction="0"></info>*/
+ALTER PROCEDURE Lrf_MemberCustomerClassPolicySel
 	@Custid  INT,
 	@CustomerClass	SMALLINT,
 	@site VARCHAR(50),
-	@CurrencyID	TINYINT,
+	@CurrencyID	SMALLINT,
 	@IsTest BIT = 0
 AS
 	/*
@@ -16,6 +16,7 @@ AS
 			- 20240920@Winfred: Fix all Site all Curency [redmine:#211114]
 			- 20240930@Winfred: LAP - Risk Level - Integrate Top Priority settings [redmine:#211185]
 			- 20241017@Winfred: LAP - Risk Level Bet Setting - Show league group info [redmine:#211952]
+			- 20250417@Harmony: LAP - Upgrade exchangeid datatype [redmine:#222339]
 	*/
 BEGIN
 	SET NOCOUNT ON
