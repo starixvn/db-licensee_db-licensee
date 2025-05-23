@@ -1,11 +1,13 @@
-﻿/*<info serverAlias="DBBOF-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+﻿/*<info serverAlias="DBBOF-bodb02" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 
-ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel2021]	
+ALTER PROCEDURE [dbo].[Lrf_TotalBets_Sel2021]
 	@PageSize		INT=50,
 	@PageIndex		INT=0,
 	@TotalRows		INT=0 OUTPUT,
 	@AgentList		VARCHAR(MAX),
-	@BaseCurrency	VARCHAR(12) = ''
+	@BaseCurrency	VARCHAR(12) = '',
+	@LicenseeID		INT
+
 AS 
 /*
 Created: 20101201@Henry
@@ -27,6 +29,7 @@ Revisions:
 	- 20190611@Amanda: Add Base Currency parameter [Redmine: #112531]
 	- 20210224@Mark: Change alias DB042 to DBBOF [Redmine: #150375]
 	- 20220914@Evan: Expand length of @BaseCurrency [Redmine #177481]
+	- 20250522@Kelvin: Match Monitoring Center [Redmine #227673]
 
 Param's Explanation:
 	+ @AgentList: xml structure
@@ -168,8 +171,8 @@ BEGIN
 		FROM
 			bettrans a  WITH (NOLOCK)
 			INNER JOIN @TempAg ag ON a.recommend = ag.CustId AND a.currency = ag.Currency
-			INNER JOIN match 	m  WITH (NOLOCK) ON m.matchid       = a.matchid 
-			INNER JOIN @ExchangeRate e ON e.exchangeid = a.currency	
+			INNER JOIN match 	m  WITH (NOLOCK) ON m.matchid       = a.matchid
+			INNER JOIN @ExchangeRate e ON e.exchangeid = a.currency
 		WHERE 		
 			a.bettype IN (20,21) AND
 			a.statusID IN (0,1) AND
@@ -198,36 +201,45 @@ BEGIN
 	SELECT c.* FROM
 	(
 		SELECT
-			ROW_NUMBER() over (order by matchcode) as RowNum ,
-			showtime ,
-		leagueid  ,
-		matchcode  ,
-		liveindicator  ,
-		matchid  ,
-		homeID  ,
-		awayID  ,
-		livehomescore  ,
-		liveawayscore  ,
+			ROW_NUMBER() over (order by d.matchcode) as RowNum ,
+			d.showtime ,
+			d.leagueid  ,
+			d.matchcode  ,
+			d.liveindicator  ,
+			d.matchid  ,
+			d.homeID  ,
+			d.awayID  ,
+			d.livehomescore  ,
+			d.liveawayscore  ,
 		
-		home_odds  ,
+			home_odds  ,
 		
-		away_odds  ,
+			away_odds  ,
 		
-		WinLost_home  ,
+			WinLost_home  ,
 
-		WinLost_away  ,
+			WinLost_away  ,
 
-		home_odds_HT  ,
+			home_odds_HT  ,
 	
-		away_odds_HT  ,
+			away_odds_HT  ,
 		
-		WinLost_home_HT  ,
+			WinLost_home_HT  ,
 		
-		WinLost_away_HT  ,
+			WinLost_away_HT  ,
 		
-		isNeutral BIT
-		FROM @Data
-	) c WHERE c.RowNum between @RowStart AND @RowEnd
+			isNeutral BIT,
+
+			CASE WHEN home_odds = 0 AND away_odds = 0 THEN -1
+				 WHEN m.MonitoringID IS NULL THEN 0
+				 ELSE 1
+			END AS MonitoringStatus
+		FROM @Data d
+		LEFT JOIN bodb_Licensee.dbo.LicenseeMatchMonitoring (NOLOCK) m
+			ON m.LicenseeId = @LicenseeID AND m.MatchID = d.matchid AND m.BetType = 20 AND m.IsActive = 1
+			AND m.LiveIndicator = d.liveindicator AND m.LiveHomeScore = d.livehomescore AND m.LiveAwayScore = d.liveawayscore
+	) c 
+	WHERE c.RowNum between @RowStart AND @RowEnd
 
 	SELECT 
 		SUM(home_odds_ori) home_odds,
