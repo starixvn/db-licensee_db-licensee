@@ -37,6 +37,7 @@ AS
 		- 20250217@Kelvin: Win Loss By League - Support Virtual Sports [RedmineID: #217407]
 		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 		- 20250311@Kelvin: Integrate Virtual Sports 7 - Kiron [RedmineID: #219083]
+		- 20250425@Kelvin: Integrate Saba Soccer Marble [RedmineID: #225015]
 
 	Param's Explanation:
 		- @SportTypeList: sporttype list separated by ','
@@ -50,6 +51,7 @@ AS
 			-9	 :SABA Tennis	{"Sporttype":5, "LeagueGroupID": [42]}
 			-10	 :SABA Ice Hockey	{"Sporttype":4, "LeagueGroupID": [42]}
 			-11	 :SABA Kabaddi	{"Sporttype":47, "LeagueGroupID": [42]}
+			-12	 :Saba Soccer Marble {"Sporttype":1, "LeagueGroupID": [252]}
 
 		- @BetTypeList: bettype list separated by ','
 			+ 'All': all bettypes
@@ -200,12 +202,6 @@ BEGIN
 
 	SELECT @_FromDate = @FromDate,
 		@_ToDate = @ToDate
-
-	DECLARE @CutoffDate SMALLDATETIME;
-
-	SELECT @CutoffDate = CutoffDate
-	FROM dbo.Lrf_f_GetCutOffDate()
-	WHERE TypeName = 'SabaTennis'
 	
 	-- Get league list
 	CREATE TABLE #League (LeagueId INT, EventType INT, SportType SMALLINT, LeagueGroupId SMALLINT)

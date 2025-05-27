@@ -33,8 +33,22 @@ AS
 		- 20240304@Evan: Integrate Saba Ice Hockey [RedmineID: #201283]
 		- 20240508@Bobby: Integrate Saba Kabaddi [RedmineID: #203612]
 		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
+		- 20250425@Kelvin: Integrate Saba Soccer Marble [RedmineID: #225015]
 
 	Param's Explanation:
+		+ @SportType:
+			-2	 :SABA Soccer	{"Sporttype":1, "LeagueGroupID": [42,74]}
+			-3	 :SABA Futsal	{"Sporttype":1, "LeagueGroupID": [108]}
+			-4	 :SABA Soccer PinGoal	{"Sporttype":1, "LeagueGroupID": [113]}
+			-5	 :SABA Basketball	{"Sporttype":2, "LeagueGroupID": [42]}
+			-6	 :SABA Basketball PinGoal	{"Sporttype":2, "LeagueGroupID": [122]}
+			-7	 :SABA ESports PinGoal	{"Sporttype":43, "LeagueGroupID": [151]}
+			-8	 :SABA Cricket	{"Sporttype":50, "LeagueGroupID": [42]}
+			-9	 :SABA Tennis	{"Sporttype":5, "LeagueGroupID": [42]}
+			-10	 :SABA Ice Hockey	{"Sporttype":4, "LeagueGroupID": [42]}
+			-11	 :SABA Kabaddi	{"Sporttype":47, "LeagueGroupID": [42]}
+			-12	 :Saba Soccer Marble {"Sporttype":1, "LeagueGroupID": [252]}
+
 		+ @ReportType: 1: Daily, 2: Monthly
 		+ @DrawFilter: 1: Normal, 2: No Draw, 3: No Draw for Turnover only
 		+ @AgentList: XML structure
@@ -47,6 +61,17 @@ AS
 BEGIN
 	SET NOCOUNT ON
 
+	DECLARE
+		@_FromDate		SMALLDATETIME,
+		@_ToDate		SMALLDATETIME,
+		@TempFromDate	SMALLDATETIME,
+		@TempToDate		SMALLDATETIME
+
+	SELECT  @_FromDate = @FromDate,
+			@_ToDate = @ToDate
+
+	/* Get Agent */
+	-----------------------------------------------------------------------------------------------------------------------------------------------------------
 	CREATE TABLE #TempAg (CustId INT, Currency INT)
 
 	CREATE CLUSTERED INDEX IX_CustId ON #TempAg (CustId)
@@ -69,7 +94,10 @@ BEGIN
 
 		RETURN
 	END CATCH;
+	-----------------------------------------------------------------------------------------------------------------------------------------------------------
 
+	/* Get CustId */
+	-----------------------------------------------------------------------------------------------------------------------------------------------------------
 	DECLARE @CustId INT = -1
 
 	-- Get CustId in case of inputting Username
@@ -93,42 +121,63 @@ BEGIN
 			SET @CustId = 0
 		END
 	END
+	-----------------------------------------------------------------------------------------------------------------------------------------------------------
 
-	DECLARE @BetType TABLE (BetType INT, ProductCode VARCHAR(10))
+	/* Get Saba Sport */
+	-----------------------------------------------------------------------------------------------------------------------------------------------------------
+	CREATE TABLE #SabaSporttype (SabaSportType INT, SportType INT, LeagueGroupID INT, CutOffDate SMALLDATETIME);
+
+	INSERT INTO #SabaSporttype (SabaSportType, SportType, LeagueGroupID, CutOffDate)
+	SELECT saba.SabaSportType, t.SportType, t.LeagueGroupID, saba.CutOffDate
+	FROM bodb02.[dbo].[LAP_f_WinlossAnalysis_SabaSportSel] () AS saba
+	OUTER APPLY
+	(
+		SELECT Sporttype, LeagueGroupID
+		FROM OPENJSON(saba.SporttypeRef)
+		WITH (Sporttype INT '$.Sporttype', 
+			LeagueGroupIDs NVARCHAR(MAX) '$.LeagueGroupID' AS JSON
+		)
+		OUTER APPLY OPENJSON(LeagueGroupIDs) WITH (LeagueGroupID INT '$')
+	) AS t
+	WHERE saba.IsShowUI = 1 
+	AND 1 = CASE WHEN @SportType = 0 THEN 1
+				 WHEN @SportType = -2 AND saba.SabaSportType IN (-2,-3) THEN 1 -- -2: Soccer & Futsal including, No need to add Futsal in Sport filter since tickets of the new sport still use Soccer to display on betlist
+				 WHEN saba.SabaSportType = @SportType THEN 1
+				 ELSE 0
+			END
+	-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+	/* Get BetType */
+	-----------------------------------------------------------------------------------------------------------------------------------------------------------
+	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)
+
+	-- Insert Excluded BetType
+	INSERT INTO @ExcludedBetType (ProductCode, BetType)
+	SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()
+
+	CREATE TABLE #BetType (BetType INT PRIMARY KEY, EventType TINYINT,ProductCode VARCHAR(10))
 
 	DECLARE @IsTest BIT = 0
-
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
 	-- Insert Bettype
-	INSERT INTO @BetType (BetType, ProductCode)
-	SELECT DISTINCT BetType, ProductPrefix
-	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', 'SB,CO', @IsTest)
+	INSERT INTO #BetType (BetType, EventType, ProductCode)
+	SELECT DISTINCT BetType, EventType, ProductPrefix
+	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', 'SB,CO', @IsTest) s
 	WHERE BetType NOT IN (9, 29, 914, 901, 902, 903, 904)
+		AND Bettype NOT IN (SELECT BetType FROM @ExcludedBetType e WHERE e.ProductCode = s.ProductPrefix)
+	-----------------------------------------------------------------------------------------------------------------------------------------------------------
 
-	CREATE TABLE #SabaVirtualSportsLeague (LeagueId INT, PRIMARY KEY (LeagueId), SportType TINYINT, LeagueGroupID SMALLINT)
+	/* Get League */
+	-----------------------------------------------------------------------------------------------------------------------------------------------------------
+	CREATE TABLE #SabaVirtualSportsLeague (LeagueId INT PRIMARY KEY, SportType TINYINT, LeagueGroupID SMALLINT, CutOffDate SMALLDATETIME)
 
-	INSERT INTO #SabaVirtualSportsLeague
-	SELECT LeagueId, SportType, LeagueGroupID
-	FROM dbo.League WITH (NOLOCK)
-	WHERE (@LeagueId = 0 OR leagueid = @LeagueId)
-		AND (@SportType = 0
-			OR sporttype = CASE
-							WHEN @SportType = -1 THEN 1
-							WHEN @SportType = -2 THEN 2
-							WHEN @SportType = -43 THEN 43
-							ELSE @SportType
-						END)
-		AND ((@SportType IN (0, 1) AND sporttype = 1 AND LeagueGroupID IN (42, 74, 108))
-			OR (@SportType IN (0, -1) AND sporttype = 1 AND LeagueGroupID IN (113))
-			OR (@SportType IN (0, 2) AND sporttype = 2 AND LeagueGroupID IN (42))
-			OR (@SportType IN (0, -2) AND sporttype = 2 AND LeagueGroupID IN (122))
-			OR (sporttype = 50 AND LeagueGroupID IN (42))
-			OR (@SportType IN (0, -43) AND sporttype = 43 AND LeagueGroupID IN (151))
-			OR (@sporttype IN (0, 5) AND sporttype = 5 AND LeagueGroupID IN (42))
-			OR (@sporttype IN (0, 4) AND sporttype = 4 AND LeagueGroupID IN (42))
-			OR (@sporttype IN (0, 47) AND sporttype = 47 AND LeagueGroupID IN (42)) --Saba Kabaddi
-		)
+	INSERT INTO #SabaVirtualSportsLeague (LeagueId, SportType, LeagueGroupID, CutOffDate)
+	SELECT l.LeagueId, l.SportType, l.LeagueGroupID, sb.CutOffDate
+	FROM dbo.League l WITH(NOLOCK)
+		INNER JOIN #SabaSporttype sb ON sb.SportType = l.sporttype AND sb.LeagueGroupID = l.LeagueGroupID
+	WHERE (@LeagueId = 0 OR l.leagueid = @LeagueId)
+	-----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 	DECLARE @Data TABLE (
 		CustId			INT,
@@ -142,21 +191,6 @@ BEGIN
 		PlayerComm		MONEY,
 		CashOutComm		MONEY
 	)
-
-	DECLARE
-		@_FromDate	SMALLDATETIME,
-		@_ToDate	SMALLDATETIME
-
-	SELECT @_FromDate = @FromDate,
-		@_ToDate = @ToDate
-
-	DECLARE @TempFromDate	SMALLDATETIME,
-		@TempToDate			SMALLDATETIME
-
-	DECLARE @CutoffDate SMALLDATETIME;
-	SELECT @CutoffDate = CutoffDate
-	FROM dbo.Lrf_f_GetCutOffDate()
-	WHERE TypeName = 'SabaTennis'
 
 	IF @_ToDate > @MoveBetsDay
 	BEGIN
@@ -209,66 +243,24 @@ BEGIN
 		FROM
 			dbo.bettrans AS b WITH (NOLOCK)
 			INNER JOIN #TempAg AS a ON a.CustId = b.recommend
-			INNER JOIN @BetType AS bt ON bt.bettype = b.bettype
-			INNER JOIN dbo.match AS m WITH (NOLOCK) ON m.MatchId = b.matchid
-			INNER JOIN #SabaVirtualSportsLeague AS l ON l.LeagueId = m.leagueid
+			INNER JOIN #BetType AS bt ON bt.bettype = b.bettype
+			LEFT JOIN dbo.match AS m WITH (NOLOCK) ON m.MatchId = b.matchid
+			LEFT JOIN #SabaVirtualSportsLeague AS lm ON lm.LeagueId = m.leagueid
+			LEFT JOIN dbo.outright AS o WITH (NOLOCK) ON o.orid = b.matchid
+			LEFT JOIN #SabaVirtualSportsLeague AS lo ON lo.LeagueId = o.leagueid
+			OUTER APPLY
+			(
+				SELECT 
+						CASE WHEN bt.EventType = 1 THEN ISNULL(lm.LeagueId, -1)
+							WHEN bt.EventType = 2 THEN ISNULL(lo.LeagueId, -1)
+							ELSE - 1
+						END AS LeagueId
+			) ext
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
 			AND b.statusID IN (111, 112, 113)
-			AND b.bettype <> 10
 			AND (@Username = '' OR b.custid = @CustId)
-		GROUP BY
-			b.custid,
-			b.currency,
-			b.winlostdate
-
-		INSERT INTO @Data (
-			CustId,
-			Currency,
-			WinLostDate,
-			BetCount,
-			TurnoverSB,
-			WinLost,
-			LicenseeWLSB,
-			LicenseeWLCO,
-			PlayerComm,
-			CashOutComm )
-		SELECT
-			b.custid,
-			b.currency,
-			b.winlostdate,
-			SUM(CASE
-					WHEN @DrawFilter = 2 AND b.statusID = 111 THEN 0
-					ELSE 1
-				END) AS BetCount,
-			SUM(CASE
-					WHEN @DrawFilter = 1 THEN b.stake
-					WHEN @DrawFilter IN (2, 3)
-						AND b.statusID IN (112, 113)
-						AND b.modds IN (-0.25, 0.25)
-						AND b.bettype NOT IN (29, 38)
-						THEN 0.5 * b.stake
-					WHEN @DrawFilter IN (2, 3)
-						AND b.statusID IN (112, 113)
-						AND (b.modds NOT IN (-0.25, 0.25) OR b.bettype IN (29, 38))
-						THEN b.stake
-					ELSE 0
-				END) AS TurnoverSB,
-			SUM(b.winlost - b.actual_stake) AS WinLost,
-			-SUM(b.winlost - b.actual_stake) AS LicenseeWLSB,
-			0 AS LicenseeWLCO,
-			SUM(b.playerComm) AS PlayerComm,
-			0 AS CashOutComm
-		FROM
-			dbo.bettrans AS b WITH (NOLOCK)
-			INNER JOIN #TempAg AS a ON a.CustId = b.recommend
-			INNER JOIN dbo.outright AS o WITH (NOLOCK) ON o.orid = b.matchid
-			INNER JOIN #SabaVirtualSportsLeague AS l ON l.LeagueId = o.leagueid
-		WHERE
-			b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-			AND b.statusID IN (111, 112, 113)
-			AND b.bettype = 10
-			AND (@Username = '' OR b.custid = @CustId)
+			AND ext.LeagueId <> -1
 		GROUP BY
 			b.custid,
 			b.currency,
@@ -333,16 +325,12 @@ BEGIN
 				FROM
 					bodb_licenseereport.dbo.rptCustomerMatch AS b WITH (NOLOCK)
 					INNER JOIN #TempAg AS ag ON ag.CustId = b.recommend
-					INNER JOIN #SabaVirtualSportsLeague AS l ON l.LeagueId = b.leagueid
+					INNER JOIN #BetType AS bt ON bt.bettype = b.bettype
+					INNER JOIN #SabaVirtualSportsLeague AS l ON l.LeagueId = b.leagueid AND b.winlostdate >= ISNULL(l.CutOffDate, b.winlostdate)
 				WHERE
 					b.winlostdate = d.Date
 					AND b.statusID <> 101	--exclude REJECT
-					AND b.bettype NOT IN (901, 902, 903, 904, 914, 9, 29)
 					AND (@Username = '' OR b.custid = @CustId)
-					AND 1 = CASE 
-								WHEN l.SportType = 5 AND l.LeagueGroupID = 42 AND b.winlostdate < @CutoffDate THEN 0 
-								ELSE 1
-							END
 				GROUP BY
 					b.custid,
 					b.Currency,
@@ -464,5 +452,7 @@ BEGIN
 
 	DROP TABLE #TempAg
 	DROP TABLE #SabaVirtualSportsLeague
+	DROP TABLE #BetType
+	DROP TABLE #SabaSporttype
 END
 GO
