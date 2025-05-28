@@ -37,6 +37,7 @@ AS
 		- 20250402@Kelvin: Integrate Microgaming Live product [RedmineID: #222437]
 		- 20250311@Kelvin: Integrate Virtual Sports 7 - Kiron [RedmineID: #219083]
 		- 20250421@Kelvin: Integrate RichGaming [RedmineID: #224191]
+		- 20250519@Kelvin: Add new Saba Promotion - FIFA CWC Score Challenge [RedmineID: #227537]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -61,6 +62,7 @@ AS
 			- 3711: Number Game Lucky Draw Promotion (BetType: 17031)
 			- 3712: NBA Playoffs Lottery (BetType: 17011)
 			- 3713: Balance Adjustment (BetType: 17012)
+			- 3714: FIFA CWC Score Challenge (BetType: 17013)
 			- 3901: SA Gaming - Tip (BetType: 3007)
 			- 4201: Saba.club - Free Bets (SportType: 150)
 			- 4202: Saba.club - Jackpot Prize (BetType: 1699)
@@ -140,6 +142,7 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3711,%' AND BetType = 17031 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3712,%' AND BetType = 17011 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3713,%' AND BetType = 17012 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3714,%' AND BetType = 17013 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3901,%' AND BetType = 3007 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4201,%' AND ProductPrefix = 'SBC' AND BetType NOT IN (1698, 1699) THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4202,%' AND BetType = 1699 THEN 1
@@ -221,6 +224,7 @@ BEGIN
 				WHEN b.bettype = 17031 THEN 3711
 				WHEN b.bettype = 17011 THEN 3712
 				WHEN b.bettype = 17012 THEN 3713
+				WHEN b.bettype = 17013 THEN 3714
 				WHEN b.bettype = 3007 THEN 3901
 				WHEN sbt.ProductCode = 'SBC' AND b.matchid = 150 THEN 4201
 				WHEN b.bettype = 1699 THEN 4202
@@ -310,6 +314,7 @@ BEGIN
 				WHEN b.bettype = 17031 THEN 3711
 				WHEN b.bettype = 17011 THEN 3712
 				WHEN b.bettype = 17012 THEN 3713
+				WHEN b.bettype = 17013 THEN 3714
 				WHEN b.bettype = 3007 THEN 3901
 				WHEN sbt.ProductCode = 'SBC' AND b.matchid = 150 THEN 4201
 				WHEN b.bettype = 1699 THEN 4202
@@ -393,6 +398,7 @@ BEGIN
 				WHEN b.bettype = 17031 THEN 3711
 				WHEN b.bettype = 17011 THEN 3712
 				WHEN b.bettype = 17012 THEN 3713
+				WHEN b.bettype = 17013 THEN 3714
 				WHEN b.bettype = 3007 THEN 3901
 				WHEN sbt.ProductCode = 'SBC' AND b.matchid = 150 THEN 4201
 				WHEN b.bettype = 1699 THEN 4202
