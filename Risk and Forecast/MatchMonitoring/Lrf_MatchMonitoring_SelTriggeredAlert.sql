@@ -65,8 +65,8 @@ BEGIN
 	)
 	SELECT 
 		FORMAT(DATEADD(HOUR, 12, LogDate), 'yyyy-MM-dd HH:mm:ss') AS [LogDate] -- (GMT-4) -> (GMT+8)
-		,'[' + STRING_AGG('"' + DetectedInfo + '"',',') + ']' AS [DetectedInfo]
-		,'[' + STRING_AGG('"' + AlertRule + '"',',') + ']' AS [AlertRule]
+		,'[' + STRING_AGG('"' + REPLACE(DetectedInfo,'"','\"') + '"',',') + ']' AS [DetectedInfo]
+		,'[' + STRING_AGG('"' + REPLACE(AlertRule,'"','\"') + '"',',') + ']' AS [AlertRule]
 	FROM CTE_Alert
 	GROUP BY FORMAT(DATEADD(HOUR, 12, LogDate), 'yyyy-MM-dd HH:mm:ss')
 	ORDER BY LogDate

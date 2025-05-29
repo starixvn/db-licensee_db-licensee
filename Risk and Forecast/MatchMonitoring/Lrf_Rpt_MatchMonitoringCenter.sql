@@ -197,7 +197,7 @@ BEGIN
 	(
 		SELECT
 			  MonitoringID
-			, '[' + STRING_AGG('"' + RuleDescription + '"', ',') + ']' AS AlertRules
+			, '[' + STRING_AGG('"' + REPLACE(RuleDescription,'"','\"') + '"', ',') + ']' AS AlertRules
 		FROM CTE_SettingDescriptions
 		GROUP BY MonitoringID
 	)
