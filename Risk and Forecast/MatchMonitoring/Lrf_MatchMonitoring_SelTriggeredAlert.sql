@@ -1,6 +1,6 @@
 /*<info serverAlias="DBEXT-bodb02" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 
-CREATE OR ALTER PROCEDURE [dbo].[Lrf_MatchMonitoring_SelTriggeredAlert]
+ALTER PROCEDURE [dbo].[Lrf_MatchMonitoring_SelTriggeredAlert]
 	@MonitoringID		INT
 AS
 

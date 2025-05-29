@@ -1,6 +1,6 @@
 /*<info serverAlias="DBBOF-bodb02" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 
-CREATE OR ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchMonitoringCenter]
+ALTER PROCEDURE [dbo].[Lrf_Rpt_MatchMonitoringCenter]
 	  @LicenseeID			INT
 	, @AgentList			VARCHAR(MAX)
 	, @MatchIDList			VARCHAR(MAX)	= 'ALL'
