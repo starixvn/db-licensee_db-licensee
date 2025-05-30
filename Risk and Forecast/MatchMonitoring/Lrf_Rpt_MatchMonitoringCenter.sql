@@ -53,9 +53,6 @@ BEGIN
 	END TRY
 
 	BEGIN CATCH
-		SELECT ErrCode = 100
-				,ErrMsg = N'Paramter invalid.'
-
 		RETURN
 	END CATCH;
 	----------------------------------------------------------------------------------------------------------------------------
