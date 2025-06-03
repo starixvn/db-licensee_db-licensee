@@ -69,6 +69,6 @@ BEGIN
 		,'[' + STRING_AGG('"' + REPLACE(AlertRule,'"','\"') + '"',',') + ']' AS [AlertRule]
 	FROM CTE_Alert
 	GROUP BY FORMAT(DATEADD(HOUR, 12, LogDate), 'yyyy-MM-dd HH:mm:ss')
-	ORDER BY LogDate
+	ORDER BY LogDate DESC
 END
 GO
