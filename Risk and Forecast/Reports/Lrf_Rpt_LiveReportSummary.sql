@@ -123,6 +123,7 @@ AS
 		- 20240509@Evan: Integrate VS4 [RedmineID: #199347]
 		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 		- 20241107@Kelvin: Integrate VS5 [RedmineID: #207582]
+		- 20250509@Kelvin: Enhancement to speed up integrate new casino product [RedmineID: #226292]
 
 	Param's Explanation:
 		+ @IsLive : indicate that whether the report will get live data or not
@@ -140,13 +141,23 @@ AS
 BEGIN
 	SET NOCOUNT ON
 
-	--
 	DROP TABLE IF EXISTS #TempAg
 	DROP TABLE IF EXISTS #tmpWinloss
 	DROP TABLE IF EXISTS #TempExchange
 	DROP TABLE IF EXISTS #LicenseeList
 	DROP TABLE IF EXISTS #tmpBettype
-	-- Get agent list
+
+	DECLARE @TempFromDate	SMALLDATETIME,
+			@TempToDate		SMALLDATETIME,
+			@FDate			SMALLDATETIME,
+			@TDate			SMALLDATETIME
+
+	--to Deal With Parameter Sniffing
+	SELECT	@FDate = @FromDate,
+			@TDate = @ToDate
+
+	/* Get agent list */
+	-----------------------------------------------------------------------------------------------------------------------------------
 	CREATE TABLE #TempAg (CustId INT, Currency INT)
 
 	CREATE CLUSTERED INDEX CIX_TempAg ON #TempAg (CustId);
@@ -168,16 +179,58 @@ BEGIN
 				,ErrMsg = N'Parameter invalid.'
 
 		RETURN
-	END CATCH; 
+	END CATCH;
 
-	DECLARE @TempFromDate	SMALLDATETIME,
-			@TempToDate		SMALLDATETIME,
-			@FDate			SMALLDATETIME,
-			@TDate			SMALLDATETIME
+	CREATE TABLE #LicenseeList(LicenseeID INT, Currency INT)
 
-	--to Deal With Parameter Sniffing
-	SELECT	@FDate = @FromDate,
-			@TDate = @ToDate	
+	CREATE CLUSTERED INDEX IX_LicenseeList_cl ON #LicenseeList(LicenseeID, Currency)
+
+	INSERT INTO #LicenseeList(LicenseeID, Currency)
+	SELECT DISTINCT LicenseeID, Currency
+	FROM bodb_licensee.dbo.LicenseeCust lc WITH(NOLOCK)
+	WHERE EXISTS (	SELECT 1
+					FROM #TempAg t
+					WHERE t.CustId = lc.CustID AND t.Currency = lc.Currency )
+	-----------------------------------------------------------------------------------------------------------------------------------
+
+	/* Get Excluded BetType */
+	-----------------------------------------------------------------------------------------------------------------------------------
+	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)
+	-- Insert Excluded BetType
+	INSERT INTO @ExcludedBetType (ProductCode, BetType)
+	SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()
+	-----------------------------------------------------------------------------------------------------------------------------------
+
+	/* Get Parlay BetType */
+	-----------------------------------------------------------------------------------------------------------------------------------
+	DECLARE @ParlayBetType TABLE (ProductCode VARCHAR (10), BetType INT)
+
+	INSERT INTO @ParlayBetType (ProductCode, BetType)
+	SELECT ProductCode, BetType FROM dbo.Lrf_f_SelParlayBetType()
+	-----------------------------------------------------------------------------------------------------------------------------------
+
+	/* Get BetType */
+	-----------------------------------------------------------------------------------------------------------------------------------
+	IF @ProductCodes IS NULL
+		SET @ProductCodes = ''
+
+	DECLARE @SBBACheck TINYINT;
+	SELECT @SBBACheck = (POWER(2*1, 1)
+				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 2))
+	
+	CREATE TABLE #tmpBettype ( Bettype INT, ProductCode VARCHAR(10), IsParLay BIT)
+
+	INSERT INTO #tmpBettype (Bettype, ProductCode, IsParLay)
+	SELECT a.Bettype, ISNULL(lf.GroupProductPrefix,IIF(a.ProductId IN (63,69),'SB',b.ProductPrefix)) AS ProductCode
+		, CASE WHEN pl.BetType IS NOT NULL THEN 1 ELSE 0 END AS IsParLay
+	FROM dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductCodes,null,null,@SBBACheck) a 
+		INNER JOIN dbo.Products b WITH(NOLOCK) ON a.ProductId = b.ProductID
+		LEFT JOIN dbo.Lrf_f_GroupProduct() lf ON a.ProductId = lf.ProductId
+		LEFT JOIN @ParlayBetType pl ON a.Bettype = pl.BetType
+	WHERE NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = a.Bettype) AND a.Bettype <> 72
+			AND (a.bettype < 901 OR a.bettype > 904)
+			AND (a.bettype < 911 OR a.bettype > 914)
+	-----------------------------------------------------------------------------------------------------------------------------------
 
 	CREATE TABLE #tmpWinloss
 	(
@@ -192,39 +245,6 @@ BEGIN
 		AmtDueTo3rd MONEY,
 		BetCount	INT
 	)
-
-	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)
-	-- Insert Excluded BetType
-	INSERT INTO @ExcludedBetType (ProductCode, BetType)
-	SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()
-
-	CREATE TABLE #LicenseeList(LicenseeID INT, Currency INT)
-
-	CREATE CLUSTERED INDEX IX_LicenseeList_cl ON #LicenseeList(LicenseeID, Currency)
-
-	INSERT INTO #LicenseeList(LicenseeID, Currency)
-	SELECT DISTINCT LicenseeID, Currency
-	FROM bodb_licensee.dbo.LicenseeCust lc WITH(NOLOCK)
-	WHERE EXISTS (	SELECT 1
-					FROM #TempAg t
-					WHERE t.CustId = lc.CustID AND t.Currency = lc.Currency )
-
-	IF @ProductCodes IS NULL
-		SET @ProductCodes = ''
-
-	DECLARE @SBBACheck TINYINT;
-	SELECT @SBBACheck = (POWER(2*1, 1)
-				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 2))
-	
-	CREATE TABLE #tmpBettype ( Bettype INT, ProductCode VARCHAR(10))
-	INSERT INTO #tmpBettype
-	SELECT a.Bettype, ISNULL(lf.GroupProductPrefix,IIF(a.ProductId IN (63,69),'SB',b.ProductPrefix)) AS ProductCode
-	FROM dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductCodes,null,null,@SBBACheck) a 
-	INNER JOIN dbo.Products b WITH(NOLOCK) ON a.ProductId = b.ProductID
-	LEFT JOIN dbo.Lrf_f_GroupProduct() lf ON a.ProductId = lf.ProductId
-	WHERE NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = a.Bettype) AND a.Bettype <> 72
-			AND (a.bettype < 901 OR a.bettype > 904)
-			AND (a.bettype < 911 OR a.bettype > 914)
 
 	IF @TDate > @MoveBetsDay
 	BEGIN
@@ -251,7 +271,7 @@ BEGIN
 			INNER JOIN #tmpBettype bt ON b.bettype = bt.Bettype
 			OUTER APPLY
 			(
-				SELECT ISNULL(CASE WHEN b.bettype IN (9,29,2799,10449,11099) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
+				SELECT ISNULL(CASE WHEN bt.IsParLay = 1 AND bt.ProductCode IN ('SB','VS') THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 			) s
 		WHERE
 			b.winlostdate BETWEEN @TempFromDate AND @TDate
@@ -298,7 +318,7 @@ BEGIN
 			AND b.status NOT IN (-1,103)
 			AND (b.IsLive = @Liveindicator OR @Liveindicator = 2) 
 			AND b.CustomerCategory IN (-1, 1001, 1003)
-			AND b.bettype NOT IN (9,29,2799,10449,11099) 
+			AND NOT (bt.IsParLay = 1 AND bt.ProductCode IN ('SB','VS'))
 			AND 1 = CASE WHEN b.bettype BETWEEN 1611 AND 1697 AND b.TicketType = 2 THEN 0
 						WHEN b.bettype BETWEEN 3801 AND 3899 AND b.TicketType = 2 THEN 0
 					ELSE 1 END
@@ -327,7 +347,7 @@ BEGIN
 		WHERE
 			b.rptDate BETWEEN @FDate AND @TempToDate
 			AND b.status NOT IN (-1,103)
-			AND b.Bettype IN (9,29,2799,10449,11099)
+			AND bt.IsParLay = 1 AND bt.ProductCode IN ('SB','VS')
 			AND NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = b.BetType)
 			AND (b.IsLive = @Liveindicator OR @Liveindicator = 2) 
 		GROUP BY

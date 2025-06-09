@@ -75,6 +75,7 @@ AS
 		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]
 		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 		- 20241107@Kelvin: Integrate VS5 [RedmineID: #207582]
+		- 20250509@Kelvin: Enhancement to speed up integrate new casino product [RedmineID: #226292]
 
 	Param's Explanation:
 		+ @AgentList: XML structure
@@ -87,6 +88,8 @@ AS
 BEGIN
 	SET NOCOUNT ON
 
+	/* Get agent list */
+	-----------------------------------------------------------------------------------------------------------------------------------
 	DECLARE @TempAg AS TABLE (CustId INT, Currency INT)
 	DECLARE @DocHandler INT
 
@@ -106,7 +109,18 @@ BEGIN
 
 		RETURN
 	END CATCH;
+	-----------------------------------------------------------------------------------------------------------------------------------
 
+	/* Get Parlay BetType */
+	-----------------------------------------------------------------------------------------------------------------------------------
+	DECLARE @ParlayBetType TABLE (ProductCode VARCHAR (10), BetType INT)
+
+	INSERT INTO @ParlayBetType (ProductCode, BetType)
+	SELECT ProductCode, BetType FROM dbo.Lrf_f_SelParlayBetType()
+	-----------------------------------------------------------------------------------------------------------------------------------
+
+	/* Get BetType */
+	-----------------------------------------------------------------------------------------------------------------------------------
 	SELECT @ProductList = STRING_AGG(b.ProductPrefix, ',')
 	FROM (
 		SELECT DISTINCT ISNULL(b.ProductPrefix,a.Value) AS ProductPrefix
@@ -114,16 +128,20 @@ BEGIN
 			LEFT JOIN dbo.Lrf_f_GroupProduct() b ON a.Value = b.GroupProductPrefix
 	) b
 	
-	DECLARE @BetType TABLE (BetType INT PRIMARY KEY, ProductCode VARCHAR(10), EventType TINYINT)
+	DECLARE @BetType TABLE (BetType INT PRIMARY KEY, ProductCode VARCHAR(10), EventType TINYINT, IsParLay BIT)
 
 	DECLARE @IsTest BIT = 0
 
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
-	INSERT INTO @BetType (BetType, ProductCode, EventType)
-	SELECT DISTINCT BetType, ProductPrefix, EventType
-	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
-	WHERE BetType NOT IN (SELECT BetType FROM dbo.Lrf_f_SelExcludedBetType())
+	INSERT INTO @BetType (BetType, ProductCode, EventType, IsParLay)
+	SELECT DISTINCT f.BetType, ISNULL(lf.GroupProductPrefix, f.ProductPrefix), f.EventType
+		, CASE WHEN pl.BetType IS NOT NULL THEN 1 ELSE 0 END AS IsParLay
+	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest) f
+		LEFT JOIN dbo.Lrf_f_GroupProduct() lf ON f.ProductId = lf.ProductId
+		LEFT JOIN @ParlayBetType pl ON f.Bettype = pl.BetType
+	WHERE f.BetType NOT IN (SELECT BetType FROM dbo.Lrf_f_SelExcludedBetType())
+	-----------------------------------------------------------------------------------------------------------------------------------
 
 	DECLARE @Data TABLE (
 		BetGroup		TINYINT,
@@ -180,7 +198,7 @@ BEGIN
 			CASE
 				WHEN b.bettype = 10 THEN 2
 				WHEN b.bettype = 29 THEN 4
-				WHEN b.bettype IN (2799,10449,11099) THEN 3
+				WHEN bt.IsParLay = 1 AND bt.ProductCode = 'VS' THEN 3
 				WHEN bt.EventType = 0 THEN 5
 				ELSE 0
 			END AS BetGroup,
@@ -201,7 +219,7 @@ BEGIN
 			CASE
 				WHEN b.bettype = 10 THEN 103
 				WHEN b.bettype = 29 THEN 102
-				WHEN b.bettype IN (2799,10449,11099) THEN 104
+				WHEN bt.IsParLay = 1 AND bt.ProductCode = 'VS' THEN 104
 				WHEN bt.EventType = 0 THEN b.matchid
 				ELSE 0
 			END AS SportType,
@@ -226,6 +244,13 @@ BEGIN
 			bt.ProductCode,
 			b.bettype,
 			CASE
+				WHEN b.bettype = 10 THEN 2
+				WHEN b.bettype = 29 THEN 4
+				WHEN bt.IsParLay = 1 AND bt.ProductCode = 'VS' THEN 3
+				WHEN bt.EventType = 0 THEN 5
+				ELSE 0
+			END,
+			CASE
 				WHEN bt.EventType IN (1, 3, 5) THEN b.matchid
 				ELSE 0
 			END,
@@ -233,7 +258,7 @@ BEGIN
 			CASE
 				WHEN b.bettype = 10 THEN 103
 				WHEN b.bettype = 29 THEN 102
-				WHEN b.bettype IN (2799,10449,11099) THEN 104
+				WHEN bt.IsParLay = 1 AND bt.ProductCode = 'VS' THEN 104
 				WHEN bt.EventType = 0 THEN b.matchid
 				ELSE 0
 			END,
@@ -322,12 +347,10 @@ BEGIN
 			LicenseeWL
 			)
 		SELECT
-			CASE b.bettype
-				WHEN 10 THEN 2
-				WHEN 29 THEN 4
-				WHEN 2799 THEN 3
-				WHEN 10449 THEN 3
-				WHEN 11099 THEN 3
+			CASE 
+				WHEN b.bettype = 10 THEN 2
+				WHEN b.bettype = 29 THEN 4
+				WHEN bt.IsParLay = 1 AND bt.ProductCode = 'VS' THEN 3
 				ELSE 0
 			END AS BetGroup,
 			CASE
@@ -347,7 +370,7 @@ BEGIN
 			CASE
 				WHEN b.bettype = 10 THEN 103
 				WHEN b.bettype = 29 THEN 102
-				WHEN b.bettype IN (2799,10449,11099) THEN 104
+				WHEN bt.IsParLay = 1 AND bt.ProductCode = 'VS' THEN 104
 				WHEN bt.EventType = 0 THEN b.matchid
 				ELSE 0
 			END AS SportType,
@@ -371,6 +394,12 @@ BEGIN
 		GROUP BY
 			bt.ProductCode,
 			b.bettype,
+			CASE 
+				WHEN b.bettype = 10 THEN 2
+				WHEN b.bettype = 29 THEN 4
+				WHEN bt.IsParLay = 1 AND bt.ProductCode = 'VS' THEN 3
+				ELSE 0
+			END,
 			CASE
 				WHEN bt.EventType IN (1, 3, 5) THEN b.matchid
 				ELSE 0
@@ -379,7 +408,7 @@ BEGIN
 			CASE
 				WHEN b.bettype = 10 THEN 103
 				WHEN b.bettype = 29 THEN 102
-				WHEN b.bettype IN (2799,10449,11099) THEN 104
+				WHEN bt.IsParLay = 1 AND bt.ProductCode = 'VS' THEN 104
 				WHEN bt.EventType = 0 THEN b.matchid
 				ELSE 0
 			END,
@@ -611,7 +640,7 @@ BEGIN
 				CASE
 					WHEN ISNULL(ss.bettype, 0) <> 0 THEN ss.GroupTypeId ELSE b.BetType
 				END AS BetType,
-				ISNULL(f.GroupProductPrefix,b.ProductCode) ProductCode,
+				b.ProductCode,
 				b.LiveIndicator,
 				b.EventType,
 				SUM(b.BetCount) AS BetCount,
@@ -624,7 +653,6 @@ BEGIN
 				@Data AS b
 				INNER JOIN @ExchangeDaily AS e ON e.ExchangeId = b.Currency
 				LEFT JOIN @GroupBetType AS ss ON ss.bettype = b.BetType
-				LEFT JOIN dbo.Lrf_f_GroupProduct() f ON f.ProductPrefix = b.ProductCode
 			GROUP BY
 				b.BetGroup,
 				b.MatchId,				
@@ -640,7 +668,7 @@ BEGIN
 				CASE
 					WHEN ISNULL(ss.bettype, 0) <> 0 THEN ss.GroupTypeId ELSE b.BetType
 				END,
-				ISNULL(f.GroupProductPrefix,b.ProductCode),
+				b.ProductCode,
 				b.LiveIndicator,
 				b.EventType
 			) wl
