@@ -72,6 +72,7 @@ AS
 		- 20240614@Johnson: Restructure Commission [redmine:#179088]
 		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
 		- 20250227@Virgil: Drop BA functions [RedmineID: #216882]
+		- 20250620@Kelvin: Handle Security (Dynamic Query) issue [RedmineID: #227496]
 
 	Param's Explanation:
 		+ @SpecialLevel: default value = -1 (all)
@@ -174,59 +175,51 @@ BEGIN
 	DECLARE @CustID INT, @i INT, @max INT, @LastOffBy INT
 
 	SET @OddsGroups = ISNULL(@OddsGroups, '')
-	--For predicate pushdown
-	DECLARE @OddsGroupsC VARCHAR (100)
-	SELECT @OddsGroupsC = '''' + REPLACE(@OddsGroups, ',', ''',''') + ''''
 
-	DECLARE @strSQL NVARCHAR(MAX)
+	DECLARE @OddsGroupTable TABLE (val VARCHAR(10));
+	INSERT INTO @OddsGroupTable SELECT value FROM STRING_SPLIT(@OddsGroups, ',');
 
 	IF LEN(@Username) = 0
 	BEGIN
 		BEGIN
-			SELECT @strSQL = 'INSERT INTO #tmpCust(custid, closed, reject, ugroup)
+			INSERT INTO #tmpCust(custid, closed, reject, ugroup)
 			SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1)
 			FROM #TempAg t 
 				 INNER JOIN custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
 				 INNER JOIN Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
 			WHERE ci.roleid=1 
-					AND c.username NOT LIKE ''%CashOut%''
-					AND c.username  NOT LIKE ''%01OddsAdj%''
-					AND c.username  NOT LIKE ''%01OddsBoostAdj%''
+					AND c.username NOT LIKE '%CashOut%'
+					AND c.username  NOT LIKE '%01OddsAdj%'
+					AND c.username  NOT LIKE '%01OddsBoostAdj%'
 					AND
 					(
-						(''' + @CustStatus + ''' = '''')
-						OR (''' + @CustStatus + ''' = ''Open'' AND ci.closed = 0)
-						OR (''' + @CustStatus + ''' = ''Closed'' AND ci.closed = 1)
+						@CustStatus = ''
+						OR (@CustStatus = 'Open' AND ci.closed = 0)
+						OR (@CustStatus = 'Closed' AND ci.closed = 1)
 					)
 					AND
 					(
-						(''' + @CustStatus + ''' IN ('''',''Closed''))
-						OR (''' + @CustStatus + ''' = ''Open'' AND ISNULL(ci.reject, 0) = 0)
-						OR (''' + @CustStatus + ''' = ''Suspended'' AND ISNULL(ci.reject, 0) = 1)
+						@CustStatus IN ('','Closed')
+						OR (@CustStatus = 'Open' AND ISNULL(ci.reject, 0) = 0)
+						OR (@CustStatus = 'Suspended' AND ISNULL(ci.reject, 0) = 1)
 					)
-					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))'
+					AND (@OddsGroups = '' OR RIGHT(c.ugroup,1) IN (SELECT val FROM @OddsGroupTable))
 		
-			--EXEC sp_executesql @strSQL
-			EXEC (@strSQL)
-
-			SELECT @strSQL = 'INSERT INTO #TempMember (CustID, speciallevel, username2, username, ugroup, closed, reject)
+			INSERT INTO #TempMember (CustID, speciallevel, username2, username, ugroup, closed, reject)
 			SELECT c.CustID, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject
 			FROM
 				#tmpCust c
 				INNER JOIN 
-				(SELECT c.custid, ISNULL(lc.speciallevel,0) as speciallevel , c.username, c.username2 
-				 FROM bodb02.dbo.Customer c WITH (NOLOCK)
-					LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.CustID = lc.CustID
-					INNER JOIN #TempAg t ON c.recommend = t.custid
-				 WHERE c.RoleID = 1
-				 ) lc ON lc.custid = c.custid
-				LEFT JOIN  bodb_licensee.dbo.LicenseeCustDiscount cc WITH(NOLOCK) ON c.custid = cc.custid AND cc.Licenseeid = '+ CONVERT(VARCHAR(10),@LicenseeID) +'
-			WHERE (' + CONVERT(VARCHAR(10),@SpecialLevel) + ' = -1 OR ISNULL(lc.speciallevel,0) = ' +  CONVERT(VARCHAR(10),@SpecialLevel) + ')
-				AND (' + CONVERT(VARCHAR(10),@GroupDiscountID) + ' = -1 OR ISNULL(cc.GroupDiscountID, 0) = ' + CONVERT(VARCHAR(10),@GroupDiscountID) + ')'
-		
-			--EXEC sp_executesql @strSQL
-			EXEC (@strSQL)
-		
+					(SELECT c.custid, ISNULL(lc.speciallevel,0) as speciallevel , c.username, c.username2 
+					 FROM bodb02.dbo.Customer c WITH (NOLOCK)
+						LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.CustID = lc.CustID
+						INNER JOIN #TempAg t ON c.recommend = t.custid
+					 WHERE c.RoleID = 1
+					 ) lc ON lc.custid = c.custid
+				LEFT JOIN  bodb_licensee.dbo.LicenseeCustDiscount cc WITH(NOLOCK) ON c.custid = cc.custid AND cc.Licenseeid = @LicenseeID
+			WHERE @SpecialLevel = -1 OR ISNULL(lc.speciallevel,0) = @SpecialLevel
+				AND @GroupDiscountID = -1 OR ISNULL(cc.GroupDiscountID, 0) = @GroupDiscountID
+				
 			IF ISNULL(@TotalRows, 0) = 0
 				SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
 	
@@ -251,40 +244,35 @@ BEGIN
 	ELSE
 	BEGIN
 		SET @username = LTRIM(RTRIM(@username))
-
-		SELECT @username = REPLACE(@username,'''','''''')
 		
-		SELECT @strSQL = 'INSERT INTO #TempMember (CustID, speciallevel, username2, username, ugroup, closed, reject)
-				SELECT ci.custid, ISNULL(lc.SpecialLevel,0) as speciallevel , c.username2, c.username, RIGHT(c.ugroup, 1), ci.closed, ci.reject
-				FROM #TempAg t
-					INNER JOIN dbo.Customer c WITH (NOLOCK) ON c.recommend = t.custid
-					INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
-					LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.custid = lc.custid
-					LEFT JOIN bodb_licensee.dbo.LicenseeCustDiscount cc ON c.custid = cc.custid AND cc.Licenseeid = ' + CONVERT(VARCHAR(10),@LicenseeID) + '
-				WHERE 
-					c.RoleID = 1
-					AND (c.username2 LIKE ' + '''%$' + @Username + '%''' + ' OR c.username LIKE ''' + @Username + '%''' + ')
-					AND c.username NOT LIKE ''%CashOut%''
-					AND c.username  NOT LIKE ''%01OddsAdj%''
-					AND c.username  NOT LIKE ''%01OddsBoostAdj%''
-					AND
-					(
-						(''' + @CustStatus + ''' = '''')
-						OR (''' + @CustStatus + ''' = ''Open'' AND ci.closed = 0)
-						OR (''' + @CustStatus + ''' = ''Closed'' AND ci.closed = 1)
-					)
-					AND
-					(
-						(''' + @CustStatus + ''' IN ('''',''Closed''))
-						OR (''' + @CustStatus + ''' = ''Open'' AND ISNULL(ci.reject, 0) = 0)
-						OR (''' + @CustStatus + ''' = ''Suspended'' AND ISNULL(ci.reject, 0) = 1)
-					)
-					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
-					AND (' + CONVERT(VARCHAR(10),@SpecialLevel) + ' = -1 OR ISNULL(lc.SpecialLevel,0) = ' +  CONVERT(VARCHAR(10),@SpecialLevel) + ')
-					AND (' + CONVERT(VARCHAR(10),@GroupDiscountID) + ' = -1 OR ISNULL(cc.GroupDiscountID, 0) = ' + CONVERT(VARCHAR(10),@GroupDiscountID) + ')'
-
-		--EXEC sp_executesql @strSQL
-		EXEC (@strSQL)
+		INSERT INTO #TempMember (CustID, speciallevel, username2, username, ugroup, closed, reject)
+		SELECT ci.custid, ISNULL(lc.SpecialLevel,0) as speciallevel , c.username2, c.username, RIGHT(c.ugroup, 1), ci.closed, ci.reject
+		FROM #TempAg t
+			INNER JOIN dbo.Customer c WITH (NOLOCK) ON c.recommend = t.custid
+			INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
+			LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.custid = lc.custid
+			LEFT JOIN bodb_licensee.dbo.LicenseeCustDiscount cc WITH(NOLOCK) ON c.custid = cc.custid AND cc.Licenseeid = @LicenseeID
+		WHERE 
+			c.RoleID = 1
+			AND (c.username2 LIKE '%$' + @Username + '%' OR c.username LIKE @Username + '%')
+			AND c.username NOT LIKE '%CashOut%'
+			AND c.username  NOT LIKE '%01OddsAdj%'
+			AND c.username  NOT LIKE '%01OddsBoostAdj%'
+			AND
+			(
+				@CustStatus = ''
+				OR (@CustStatus = 'Open' AND ci.closed = 0)
+				OR (@CustStatus = 'Closed' AND ci.closed = 1)
+			)
+			AND
+			(
+				@CustStatus IN ('','Closed')
+				OR (@CustStatus = 'Open' AND ISNULL(ci.reject, 0) = 0)
+				OR (@CustStatus = 'Suspended' AND ISNULL(ci.reject, 0) = 1)
+			)
+			AND (@OddsGroups = '' OR RIGHT(c.ugroup,1) IN (SELECT val FROM @OddsGroupTable))
+			AND (@SpecialLevel = -1 OR ISNULL(lc.SpecialLevel,0) = @SpecialLevel)
+			AND (@GroupDiscountID = -1 OR ISNULL(cc.GroupDiscountID, 0) = @GroupDiscountID)
 
 		IF ISNULL(@TotalRows, 0) = 0
 			SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c

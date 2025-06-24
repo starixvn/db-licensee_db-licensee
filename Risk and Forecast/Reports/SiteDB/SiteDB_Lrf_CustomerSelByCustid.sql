@@ -30,6 +30,7 @@ AS
 		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
 		- 20250227@Virgil: Drop BA functions [RedmineID: #216882]
 		- 20250408@Kelvin: Upgrade ExchangeId Datatype [RedmineID: #222339]
+		- 20250620@Kelvin: Handle Security (Dynamic Query) issue [RedmineID: #227496]
 
 	Parameter's explanations:
 		+ @SpecialLevel: default value '1,2,3,4,5,6,7,8,9,10' (all)
@@ -91,14 +92,31 @@ BEGIN
 	FROM DBCUST.bodb_Licensee.dbo.Licensees l WITH(NOLOCK)
 	WHERE LicenseeName = @LicenseeName
 
+	DECLARE @SafeCustIDs VARCHAR(MAX) =
+	(
+		SELECT STRING_AGG(value, ',') 
+		FROM STRING_SPLIT(@custids, ',')
+		WHERE TRY_CAST(value AS INT) IS NOT NULL
+	)
+
+	DECLARE @SafeCommGroups VARCHAR(MAX) =
+	(
+		SELECT STRING_AGG(value, ',') 
+		FROM STRING_SPLIT(@CommGroups, ',')
+		WHERE TRY_CAST(value AS INT) IS NOT NULL
+	)
+
 	SELECT @SQL = ' SELECT LicenseeID, GroupDiscountID, CustID, GroupName
-						FROM OPENQUERY (DBCUST, '' SELECT lc.LicenseeID, lc.GroupDiscountID, lc.CustID, lg.GroupName
-													FROM bodb_licensee.dbo.LicenseeCustDiscount lc WITH(NOLOCK)
-													LEFT JOIN bodb_Licensee.dbo.LicenseeGroupDiscount lg WITH (NOLOCK) ON lc.GroupDiscountID = lg.GroupDiscountID	
-													WHERE lc.LicenseeID = ' +CAST(@LicenseeID AS VARCHAR(50)) + '
-													AND lc.CustID IN (SELECT value FROM STRING_SPLIT('''''+@custids+''''','''',''''))
-													AND lc.GroupDiscountID IN (SELECT value FROM STRING_SPLIT('''''+@CommGroups+''''','''',''''))''
-						)
+					FROM OPENQUERY (DBCUST, 
+							''
+							SELECT lc.LicenseeID, lc.GroupDiscountID, lc.CustID, lg.GroupName
+							FROM bodb_licensee.dbo.LicenseeCustDiscount lc WITH(NOLOCK)
+								LEFT JOIN bodb_Licensee.dbo.LicenseeGroupDiscount lg WITH (NOLOCK) ON lc.GroupDiscountID = lg.GroupDiscountID
+							WHERE lc.LicenseeID = ' + CAST(@LicenseeID AS VARCHAR(50)) + '
+								AND lc.CustID IN (SELECT value FROM STRING_SPLIT(''''' + @SafeCustIDs + ''''','''',''''))
+								AND lc.GroupDiscountID IN (SELECT value FROM STRING_SPLIT(''''' + @SafeCommGroups + ''''','''',''''))
+							''
+					)
 					'
 	INSERT INTO #LicenseeCustDiscount(LicenseeID, GroupDiscountID, CustID, GroupName)
 	EXEC( @SQL)
@@ -106,7 +124,7 @@ BEGIN
 	SELECT @SQL = ' SELECT CustID, SpecialLevel
 					FROM OPENQUERY (DBCUST, ''	SELECT sl.CustID, sl.SpecialLevel 
 												FROM CustDb.dbo.Dep_CustSpecialLevel sl WITH(NOLOCK)
-												WHERE sl.CustID IN (SELECT value FROM STRING_SPLIT('''''+@custids+''''','''',''''))
+												WHERE sl.CustID IN (SELECT value FROM STRING_SPLIT(''''' + @SafeCustIDs + ''''','''',''''))
 											''
 					)'
 	INSERT INTO  #Dep_CustSpecialLevel(CustID, SpecialLevel)
@@ -140,7 +158,7 @@ BEGIN
 
 	INSERT INTO #tblCustList(custid)
 	SELECT DISTINCT value
-	FROM STRING_SPLIT(@custids,',')
+	FROM STRING_SPLIT(@SafeCustIDs,',')
 	
 	CREATE TABLE #Temp
 	(
@@ -196,56 +214,66 @@ BEGIN
 	DECLARE @CustID INT, @i INT, @max INT, @LastOffBy INT
 
 	SET @OddsGroups = ISNULL(@OddsGroups, '')
-	--For predicate pushdown
-	DECLARE @OddsGroupsC VARCHAR (100)
-	SELECT @OddsGroupsC = '''' + REPLACE(@OddsGroups, ',', ''',''') + ''''
-	DECLARE @strSQL NVARCHAR(MAX)
 
-	SELECT @strSQL = 'INSERT INTO #tmpCust(custid, closed, reject, ugroup,CustomerClass)
+	DECLARE @OddsGroupTable TABLE (val VARCHAR(10));
+	INSERT INTO @OddsGroupTable SELECT value FROM STRING_SPLIT(@OddsGroups, ',');
+
+	DECLARE @CustomerClassTable TABLE (val INT);
+	INSERT INTO @CustomerClassTable SELECT TRY_CAST(value AS INT) FROM STRING_SPLIT(@CustomerClass, ',');
+
+	DECLARE @FullCustomerClassTable TABLE (val INT);
+	INSERT INTO @FullCustomerClassTable SELECT TRY_CAST(value AS INT) FROM STRING_SPLIT(@FullCustomerClass, ',');
+
+	DECLARE @SpecialLevelTable TABLE (val INT);
+	INSERT INTO @SpecialLevelTable SELECT TRY_CAST(value AS INT) FROM STRING_SPLIT(@SpecialLevel, ',');
+
+	INSERT INTO #tmpCust(custid, closed, reject, ugroup,CustomerClass)
 	SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1),ci.CustomerClass
 	FROM #TempAg t 
 			INNER JOIN CustDB.dbo.custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
 			INNER JOIN CustDB.dbo.Customer c WITH(NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
-	WHERE ci.roleid=1 
+	WHERE 
+		(
+			ci.roleid=1 
 			AND ci.custid IN (SELECT custid FROM #tblCustList)
-			AND c.username NOT LIKE ''%CashOut%''
-			AND c.username  NOT LIKE ''%01OddsAdj%''
-			AND c.username  NOT LIKE ''%01OddsBoostAdj%''
-			AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + ')) '
-				
-	IF ISNULL(@CustomerClass, '') <> ''
-	BEGIN
-		SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')' +
-						CASE WHEN @IsUncategorizedCC = 1 THEN ' OR ISNULL(ci.CustomerClass,0) NOT IN ('+  @FullCustomerClass + ')'
-									ELSE '' END
-	END 		
-			
+			AND c.username NOT LIKE '%CashOut%'
+			AND c.username  NOT LIKE '%01OddsAdj%'
+			AND c.username  NOT LIKE '%01OddsBoostAdj%'
+			AND (
+					@OddsGroups = ''
+					OR RIGHT(c.ugroup,1) IN (SELECT val FROM @OddsGroupTable)
+				)
+			AND (
+					ISNULL(@CustomerClass, '') = '' 
+					OR ISNULL(ci.CustomerClass,0) IN (SELECT val FROM @CustomerClassTable)
+				)
+		)
+		OR 
+		(
+			@IsUncategorizedCC = 1 
+			AND ISNULL(ci.CustomerClass,0) NOT IN (SELECT val FROM @FullCustomerClassTable)
+		)
 	
-	--EXEC sp_executesql @strSQL
-	EXEC (@strSQL)
-
-	SELECT @strSQL = 'INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
+	INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
 	SELECT c.CustID, lc.currency, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject,c.CustomerClass
 	FROM
 		#tmpCust c
 		INNER JOIN 
-		(SELECT c.custid, c.currency, ISNULL(lc.speciallevel,0) as speciallevel, c.username, c.username2 
+		(
+			SELECT c.custid, c.currency, ISNULL(lc.speciallevel,0) as speciallevel, c.username, c.username2 
 			FROM CustDB.dbo.Customer c WITH(NOLOCK)
-			LEFT JOIN #Dep_CustSpecialLevel lc ON c.CustID = lc.CustID			 
-			INNER JOIN #TempAg t ON c.recommend = t.custid
+				LEFT JOIN #Dep_CustSpecialLevel lc ON c.CustID = lc.CustID
+				INNER JOIN #TempAg t ON c.recommend = t.custid
 			WHERE c.RoleID = 1
-			) lc ON lc.custid = c.custid			
-	WHERE ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')'
+		) lc ON lc.custid = c.custid
+	WHERE ISNULL(lc.speciallevel,0) IN (SELECT val FROM @SpecialLevelTable)
 
-	--EXEC sp_executesql @strSQL
-	EXEC (@strSQL)
-		
-	IF @CommGroups IS NOT NULL
+	IF @SafeCommGroups IS NOT NULL
 	BEGIN
 		DELETE t
 		FROM #TempMember t
 			LEFT JOIN #LicenseeCustDiscount lc ON t.custid=lc.custid 
-		WHERE ISNULL(lc.GroupDiscountID,0) NOT IN (SELECT value FROM STRING_SPLIT(@CommGroups,','))		
+		WHERE ISNULL(lc.GroupDiscountID,0) NOT IN (SELECT value FROM STRING_SPLIT(@SafeCommGroups,','))
 	END
 		
 	IF ISNULL(@TotalRows, 0) = 0

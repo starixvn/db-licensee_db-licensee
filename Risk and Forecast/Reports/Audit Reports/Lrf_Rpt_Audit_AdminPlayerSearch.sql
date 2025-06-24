@@ -10,6 +10,7 @@ AS
     Revisions:  
 		- 20231025@Bobby: Customer Admin - [redmine: #195850]
 		- 20240321@Eddie: Change Link Server and metadata "bodbLicenseeNet" [RedmineID: #202712]
+		- 20250620@Kelvin: Handle Security (Dynamic Query) issue [RedmineID: #227496]
 		
     Param's Explanation:  
 	  
@@ -38,17 +39,17 @@ BEGIN
         ,IBCCustID INT
     );
 
-    --EXEC usp_Dep_Customer_List_xtest
-    DECLARE @rmtQuery NVARCHAR(MAX), @spName VARCHAR(100) = 'usp_Dep_Customer_List', @IsTest BIT
+	--EXEC usp_Dep_Customer_List_xtest
+	DECLARE @rmtQuery NVARCHAR(MAX), @spName VARCHAR(100) = 'usp_Dep_Customer_List', @IsTest BIT
 
-    SET @IsTest = [dbo].[f_CheckSPVersion](@@PROCID);
+	SET @IsTest = [dbo].[f_CheckSPVersion](@@PROCID);
 
-    SELECT @spName += IIF(@IsTest = 1, '_xtest', ''),
-        @rmtQuery = N'
-        INSERT INTO #tmpPlayerInfo
-        EXEC DBDEPOSIT2.Deposit_DB.dbo.'+@spName+' @Username = '''+@SearchName + ''''
+	SELECT @spName += IIF(@IsTest = 1, '_xtest', ''),
+	@rmtQuery = N'
+	INSERT INTO #tmpPlayerInfo
+	EXEC DBDEPOSIT2.Deposit_DB.dbo.' + @spName + ' @Username = @SearchName'
 
-    EXEC (@rmtQuery)
+	EXEC sp_executesql @rmtQuery, N'@SearchName VARCHAR(50)', @SearchName
 
 	SELECT TOP (1) pp.[CustID]
         ,@SearchName AS [UserName] 

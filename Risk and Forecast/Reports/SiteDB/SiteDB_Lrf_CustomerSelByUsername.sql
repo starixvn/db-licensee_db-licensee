@@ -30,6 +30,7 @@ AS
 		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
 		- 20250227@Virgil: Drop BA functions [RedmineID: #216882]
 		- 20250408@Kelvin: Upgrade ExchangeId Datatype [RedmineID: #222339]
+		- 20250620@Kelvin: Handle Security (Dynamic Query) issue [RedmineID: #227496]
 
 	Parameter's explanations:
 		+ @SpecialLevel: '1,2,3,4,5,6,7,8,9,10' (all)
@@ -87,13 +88,20 @@ BEGIN
 	FROM DBCUST.bodb_Licensee.dbo.Licensees WITH(NOLOCK)
 	WHERE LicenseeName = @LicenseeName
 
-	IF EXISTS (SELECT 1 FROM STRING_SPLIT(@CommGroups,',') WHERE value = 0)
+	DECLARE @SafeCommGroups VARCHAR(MAX) =
+	(
+		SELECT STRING_AGG(value, ',') 
+		FROM STRING_SPLIT(@CommGroups, ',')
+		WHERE TRY_CAST(value AS INT) IS NOT NULL
+	)
+
+	IF EXISTS (SELECT 1 FROM STRING_SPLIT(@SafeCommGroups,',') WHERE value = 0)
 	BEGIN
 		SELECT @SQL = ' SELECT LicenseeID, GroupDiscountID, CustID, GroupName
 							FROM OPENQUERY (DBCUST, '' SELECT lc.LicenseeID, lc.GroupDiscountID, lc.CustID, lg.GroupName
 														FROM bodb_licensee.dbo.LicenseeCustDiscount lc WITH(NOLOCK)
 														LEFT JOIN bodb_Licensee.dbo.LicenseeGroupDiscount lg WITH (NOLOCK) ON lc.GroupDiscountID = lg.GroupDiscountID	
-														WHERE lc.LicenseeID = ' +CAST(@LicenseeID AS VARCHAR(50)) + '
+														WHERE lc.LicenseeID = ' + CAST(@LicenseeID AS VARCHAR(50)) + '
 															AND lc.GroupDiscountID <> 0''
 							)	
 						'
@@ -104,8 +112,8 @@ BEGIN
 							FROM OPENQUERY (DBCUST, '' SELECT lc.LicenseeID, lc.GroupDiscountID, lc.CustID, lg.GroupName
 														FROM bodb_licensee.dbo.LicenseeCustDiscount lc WITH(NOLOCK)
 														LEFT JOIN bodb_Licensee.dbo.LicenseeGroupDiscount lg WITH (NOLOCK) ON lc.GroupDiscountID = lg.GroupDiscountID	
-														WHERE lc.LicenseeID = ' +CAST(@LicenseeID AS VARCHAR(50)) + '
-															AND lc.GroupDiscountID IN (SELECT value FROM STRING_SPLIT('''''+@CommGroups+''''','''',''''))''
+														WHERE lc.LicenseeID = ' + CAST(@LicenseeID AS VARCHAR(50)) + '
+															AND lc.GroupDiscountID IN (SELECT value FROM STRING_SPLIT(''''' + @SafeCommGroups + ''''','''',''''))''
 							)	
 						'
 	END
@@ -118,7 +126,7 @@ BEGIN
 							FROM CustDb.dbo.Dep_CustSpecialLevel sl WITH(NOLOCK)
 							INNER JOIN CustDb.dbo.Customer c (NOLOCK) on c.custid = sl.custid
 							INNER JOIN CustDb.dbo.Dep_CustSuper cs (NOLOCK) on cs.custid = c.srecommend
-							WHERE cs.site = '''''+@LicenseeName+'''''
+							WHERE cs.site = ''''' + @LicenseeName + '''''
 						''
 					)'
 
@@ -212,37 +220,50 @@ BEGIN
 	DECLARE @CustID INT, @i INT, @max INT, @LastOffBy INT
 
 	SET @OddsGroups = ISNULL(@OddsGroups, '')
-	--For predicate pushdown
-	DECLARE @OddsGroupsC VARCHAR (100)
-	SELECT @OddsGroupsC = '''' + REPLACE(@OddsGroups, ',', ''',''') + ''''
-	DECLARE @strSQL NVARCHAR(MAX)
+
+	DECLARE @OddsGroupTable TABLE (val VARCHAR(10));
+	INSERT INTO @OddsGroupTable SELECT value FROM STRING_SPLIT(@OddsGroups, ',');
+
+	DECLARE @CustomerClassTable TABLE (val INT);
+	INSERT INTO @CustomerClassTable SELECT TRY_CAST(value AS INT) FROM STRING_SPLIT(@CustomerClass, ',');
+
+	DECLARE @FullCustomerClassTable TABLE (val INT);
+	INSERT INTO @FullCustomerClassTable SELECT TRY_CAST(value AS INT) FROM STRING_SPLIT(@FullCustomerClass, ',');
+
+	DECLARE @SpecialLevelTable TABLE (val INT);
+	INSERT INTO @SpecialLevelTable SELECT TRY_CAST(value AS INT) FROM STRING_SPLIT(@SpecialLevel, ',');
 
 	IF LEN(@Username) = 0
 	BEGIN
-		SELECT @strSQL = 'INSERT INTO #tmpCust(custid, closed, reject, ugroup,CustomerClass)
+		INSERT INTO #tmpCust(custid, closed, reject, ugroup,CustomerClass)
 		SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1),ci.CustomerClass
 		FROM #TempAg t 
 				INNER JOIN CustDB.dbo.custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
 				INNER JOIN CustDB.dbo.Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
-		WHERE ci.roleid=1 
-				AND c.username NOT LIKE ''%CashOut%''
-				AND c.username  NOT LIKE ''%01OddsAdj%''
-				AND c.username  NOT LIKE ''%01OddsBoostAdj%''
-				AND c.username  NOT LIKE ''%ClearBal%''
-				AND c.username  NOT LIKE ''%BetTrade%''	
-				AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + ')) '
-			
-		IF ISNULL(@CustomerClass, '') <> ''
-		BEGIN
-			SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')' +
-							CASE WHEN @IsUncategorizedCC = 1 THEN ' OR ISNULL(ci.CustomerClass,0) NOT IN ('+  @FullCustomerClass + ')'
-									ELSE '' END
-		END 
+		WHERE 
+			(
+				ci.roleid=1 
+				AND c.username NOT LIKE '%CashOut%'
+				AND c.username  NOT LIKE '%01OddsAdj%'
+				AND c.username  NOT LIKE '%01OddsBoostAdj%'
+				AND c.username  NOT LIKE '%ClearBal%'
+				AND c.username  NOT LIKE '%BetTrade%'
+				AND (
+						@OddsGroups = ''
+						OR RIGHT(c.ugroup,1) IN (SELECT val FROM @OddsGroupTable)
+					)
+				AND (
+						ISNULL(@CustomerClass, '') = '' 
+						OR ISNULL(ci.CustomerClass,0) IN (SELECT val FROM @CustomerClassTable)
+					)
+			)
+			OR 
+			(
+				@IsUncategorizedCC = 1 
+				AND ISNULL(ci.CustomerClass,0) NOT IN (SELECT val FROM @FullCustomerClassTable)
+			)
 
-		--EXEC sp_executesql @strSQL
-		EXEC (@strSQL)
-
-		SELECT @strSQL = 'INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
+		INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
 		SELECT c.CustID, lc.currency, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject,c.CustomerClass
 		FROM
 			#tmpCust c
@@ -252,16 +273,13 @@ BEGIN
 				LEFT JOIN #Dep_CustSpecialLevel lc ON c.CustID = lc.CustID
 				INNER JOIN #TempAg t ON c.recommend = t.custid
 				WHERE c.RoleID = 1
-				) lc ON lc.custid = c.custid			
-		WHERE ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')'
+				) lc ON lc.custid = c.custid
+		WHERE ISNULL(lc.speciallevel,0) IN (SELECT val FROM @SpecialLevelTable)
 
-		--EXEC sp_executesql @strSQL
-		EXEC (@strSQL)
-			
 		DELETE t
 		FROM #TempMember t
 			LEFT JOIN #LicenseeCustDiscount lc ON t.custid=lc.custid
-		WHERE ISNULL(lc.GroupDiscountID,0) NOT IN (SELECT value FROM STRING_SPLIT(@CommGroups,','))		
+		WHERE ISNULL(lc.GroupDiscountID,0) NOT IN (SELECT value FROM STRING_SPLIT(@SafeCommGroups,','))		
 			
 		IF ISNULL(@TotalRows, 0) = 0
 			SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
@@ -288,46 +306,47 @@ BEGIN
 	ELSE
 	BEGIN
 		SET @username = LTRIM(RTRIM(@username))
-				
-		SELECT @username = REPLACE(@username,'''','''''')
 
+		INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
+		SELECT ci.custid, ci.currency, ISNULL(lc.SpecialLevel,0) as speciallevel , c.username2, c.username, RIGHT(c.ugroup, 1), ci.closed, ci.reject,ci.CustomerClass
+		FROM #TempAg t
+			INNER JOIN CustDB.dbo.Customer c WITH (NOLOCK) ON c.recommend = t.custid
+			INNER JOIN CustDB.dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
+			LEFT JOIN #Dep_CustSpecialLevel lc ON c.custid = lc.custid
+		WHERE
+			(
+				c.RoleID = 1
+				AND (
+						(1= @searchOption AND c.username2 LIKE '%$' + @Username + '%')
+						OR ( 2= @searchOption AND SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1, len(c.username2)) LIKE '%' + @Username + '%')
+						OR ( 3= @searchOption AND c.username2 LIKE '%$' + @Username)
+						OR ( 4= @searchOption AND (c.username2 LIKE '%$' + @Username OR c.username = @Username))
+					)
+				AND c.username NOT LIKE '%CashOut%'
+				AND c.username  NOT LIKE '%01OddsAdj%'
+				AND c.username  NOT LIKE '%01OddsBoostAdj%'
+				AND c.username  NOT LIKE '%ClearBal%'
+				AND c.username  NOT LIKE '%BetTrade%'
+				AND (
+						@OddsGroups = '' 
+						OR RIGHT(c.ugroup,1) IN (SELECT val FROM @OddsGroupTable)
+					)
+				AND ISNULL(lc.speciallevel,0) IN (SELECT val FROM @SpecialLevelTable)
+				AND (
+						ISNULL(@CustomerClass, '') = '' 
+						OR ISNULL(ci.CustomerClass,0) IN (SELECT val FROM @CustomerClassTable)
+					)
+			)
+			OR 
+			(
+				@IsUncategorizedCC = 1 
+				AND ISNULL(ci.CustomerClass,0) NOT IN (SELECT val FROM @FullCustomerClassTable)
+			)
 
-		SELECT @strSQL = 'INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
-				SELECT ci.custid, ci.currency, ISNULL(lc.SpecialLevel,0) as speciallevel , c.username2, c.username, RIGHT(c.ugroup, 1), ci.closed, ci.reject,ci.CustomerClass
-				FROM #TempAg t
-					INNER JOIN CustDB.dbo.Customer c WITH (NOLOCK) ON c.recommend = t.custid
-					INNER JOIN CustDB.dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
-					LEFT JOIN #Dep_CustSpecialLevel lc ON c.custid = lc.custid
-				WHERE 
-					c.RoleID = 1
-					AND ((1= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%$' + @Username + '%'') 
-						OR (2= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND SUBSTRING(c.username2,CHARINDEX(''$'',c.username2)+1,len(c.username2)) LIKE ''%' + @Username + '%'') 
-						OR (3= '+ CONVERT(VARCHAR(10),@searchOption) +' AND c.username2 LIKE ''%$' + @Username + ''')
-						OR (4= '+ CONVERT(VARCHAR(10),@searchOption) +' AND (c.username2 LIKE ''%$' + @Username + ''' OR c.username = ''' + @Username + ''')) ' 
-						+ ')
-					AND c.username NOT LIKE ''%CashOut%''
-					AND c.username  NOT LIKE ''%01OddsAdj%''
-					AND c.username  NOT LIKE ''%01OddsBoostAdj%''
-					AND c.username  NOT LIKE ''%ClearBal%''
-					AND c.username  NOT LIKE ''%BetTrade%''	
-					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
-					AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ') '
-			
-		IF ISNULL(@CustomerClass, '') <> ''
-		BEGIN
-			SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')'+
-							CASE WHEN @IsUncategorizedCC = 1 THEN ' OR ISNULL(ci.CustomerClass,0) NOT IN ('+  @FullCustomerClass + ')'
-									ELSE '' END
-		END 
-
-
-		--EXEC sp_executesql @strSQL
-		EXEC (@strSQL)
-		
 		DELETE t
 		FROM #TempMember t
 			LEFT JOIN #LicenseeCustDiscount lc ON t.custid=lc.custid 
-		WHERE ISNULL(lc.GroupDiscountID,0) NOT IN (SELECT value FROM STRING_SPLIT(@CommGroups,','))		
+		WHERE ISNULL(lc.GroupDiscountID,0) NOT IN (SELECT value FROM STRING_SPLIT(@SafeCommGroups,','))		
 		
 		IF ISNULL(@TotalRows, 0) = 0
 			SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c

@@ -39,6 +39,7 @@ AS
 		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
 		- 20250227@Virgil: Drop BA functions [RedmineID: #216882]
 		- 20250408@Kelvin: Upgrade ExchangeId Datatype [RedmineID: #222339]
+		- 20250620@Kelvin: Handle Security (Dynamic Query) issue [RedmineID: #227496]
 
 	Parameter's explanations:
 		+ @SpecialLevel: '1,2,3,4,5,6,7,8,9,10' (all)
@@ -105,7 +106,7 @@ BEGIN
 	IF EXISTS (SELECT 1 
 			FROM STRING_SPLIT(@CustomerClass,',')
 			WHERE value = 0)
-	SELECT @IsUncategorizedCC = 1		
+	SELECT @IsUncategorizedCC = 1
 
 	CREATE TABLE #Temp
 	(
@@ -154,7 +155,7 @@ BEGIN
 	CREATE TABLE #Exchange
 	(
 		Id		INT PRIMARY KEY,
-		Name	VARCHAR(50),
+		Name	VARCHAR(50)
 	)
 
 	CREATE TABLE #TotalBalance
@@ -167,52 +168,63 @@ BEGIN
 	DECLARE @CustID INT, @i INT, @max INT, @LastOffBy INT
 
 	SET @OddsGroups = ISNULL(@OddsGroups, '')
-	--For predicate pushdown
-	DECLARE @OddsGroupsC VARCHAR (100)
-	SELECT @OddsGroupsC = '''' + REPLACE(@OddsGroups, ',', ''',''') + ''''
-	DECLARE @strSQL NVARCHAR(MAX)
+
+	DECLARE @OddsGroupTable TABLE (val VARCHAR(10));
+	INSERT INTO @OddsGroupTable SELECT value FROM STRING_SPLIT(@OddsGroups, ',');
+
+	DECLARE @CustomerClassTable TABLE (val INT);
+	INSERT INTO @CustomerClassTable SELECT TRY_CAST(value AS INT) FROM STRING_SPLIT(@CustomerClass, ',');
+
+	DECLARE @FullCustomerClassTable TABLE (val INT);
+	INSERT INTO @FullCustomerClassTable SELECT TRY_CAST(value AS INT) FROM STRING_SPLIT(@FullCustomerClass, ',');
+
+	DECLARE @SpecialLevelTable TABLE (val INT);
+	INSERT INTO @SpecialLevelTable SELECT TRY_CAST(value AS INT) FROM STRING_SPLIT(@SpecialLevel, ',');
 
 	IF LEN(@Username) = 0
 	BEGIN
-		SELECT @strSQL = 'INSERT INTO #tmpCust(custid, closed, reject, ugroup,CustomerClass)
+		INSERT INTO #tmpCust(custid, closed, reject, ugroup,CustomerClass)
 		SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1),ci.CustomerClass
 		FROM #TempAg t 
 				INNER JOIN custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
 				INNER JOIN Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
-		WHERE ci.roleid=1 
-				AND c.username NOT LIKE ''%CashOut%''
-				AND c.username  NOT LIKE ''%01OddsAdj%''
-				AND c.username  NOT LIKE ''%01OddsBoostAdj%''
-				AND c.username  NOT LIKE ''%ClearBal%''
-				AND c.username  NOT LIKE ''%BetTrade%''	
-				AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + ')) '
-			
-		IF ISNULL(@CustomerClass, '') <> ''
-		BEGIN
-			SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')' +	
-								CASE WHEN @IsUncategorizedCC = 1 THEN ' OR ISNULL(ci.CustomerClass,0) NOT IN ('+  @FullCustomerClass + ')'
-									ELSE '' END
-		END 
+		WHERE
+			(
+				ci.roleid=1 
+				AND c.username NOT LIKE '%CashOut%'
+				AND c.username  NOT LIKE '%01OddsAdj%'
+				AND c.username  NOT LIKE '%01OddsBoostAdj%'
+				AND c.username  NOT LIKE '%ClearBal%'
+				AND c.username  NOT LIKE '%BetTrade%'
+				AND (
+						@OddsGroups = ''
+						OR RIGHT(c.ugroup,1) IN (SELECT val FROM @OddsGroupTable)
+					)
+				AND (
+						ISNULL(@CustomerClass, '') = '' 
+						OR ISNULL(ci.CustomerClass,0) IN (SELECT val FROM @CustomerClassTable)
+					)
+			)
+			OR 
+			(
+				@IsUncategorizedCC = 1 
+				AND ISNULL(ci.CustomerClass,0) NOT IN (SELECT val FROM @FullCustomerClassTable)
+			)
 
-		--EXEC sp_executesql @strSQL
-		EXEC (@strSQL)
-
-		SELECT @strSQL = 'INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
+		INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
 		SELECT c.CustID, lc.currency, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject,c.CustomerClass
 		FROM
 			#tmpCust c
-			INNER JOIN 
-			(SELECT c.custid, c.currency, ISNULL(lc.speciallevel,0) as speciallevel , c.username, c.username2 
+			INNER JOIN
+			(
+				SELECT c.custid, c.currency, ISNULL(lc.speciallevel,0) as speciallevel , c.username, c.username2 
 				FROM bodb02.dbo.Customer c WITH (NOLOCK)
-				LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.CustID = lc.CustID
-				INNER JOIN #TempAg t ON c.recommend = t.custid
+					LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.CustID = lc.CustID
+					INNER JOIN #TempAg t ON c.recommend = t.custid
 				WHERE c.RoleID = 1
-				) lc ON lc.custid = c.custid
-		WHERE ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')'
+			) lc ON lc.custid = c.custid
+		WHERE ISNULL(lc.speciallevel,0) IN (SELECT val FROM @SpecialLevelTable)
 
-		--EXEC sp_executesql @strSQL
-		EXEC (@strSQL)
-			
 		DELETE t
 		FROM #TempMember t
 			LEFT JOIN bodb_Licensee.dbo.LicenseeCustDiscount lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
@@ -243,42 +255,43 @@ BEGIN
 	ELSE
 	BEGIN
 		SET @username = LTRIM(RTRIM(@username))
-				
-		SELECT @username = REPLACE(@username,'''','''''')
 
-		SELECT @strSQL = 'INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
-				SELECT ci.custid, ci.currency, ISNULL(lc.SpecialLevel,0) as speciallevel , c.username2, c.username, RIGHT(c.ugroup, 1), ci.closed, ci.reject,ci.CustomerClass
-				FROM #TempAg t
-					INNER JOIN dbo.Customer c WITH (NOLOCK) ON c.recommend = t.custid
-					INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
-					LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.custid = lc.custid
-				WHERE 
-					c.RoleID = 1
-					AND ((1= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%$' + @Username + '%'') 
-						OR (2= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND SUBSTRING(c.username2,CHARINDEX(''$'',c.username2)+1,len(c.username2)) LIKE ''%' + @Username + '%'') 
-						OR (3= '+ CONVERT(VARCHAR(10),@searchOption) +' AND c.username2 LIKE ''%$' + @Username + ''')
-						OR (4= '+ CONVERT(VARCHAR(10),@searchOption) +' AND (c.username2 LIKE ''%$' + @Username + ''' OR c.username = ''' + @Username + ''')) ' 
-						+ ')
-					AND c.username NOT LIKE ''%CashOut%''
-					AND c.username  NOT LIKE ''%01OddsAdj%''
-					AND c.username  NOT LIKE ''%01OddsBoostAdj%''
-					AND c.username  NOT LIKE ''%ClearBal%''
-					AND c.username  NOT LIKE ''%BetTrade%''	
-					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
-					AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ') '
-			
-		IF ISNULL(@CustomerClass, '') <> ''
-		BEGIN
-			SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')' +	
-							CASE WHEN @IsUncategorizedCC = 1 THEN ' OR ISNULL(ci.CustomerClass,0) NOT IN ('+  @FullCustomerClass + ')'
-									ELSE '' END
-		END 
+		INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
+		SELECT ci.custid, ci.currency, ISNULL(lc.SpecialLevel,0) as speciallevel , c.username2, c.username, RIGHT(c.ugroup, 1), ci.closed, ci.reject,ci.CustomerClass
+		FROM #TempAg t
+			INNER JOIN dbo.Customer c WITH (NOLOCK) ON c.recommend = t.custid
+			INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
+			LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.custid = lc.custid
+		WHERE 
+			(
+				c.RoleID = 1
+				AND (
+						(1 = @searchOption AND c.username2 LIKE '%$' + @Username + '%')
+						OR (2 = @searchOption AND SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1, len(c.username2)) LIKE '%' + @Username + '%')
+						OR (3 = @searchOption AND c.username2 LIKE '%$' + @Username)
+						OR (4 = @searchOption AND (c.username2 LIKE '%$' + @Username OR c.username = @Username))
+					)
+				AND c.username NOT LIKE '%CashOut%'
+				AND c.username  NOT LIKE '%01OddsAdj%'
+				AND c.username  NOT LIKE '%01OddsBoostAdj%'
+				AND c.username  NOT LIKE '%ClearBal%'
+				AND c.username  NOT LIKE '%BetTrade%'
+				AND (
+						@OddsGroups = '' 
+						OR RIGHT(c.ugroup,1) IN (SELECT val FROM @OddsGroupTable)
+					)
+				AND ISNULL(lc.speciallevel,0) IN (SELECT val FROM @SpecialLevelTable)
+				AND (
+						ISNULL(@CustomerClass, '') = '' 
+						OR ISNULL(ci.CustomerClass,0) IN (SELECT val FROM @CustomerClassTable)
+					)
+			)
+			OR 
+			(
+				@IsUncategorizedCC = 1 
+				AND ISNULL(ci.CustomerClass,0) NOT IN (SELECT val FROM @FullCustomerClassTable)
+			)
 
-
-
-		--EXEC sp_executesql @strSQL
-		EXEC (@strSQL)
-		
 		DELETE t
 		FROM #TempMember t
 			LEFT JOIN bodb_Licensee.dbo.LicenseeCustDiscount lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
