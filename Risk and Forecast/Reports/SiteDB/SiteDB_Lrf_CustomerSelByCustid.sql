@@ -227,32 +227,35 @@ BEGIN
 	DECLARE @SpecialLevelTable TABLE (val INT);
 	INSERT INTO @SpecialLevelTable SELECT TRY_CAST(value AS INT) FROM STRING_SPLIT(@SpecialLevel, ',');
 
-	INSERT INTO #tmpCust(custid, closed, reject, ugroup,CustomerClass)
-	SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1),ci.CustomerClass
+	INSERT INTO #tmpCust(custid, closed, reject, ugroup, CustomerClass)
+	SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1), ci.CustomerClass
 	FROM #TempAg t 
+		INNER JOIN CustDB.dbo.custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
+		INNER JOIN CustDB.dbo.Customer c WITH(NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
+	WHERE 
+		ci.roleid=1 
+		AND ci.custid IN (SELECT custid FROM #tblCustList)
+		AND c.username NOT LIKE '%CashOut%'
+		AND c.username  NOT LIKE '%01OddsAdj%'
+		AND c.username  NOT LIKE '%01OddsBoostAdj%'
+		AND (
+				@OddsGroups = ''
+				OR RIGHT(c.ugroup,1) IN (SELECT val FROM @OddsGroupTable)
+			)
+		AND (
+				ISNULL(@CustomerClass, '') = '' 
+				OR ISNULL(ci.CustomerClass,0) IN (SELECT val FROM @CustomerClassTable)
+			)
+
+	IF @IsUncategorizedCC = 1
+	BEGIN
+		INSERT INTO #tmpCust(custid, closed, reject, ugroup, CustomerClass)
+		SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1), ci.CustomerClass
+		FROM #TempAg t 
 			INNER JOIN CustDB.dbo.custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
 			INNER JOIN CustDB.dbo.Customer c WITH(NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
-	WHERE 
-		(
-			ci.roleid=1 
-			AND ci.custid IN (SELECT custid FROM #tblCustList)
-			AND c.username NOT LIKE '%CashOut%'
-			AND c.username  NOT LIKE '%01OddsAdj%'
-			AND c.username  NOT LIKE '%01OddsBoostAdj%'
-			AND (
-					@OddsGroups = ''
-					OR RIGHT(c.ugroup,1) IN (SELECT val FROM @OddsGroupTable)
-				)
-			AND (
-					ISNULL(@CustomerClass, '') = '' 
-					OR ISNULL(ci.CustomerClass,0) IN (SELECT val FROM @CustomerClassTable)
-				)
-		)
-		OR 
-		(
-			@IsUncategorizedCC = 1 
-			AND ISNULL(ci.CustomerClass,0) NOT IN (SELECT val FROM @FullCustomerClassTable)
-		)
+		WHERE ISNULL(ci.CustomerClass,0) NOT IN (SELECT val FROM @FullCustomerClassTable)
+	END
 	
 	INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
 	SELECT c.CustID, lc.currency, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject,c.CustomerClass

@@ -183,33 +183,36 @@ BEGIN
 
 	IF LEN(@Username) = 0
 	BEGIN
-		INSERT INTO #tmpCust(custid, closed, reject, ugroup,CustomerClass)
-		SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1),ci.CustomerClass
+		INSERT INTO #tmpCust(custid, closed, reject, ugroup, CustomerClass)
+		SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1), ci.CustomerClass
 		FROM #TempAg t 
+			INNER JOIN custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
+			INNER JOIN Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
+		WHERE
+			ci.roleid=1 
+			AND c.username NOT LIKE '%CashOut%'
+			AND c.username  NOT LIKE '%01OddsAdj%'
+			AND c.username  NOT LIKE '%01OddsBoostAdj%'
+			AND c.username  NOT LIKE '%ClearBal%'
+			AND c.username  NOT LIKE '%BetTrade%'
+			AND (
+					@OddsGroups = ''
+					OR RIGHT(c.ugroup,1) IN (SELECT val FROM @OddsGroupTable)
+				)
+			AND (
+					ISNULL(@CustomerClass, '') = '' 
+					OR ISNULL(ci.CustomerClass,0) IN (SELECT val FROM @CustomerClassTable)
+				)
+
+		IF @IsUncategorizedCC = 1
+		BEGIN
+			INSERT INTO #tmpCust(custid, closed, reject, ugroup, CustomerClass)
+			SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1), ci.CustomerClass
+			FROM #TempAg t 
 				INNER JOIN custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
 				INNER JOIN Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
-		WHERE
-			(
-				ci.roleid=1 
-				AND c.username NOT LIKE '%CashOut%'
-				AND c.username  NOT LIKE '%01OddsAdj%'
-				AND c.username  NOT LIKE '%01OddsBoostAdj%'
-				AND c.username  NOT LIKE '%ClearBal%'
-				AND c.username  NOT LIKE '%BetTrade%'
-				AND (
-						@OddsGroups = ''
-						OR RIGHT(c.ugroup,1) IN (SELECT val FROM @OddsGroupTable)
-					)
-				AND (
-						ISNULL(@CustomerClass, '') = '' 
-						OR ISNULL(ci.CustomerClass,0) IN (SELECT val FROM @CustomerClassTable)
-					)
-			)
-			OR 
-			(
-				@IsUncategorizedCC = 1 
-				AND ISNULL(ci.CustomerClass,0) NOT IN (SELECT val FROM @FullCustomerClassTable)
-			)
+			WHERE ISNULL(ci.CustomerClass,0) NOT IN (SELECT val FROM @FullCustomerClassTable)
+		END
 
 		INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
 		SELECT c.CustID, lc.currency, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject,c.CustomerClass
@@ -263,34 +266,38 @@ BEGIN
 			INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
 			LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.custid = lc.custid
 		WHERE 
-			(
-				c.RoleID = 1
-				AND (
-						(1 = @searchOption AND c.username2 LIKE '%$' + @Username + '%')
-						OR (2 = @searchOption AND SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1, len(c.username2)) LIKE '%' + @Username + '%')
-						OR (3 = @searchOption AND c.username2 LIKE '%$' + @Username)
-						OR (4 = @searchOption AND (c.username2 LIKE '%$' + @Username OR c.username = @Username))
-					)
-				AND c.username NOT LIKE '%CashOut%'
-				AND c.username  NOT LIKE '%01OddsAdj%'
-				AND c.username  NOT LIKE '%01OddsBoostAdj%'
-				AND c.username  NOT LIKE '%ClearBal%'
-				AND c.username  NOT LIKE '%BetTrade%'
-				AND (
-						@OddsGroups = '' 
-						OR RIGHT(c.ugroup,1) IN (SELECT val FROM @OddsGroupTable)
-					)
-				AND ISNULL(lc.speciallevel,0) IN (SELECT val FROM @SpecialLevelTable)
-				AND (
-						ISNULL(@CustomerClass, '') = '' 
-						OR ISNULL(ci.CustomerClass,0) IN (SELECT val FROM @CustomerClassTable)
-					)
-			)
-			OR 
-			(
-				@IsUncategorizedCC = 1 
-				AND ISNULL(ci.CustomerClass,0) NOT IN (SELECT val FROM @FullCustomerClassTable)
-			)
+			c.RoleID = 1
+			AND (
+					(1 = @searchOption AND c.username2 LIKE '%$' + @Username + '%')
+					OR (2 = @searchOption AND SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1, len(c.username2)) LIKE '%' + @Username + '%')
+					OR (3 = @searchOption AND c.username2 LIKE '%$' + @Username)
+					OR (4 = @searchOption AND (c.username2 LIKE '%$' + @Username OR c.username = @Username))
+				)
+			AND c.username NOT LIKE '%CashOut%'
+			AND c.username  NOT LIKE '%01OddsAdj%'
+			AND c.username  NOT LIKE '%01OddsBoostAdj%'
+			AND c.username  NOT LIKE '%ClearBal%'
+			AND c.username  NOT LIKE '%BetTrade%'
+			AND (
+					@OddsGroups = '' 
+					OR RIGHT(c.ugroup,1) IN (SELECT val FROM @OddsGroupTable)
+				)
+			AND ISNULL(lc.speciallevel,0) IN (SELECT val FROM @SpecialLevelTable)
+			AND (
+					ISNULL(@CustomerClass, '') = '' 
+					OR ISNULL(ci.CustomerClass,0) IN (SELECT val FROM @CustomerClassTable)
+				)
+
+		IF @IsUncategorizedCC = 1
+		BEGIN
+			INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject, CustomerClass)
+			SELECT ci.custid, ci.currency, ISNULL(lc.SpecialLevel,0) as speciallevel , c.username2, c.username, RIGHT(c.ugroup, 1), ci.closed, ci.reject, ci.CustomerClass
+			FROM #TempAg t
+				INNER JOIN dbo.Customer c WITH (NOLOCK) ON c.recommend = t.custid
+				INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
+				LEFT JOIN dbo.Dep_CustSpecialLevel lc WITH(NOLOCK) ON c.custid = lc.custid
+			WHERE ISNULL(ci.CustomerClass,0) NOT IN (SELECT val FROM @FullCustomerClassTable)
+		END
 
 		DELETE t
 		FROM #TempMember t
