@@ -68,8 +68,8 @@ BEGIN
 			WHERE value = 0)
 	SELECT @IsUncategorizedCC = 1
 	
-	CREATE TABLE #TempAg (custid INT)
-	CREATE TABLE #tblCustList (custid INT)
+	CREATE TABLE #TempAg (custid INT PRIMARY KEY)
+	CREATE TABLE #tblCustList (custid INT PRIMARY KEY)
 	
 	CREATE TABLE #Exchange
 	(
@@ -165,48 +165,52 @@ BEGIN
 	DECLARE @CustID INT, @i INT, @max INT, @LastOffBy INT
 
 	SET @OddsGroups = ISNULL(@OddsGroups, '')
+	SET @CustomerClass = ISNULL(@CustomerClass, '')
 
-	DECLARE @OddsGroupTable TABLE (val VARCHAR(10));
-	INSERT INTO @OddsGroupTable SELECT value FROM STRING_SPLIT(@OddsGroups, ',');
+	CREATE TABLE #OddsGroupTable (val VARCHAR(10) PRIMARY KEY)
+	INSERT INTO #OddsGroupTable SELECT value FROM STRING_SPLIT(@OddsGroups, ',')
 
-	DECLARE @CustomerClassTable TABLE (val INT);
-	INSERT INTO @CustomerClassTable SELECT TRY_CAST(value AS INT) FROM STRING_SPLIT(@CustomerClass, ',');
+	CREATE TABLE #CustomerClassTable (val INT PRIMARY KEY)
+	INSERT INTO #CustomerClassTable SELECT TRY_CAST(value AS INT) FROM STRING_SPLIT(@CustomerClass, ',');
 
-	DECLARE @FullCustomerClassTable TABLE (val INT);
-	INSERT INTO @FullCustomerClassTable SELECT TRY_CAST(value AS INT) FROM STRING_SPLIT(@FullCustomerClass, ',');
+	CREATE TABLE #FullCustomerClassTable (val INT PRIMARY KEY)
+	INSERT INTO #FullCustomerClassTable SELECT TRY_CAST(value AS INT) FROM STRING_SPLIT(@FullCustomerClass, ',');
 
-	DECLARE @SpecialLevelTable TABLE (val INT);
-	INSERT INTO @SpecialLevelTable SELECT TRY_CAST(value AS INT) FROM STRING_SPLIT(@SpecialLevel, ',');
+	CREATE TABLE #SpecialLevelTable (val INT PRIMARY KEY)
+	INSERT INTO #SpecialLevelTable SELECT TRY_CAST(value AS INT) FROM STRING_SPLIT(@SpecialLevel, ',');
+
+	CREATE TABLE #CommGroupsTable (val INT PRIMARY KEY)
+	INSERT INTO #CommGroupsTable SELECT TRY_CAST(value AS INT) FROM STRING_SPLIT(@CommGroups, ',');
 
 	BEGIN
 		INSERT INTO #tmpCust(custid, closed, reject, ugroup, CustomerClass)
-		SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1),ci.CustomerClass
+		SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1), ci.CustomerClass
 		FROM #TempAg t 
-			INNER JOIN custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
-			INNER JOIN Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid
+			INNER JOIN dbo.custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
+			INNER JOIN dbo.Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid
 		WHERE 
 			ci.roleid=1 
-			AND ci.custid IN (SELECT custid FROM #tblCustList)
+			AND EXISTS (SELECT 1 FROM #tblCustList tbl WHERE tbl.custid = ci.custid)
 			AND c.username NOT LIKE '%CashOut%'
 			AND c.username NOT LIKE '%01OddsAdj%'
 			AND c.username NOT LIKE '%01OddsBoostAdj%'
 			AND (
 					@OddsGroups = ''
-					OR RIGHT(c.ugroup,1) IN (SELECT val FROM @OddsGroupTable)
+					OR EXISTS (SELECT 1 FROM #OddsGroupTable tbl WHERE tbl.val = RIGHT(c.ugroup,1))
 				)
 			AND (
-					ISNULL(@CustomerClass, '') = '' 
-					OR ISNULL(ci.CustomerClass,0) IN (SELECT val FROM @CustomerClassTable)
+					@CustomerClass = ''
+					OR EXISTS (SELECT 1 FROM #CustomerClassTable tbl WHERE tbl.val = ISNULL(ci.CustomerClass,0))
 				)
 
 		IF @IsUncategorizedCC = 1
 		BEGIN
 			INSERT INTO #tmpCust(custid, closed, reject, ugroup, CustomerClass)
-			SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1),ci.CustomerClass
+			SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1), ci.CustomerClass
 			FROM #TempAg t 
-				INNER JOIN custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
-				INNER JOIN Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid
-			WHERE ISNULL(ci.CustomerClass,0) NOT IN (SELECT val FROM @FullCustomerClassTable)
+				INNER JOIN dbo.custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
+				INNER JOIN dbo.Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid
+			WHERE NOT EXISTS(SELECT 1 FROM #FullCustomerClassTable tbl WHERE tbl.val = ISNULL(ci.CustomerClass,0))
 		END
 
 		INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
@@ -221,14 +225,14 @@ BEGIN
 					INNER JOIN #TempAg t ON c.recommend = t.custid
 				WHERE c.RoleID = 1
 			) lc ON lc.custid = c.custid
-		WHERE ISNULL(lc.speciallevel,0) IN (SELECT val FROM @SpecialLevelTable)
+		WHERE EXISTS (SELECT 1 FROM #SpecialLevelTable tbl WHERE tbl.val = lc.speciallevel)
 
 		IF @CommGroups IS NOT NULL
 		BEGIN
 			DELETE t
 			FROM #TempMember t
 				LEFT JOIN bodb_Licensee.dbo.LicenseeCustDiscount lc WITH (NOLOCK) ON t.custid=lc.custid AND lc.Licenseeid = @Licenseeid
-			WHERE ISNULL(lc.GroupDiscountID,0) NOT IN (SELECT val FROM dbo.strSplit(@CommGroups,','))		
+			WHERE NOT EXISTS(SELECT 1 FROM #CommGroupsTable tbl WHERE tbl.val = ISNULL(lc.GroupDiscountID,0))
 		END
 		
 		IF ISNULL(@TotalRows, 0) = 0
@@ -388,14 +392,19 @@ BEGIN
 		LEFT JOIN bodb_Licensee.dbo.LicenseeGroupDiscount lg WITH (NOLOCK) ON lc.GroupDiscountID = lg.GroupDiscountID			
 	ORDER BY t.username
 
-	DROP TABLE #TempAg
-	DROP TABLE #Temp
-	DROP TABLE #OutstandingTranslog
-	DROP TABLE #Data
-	DROP TABLE #tmpCust
-	DROP TABLE #TempMember
-	DROP TABLE #Exchange
-	DROP TABLE #TotalBalance
+	DROP TABLE IF EXISTS #TempAg
+	DROP TABLE IF EXISTS #Temp
+	DROP TABLE IF EXISTS #OutstandingTranslog
+	DROP TABLE IF EXISTS #Data
+	DROP TABLE IF EXISTS #tmpCust
+	DROP TABLE IF EXISTS #TempMember
+	DROP TABLE IF EXISTS #Exchange
+	DROP TABLE IF EXISTS #TotalBalance
+	DROP TABLE IF EXISTS #OddsGroupTable
+	DROP TABLE IF EXISTS #CustomerClassTable
+	DROP TABLE IF EXISTS #FullCustomerClassTable
+	DROP TABLE IF EXISTS #SpecialLevelTable
+	DROP TABLE IF EXISTS #CommGroupsTable
 
 END
 GO
