@@ -100,14 +100,14 @@ BEGIN
 
 	DECLARE @SafeCustIDs VARCHAR(MAX) =
 	(
-		SELECT STRING_AGG(value, ',') 
+		SELECT STRING_AGG(CAST(value AS VARCHAR(MAX)), ',') 
 		FROM STRING_SPLIT(@custids, ',')
 		WHERE TRY_CAST(value AS INT) IS NOT NULL
 	)
 
 	DECLARE @SafeCommGroups VARCHAR(MAX) =
 	(
-		SELECT STRING_AGG(value, ',') 
+		SELECT STRING_AGG(CAST(value AS VARCHAR(MAX)), ',') 
 		FROM STRING_SPLIT(@CommGroups, ',')
 		WHERE TRY_CAST(value AS INT) IS NOT NULL
 	)
