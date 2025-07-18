@@ -38,6 +38,7 @@ AS
 		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 		- 20250311@Kelvin: Integrate Virtual Sports 7 - Kiron [RedmineID: #219083]
 		- 20250425@Kelvin: Integrate Saba Soccer Marble [RedmineID: #225015]
+		- 20250717@Kelvin: Add "Player Count" Column to Win Loss By League Report [RedmineID: #233319]
 
 	Param's Explanation:
 		- @SportTypeList: sporttype list separated by ','
@@ -417,13 +418,15 @@ BEGIN
 			AND EXISTS (SELECT 1 FROM #SportBetType WHERE ProductID = 69)
 	END
 
-	DECLARE @Data TABLE (
+	CREATE TABLE #Data
+	(
 		GroupProductCode	VARCHAR(10),
 		LeagueId			INT,
 		LeagueGroupId		SMALLINT,
 		SportType			SMALLINT,
 		WinLostDate			SMALLDATETIME,
 		Currency			INT,
+		CustID				INT,
 		BetCount			BIGINT,
 		Turnover			MONEY,
 		WinLost				MONEY,
@@ -442,13 +445,14 @@ BEGIN
 							END
 		IF @CustId = -1		-- Licensee level
 		BEGIN
-			INSERT INTO @Data (
+			INSERT INTO #Data (
 				GroupProductCode,
 				LeagueId,
 				LeagueGroupId,
 				SportType,
 				WinLostDate,
 				Currency,
+				CustID,
 				BetCount,
 				Turnover,
 				WinLost,
@@ -461,6 +465,7 @@ BEGIN
 				ext.SportType,
 				b.winlostdate,
 				b.currency,
+				b.CustID,
 				COUNT(1) AS BetCount,
 				SUM(CASE
 						WHEN sbt.ProductID = 1 AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29, 38)
@@ -538,17 +543,19 @@ BEGIN
 				ext.LeagueGroupId,
 				ext.SportType,
 				b.winlostdate,
-				b.currency
+				b.currency,
+				b.CustID
 		END
 		ELSE IF @CustId <> 0	-- Customer level
 		BEGIN
-			INSERT INTO @Data (
+			INSERT INTO #Data (
 				GroupProductCode,
 				LeagueId,
 				LeagueGroupId,
 				SportType,
 				WinLostDate,
 				Currency,
+				CustID,
 				BetCount,
 				Turnover,
 				WinLost,
@@ -561,6 +568,7 @@ BEGIN
 				ext.SportType,
 				b.winlostdate,
 				b.currency,
+				b.CustID,
 				COUNT(1) AS BetCount,
 				SUM(CASE
 						WHEN sbt.ProductID = 1 AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29, 38)
@@ -627,7 +635,7 @@ BEGIN
 				) ext
 			WHERE
 				b.winlostdate BETWEEN @TempFromDate AND @_ToDate
-				AND b.custid = @CustId
+				AND b.CustID = @CustId
 				AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 				AND (ext.SportType IS NOT NULL AND (@SportTypeCheck IS NULL OR  ',' + @SportTypeCheck + ',' LIKE '%,' + CAST(ext.SportType AS VARCHAR(10)) + ',%'))
 				AND ext.LeagueId <> -1
@@ -637,7 +645,8 @@ BEGIN
 				ext.LeagueGroupId,
 				ext.SportType,
 				b.winlostdate,
-				b.currency
+				b.currency,
+				b.CustID
 		END		
 	END
 
@@ -659,13 +668,14 @@ BEGIN
 
 		IF @CustId = -1		-- Licensee level
 		BEGIN
-			INSERT INTO @Data (
+			INSERT INTO #Data (
 				GroupProductCode,
 				LeagueId,
 				LeagueGroupId,
 				SportType,
 				WinLostDate,
 				Currency,
+				CustID,
 				BetCount,
 				Turnover,
 				WinLost,
@@ -682,6 +692,7 @@ BEGIN
 				ISNULL(saba.SabaSportType, l.SportType) AS SportType,
 				b.winlostdate,
 				b.currency,
+				b.CustID,
 				SUM(b.betcount) AS BetCount,
 				SUM(CASE
 						WHEN b.statusID IN (114, 115) THEN 0.5 * b.stake
@@ -709,17 +720,19 @@ BEGIN
 				l.LeagueGroupId,
 				ISNULL(saba.SabaSportType, l.SportType),
 				b.winlostdate,
-				b.currency
+				b.currency,
+				b.CustID
 		END
 		ELSE IF @CustId <> 0	-- Customer level
 		BEGIN
-			INSERT INTO @Data (
+			INSERT INTO #Data (
 				GroupProductCode,
 				LeagueId,
 				LeagueGroupId,
 				SportType,
 				WinLostDate,
 				Currency,
+				CustID,
 				BetCount,
 				Turnover,
 				WinLost,
@@ -736,6 +749,7 @@ BEGIN
 				ISNULL(saba.SabaSportType, l.SportType) AS SportType,
 				b.winlostdate,
 				b.currency,
+				b.CustID,
 				SUM(b.betcount) AS BetCount,
 				SUM(CASE
 						WHEN b.statusID IN (114, 115) THEN 0.5 * b.stake
@@ -750,7 +764,7 @@ BEGIN
 				LEFT JOIN #SabaSporttype saba ON sbt.ProductID =1 AND saba.Sporttype = l.Sporttype AND saba.LeagueGroupID = l.LeagueGroupId AND b.winlostdate >= ISNULL(saba.CutOffDate,b.winlostdate)
 			WHERE
 				b.winlostdate BETWEEN @_FromDate AND @TempToDate
-				AND b.custid = @CustId
+				AND b.CustID = @CustId
 				AND ',' + @StatusIdList + ',' LIKE '%,' + CAST(b.statusID AS VARCHAR(3)) + ',%'
 				AND (l.SportType IS NOT NULL AND (@SportTypeCheck IS NULL OR  ',' + @SportTypeCheck + ',' LIKE '%,' + CAST(ISNULL(saba.SabaSportType, l.Sporttype) AS VARCHAR(10)) + ',%'))
 			GROUP BY
@@ -763,7 +777,8 @@ BEGIN
 				l.LeagueGroupId,
 				ISNULL(saba.SabaSportType, l.SportType),
 				b.winlostdate,
-				b.currency
+				b.currency,
+				b.CustID
 		END
 	END
 
@@ -778,7 +793,7 @@ BEGIN
 		GBP			FLOAT,
 		DefaultRate	FLOAT)
 
-	IF EXISTS (SELECT TOP(1) 1 FROM @Data)
+	IF EXISTS (SELECT TOP(1) 1 FROM #Data)
 	BEGIN
 		INSERT INTO @ExchangeRate(FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
 		SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate
@@ -788,17 +803,18 @@ BEGIN
 
 	-- Return result
 	SELECT
-		GroupProductCode ,SportType, LeagueId, BetCount, Turnover, WinLost, LicenseeWL
+		GroupProductCode, SportType, LeagueId, PlayerCount, BetCount, Turnover, WinLost, LicenseeWL
 	FROM 
 		(SELECT 
 			d.GroupProductCode,
 			d.SportType,
 			d.LeagueId,
+			COUNT(DISTINCT d.CustID) AS PlayerCount,
 			SUM(d.BetCount) AS BetCount,
 			CAST(SUM(d.Turnover		* e.Rate) AS MONEY) AS Turnover,
 			CAST(SUM(d.WinLost		* e.Rate) AS MONEY) AS WinLost,
 			CAST(SUM(d.LicenseeWL	* e.Rate) AS MONEY) AS LicenseeWL
-			FROM @Data AS d
+			FROM #Data AS d
 			INNER JOIN @ExchangeRate AS e
 				ON d.WinLostDate BETWEEN e.FromDate AND e.ToDate
 					AND d.Currency = e.ExchangeId
@@ -818,5 +834,6 @@ BEGIN
 	DROP TABLE IF EXISTS #TempLeague
 	DROP TABLE IF EXISTS #BetTypeSel
 	DROP TABLE IF EXISTS #SabaSporttype
+	DROP TABLE IF EXISTS #Data
 END
 GO

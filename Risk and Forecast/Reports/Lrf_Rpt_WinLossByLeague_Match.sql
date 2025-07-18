@@ -30,6 +30,7 @@ AS
 		- 20250217@Kelvin: Win Loss By League - Support Virtual Sports [RedmineID: #217407]
 		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 		- 20250311@Kelvin: Integrate Virtual Sports 7 - Kiron [RedmineID: #219083]
+		- 20250717@Kelvin: Add "Player Count" Column to Win Loss By League Report [RedmineID: #233319]
 
 	Param's Explanation:
 		- @BetTypeList: bettype list separated by ','
@@ -135,7 +136,8 @@ BEGIN
 		AND BetType NOT IN (901, 902, 903, 904)
 		AND BetType NOT BETWEEN 801 AND 806
 
-	DECLARE @Data TABLE (
+	CREATE TABLE #Data
+	(
 		MatchId			INT,
 		EventType		TINYINT,
 		HomeId			INT,
@@ -146,6 +148,7 @@ BEGIN
 		KickOffTime		DATETIME,
 		WinLostDate		SMALLDATETIME,
 		Currency		INT,
+		CustID			INT,
 		BetCount		BIGINT,
 		Turnover		MONEY,
 		WinLost			MONEY,
@@ -171,7 +174,7 @@ BEGIN
 
 		IF @CustId = -1		-- Licensee level
 		BEGIN
-			INSERT INTO @Data (
+			INSERT INTO #Data (
 				MatchId,
 				EventType,
 				HomeId,
@@ -182,6 +185,7 @@ BEGIN
 				KickOffTime,
 				WinLostDate,
 				Currency,
+				CustID,
 				BetCount,
 				Turnover,
 				WinLost,
@@ -198,6 +202,7 @@ BEGIN
 				ext.KickOffTime,
 				b.winlostdate,
 				b.currency,
+				b.CustID,
 				COUNT(1) AS BetCount,
 				SUM(CASE
 						WHEN sbt.ProductID = 1 AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29, 38)
@@ -254,11 +259,12 @@ BEGIN
 				ext.Distance,
 				ext.KickOffTime,
 				b.winlostdate,
-				b.currency
+				b.currency,
+				b.CustID
 		END
 		ELSE IF @CustId <> 0	-- Customer level
 		BEGIN
-			INSERT INTO @Data (
+			INSERT INTO #Data (
 				MatchId,
 				EventType,
 				HomeId,
@@ -269,6 +275,7 @@ BEGIN
 				KickOffTime,
 				WinLostDate,
 				Currency,
+				CustID,
 				BetCount,
 				Turnover,
 				WinLost,
@@ -285,6 +292,7 @@ BEGIN
 				ext.KickOffTime,
 				b.winlostdate,
 				b.currency,
+				b.CustID,
 				COUNT(1) AS BetCount,
 				SUM(CASE
 						WHEN sbt.ProductID = 1 AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29, 38)
@@ -341,7 +349,8 @@ BEGIN
 				ext.Distance,
 				ext.KickOffTime,
 				b.winlostdate,
-				b.currency
+				b.currency,
+				b.CustID
 		END
 	END
 
@@ -363,11 +372,12 @@ BEGIN
 
 		IF @CustId = -1		-- Licensee level
 		BEGIN
-			INSERT INTO @Data (
+			INSERT INTO #Data (
 				MatchId,
 				EventType,
 				WinLostDate,
 				Currency,
+				CustID,
 				BetCount,
 				Turnover,
 				WinLost,
@@ -378,6 +388,7 @@ BEGIN
 				sbt.EventType,
 				b.winlostdate,
 				b.currency,
+				b.CustID,
 				SUM(b.betcount) AS BetCount,
 				SUM(CASE
 						WHEN b.statusID IN (114, 115) THEN 0.5 * b.stake
@@ -397,15 +408,17 @@ BEGIN
 				b.matchid,
 				sbt.EventType,
 				b.winlostdate,
-				b.currency
+				b.currency,
+				b.CustID
 		END
 		ELSE IF @CustId <> 0	-- Customer level
 		BEGIN
-			INSERT INTO @Data (
+			INSERT INTO #Data (
 				MatchId,
 				EventType,
 				WinLostDate,
 				Currency,
+				CustID,
 				BetCount,
 				Turnover,
 				WinLost,
@@ -416,6 +429,7 @@ BEGIN
 				sbt.EventType,
 				b.winlostdate,
 				b.currency,
+				b.CustID,
 				SUM(b.betcount) AS BetCount,
 				SUM(CASE
 						WHEN b.statusID IN (114, 115) THEN 0.5 * b.stake
@@ -435,13 +449,14 @@ BEGIN
 				b.matchid,
 				sbt.EventType,
 				b.winlostdate,
-				b.currency
+				b.currency,
+				b.CustID
 		END
 
 		-- bettrans14 range
-		IF EXISTS (SELECT 1 FROM @Data WHERE WinLostDate BETWEEN @BalanceUpDay AND @MoveBetsDay)
+		IF EXISTS (SELECT 1 FROM #Data WHERE WinLostDate BETWEEN @BalanceUpDay AND @MoveBetsDay)
 		BEGIN
-			IF EXISTS(SELECT TOP(1) 1 FROM @Data WHERE EventType = 1)
+			IF EXISTS(SELECT TOP(1) 1 FROM #Data WHERE EventType = 1)
 			BEGIN
 				UPDATE b
 				SET b.MatchId = CASE
@@ -454,13 +469,13 @@ BEGIN
 					b.VendorMatchId = '',
 					b.Distance = '',
 					b.KickOffTime = 0
-				FROM @Data AS b
+				FROM #Data AS b
 					INNER JOIN dbo.match14 AS m WITH (NOLOCK) ON m.matchid = b.MatchId
 				WHERE b.WinLostDate BETWEEN @BalanceUpDay AND @MoveBetsDay
 					AND b.EventType = 1
 			END
 
-			IF EXISTS(SELECT TOP(1) 1 FROM @Data WHERE EventType = 2)
+			IF EXISTS(SELECT TOP(1) 1 FROM #Data WHERE EventType = 2)
 			BEGIN
 				UPDATE b
 				SET b.HomeId = o.teamid,
@@ -469,13 +484,13 @@ BEGIN
 					b.VendorMatchId = '',
 					b.Distance = '',
 					b.KickOffTime = 0
-				FROM @Data AS b
+				FROM #Data AS b
 					INNER JOIN dbo.outright14 AS o WITH (NOLOCK) ON o.orid = b.MatchId
 				WHERE b.WinLostDate BETWEEN @BalanceUpDay AND @MoveBetsDay
 					AND b.EventType = 2
 			END
 
-			IF EXISTS(SELECT TOP(1) 1 FROM @Data WHERE EventType = 3)
+			IF EXISTS(SELECT TOP(1) 1 FROM #Data WHERE EventType = 3)
 			BEGIN
 				UPDATE b
 				SET b.HomeId = 0,
@@ -484,13 +499,13 @@ BEGIN
 					b.VendorMatchId = r.VendorMatchId,
 					b.Distance = r.Distance,
 					b.KickOffTime = r.EventTime
-				FROM @Data AS b
+				FROM #Data AS b
 					INNER JOIN dbo.VSRaceInfo14 AS r WITH (NOLOCK) ON r.EventID = b.MatchId
 				WHERE b.WinLostDate BETWEEN @BalanceUpDay AND @MoveBetsDay
 					AND b.EventType = 3
 			END
 
-			IF EXISTS(SELECT TOP(1) 1 FROM @Data WHERE EventType = 5)
+			IF EXISTS(SELECT TOP(1) 1 FROM #Data WHERE EventType = 5)
 			BEGIN
 				UPDATE b
 				SET b.HomeId = m3rd.HomeId,
@@ -499,7 +514,7 @@ BEGIN
 					b.VendorMatchId = '',
 					b.Distance = '',
 					b.KickOffTime = 0
-				FROM @Data AS b
+				FROM #Data AS b
 					INNER JOIN dbo.Match3rd14 AS m3rd WITH (NOLOCK) ON m3rd.Match3rdId = b.MatchId
 				WHERE b.WinLostDate BETWEEN @BalanceUpDay AND @MoveBetsDay
 					AND b.EventType = 5
@@ -507,9 +522,9 @@ BEGIN
 		END
 
 		-- bettrans_bk range
-		IF EXISTS (SELECT 1 FROM @Data WHERE WinLostDate < @BalanceUpDay)
+		IF EXISTS (SELECT 1 FROM #Data WHERE WinLostDate < @BalanceUpDay)
 		BEGIN
-			IF EXISTS(SELECT TOP(1) 1 FROM @Data WHERE EventType = 1)
+			IF EXISTS(SELECT TOP(1) 1 FROM #Data WHERE EventType = 1)
 			BEGIN
 				UPDATE b
 				SET b.MatchId = CASE
@@ -522,13 +537,13 @@ BEGIN
 					b.VendorMatchId = '',
 					b.Distance = '',
 					b.KickOffTime = 0
-				FROM @Data AS b
+				FROM #Data AS b
 					INNER JOIN DBARC.bodb_Archive.dbo.match_bk AS m WITH (NOLOCK) ON m.matchid = b.MatchId
 				WHERE b.WinLostDate < @BalanceUpDay
 					AND b.EventType = 1
 			END
 
-			IF EXISTS(SELECT TOP(1) 1 FROM @Data WHERE EventType = 2)
+			IF EXISTS(SELECT TOP(1) 1 FROM #Data WHERE EventType = 2)
 			BEGIN
 				UPDATE b
 				SET b.HomeId = o.teamid,
@@ -537,13 +552,13 @@ BEGIN
 					b.VendorMatchId = '',
 					b.Distance = '',
 					b.KickOffTime = 0
-				FROM @Data AS b
+				FROM #Data AS b
 					INNER JOIN DBARC.bodb_Archive.dbo.outright_bk AS o WITH (NOLOCK) ON o.orid = b.MatchId
 				WHERE b.WinLostDate < @BalanceUpDay
 					AND b.EventType = 2
 			END
 
-			IF EXISTS(SELECT TOP(1) 1 FROM @Data WHERE EventType = 3)
+			IF EXISTS(SELECT TOP(1) 1 FROM #Data WHERE EventType = 3)
 			BEGIN
 				UPDATE b
 				SET b.HomeId = 0,
@@ -552,13 +567,13 @@ BEGIN
 					b.VendorMatchId = r.VendorMatchId,
 					b.Distance = r.Distance,
 					b.KickOffTime = r.EventTime
-				FROM @Data AS b
+				FROM #Data AS b
 					INNER JOIN DBARC.bodb_Archive.dbo.VSRaceInfo_bk AS r WITH (NOLOCK) ON r.EventID = b.MatchId
 				WHERE b.WinLostDate < @BalanceUpDay
 					AND b.EventType = 3
 			END
 
-			IF EXISTS(SELECT TOP(1) 1 FROM @Data WHERE EventType = 5)
+			IF EXISTS(SELECT TOP(1) 1 FROM #Data WHERE EventType = 5)
 			BEGIN
 				UPDATE b
 				SET b.HomeId = m3rd.HomeId,
@@ -567,7 +582,7 @@ BEGIN
 					b.VendorMatchId = '',
 					b.Distance = '',
 					b.KickOffTime = 0
-				FROM @Data AS b
+				FROM #Data AS b
 					INNER JOIN DBARC.bodb_Archive.dbo.Match3rd_bk AS m3rd WITH (NOLOCK) ON m3rd.Match3rdId = b.MatchId
 				WHERE b.WinLostDate < @BalanceUpDay
 					AND b.EventType = 5
@@ -582,7 +597,7 @@ BEGIN
 	SELECT
 		@MinDate = MIN(WinLostDate),
 		@MaxDate = MAX(WinLostDate)
-	FROM @Data
+	FROM #Data
 
 	DECLARE @ExchangeRate TABLE (
 		FromDate	SMALLDATETIME,
@@ -594,7 +609,7 @@ BEGIN
 		GBP			FLOAT,
 		DefaultRate	FLOAT)
 
-	IF EXISTS (SELECT TOP(1) 1 FROM @Data)
+	IF EXISTS (SELECT TOP(1) 1 FROM #Data)
 	BEGIN
 		INSERT INTO @ExchangeRate(FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
 		SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate
@@ -612,11 +627,12 @@ BEGIN
 		d.VendorMatchId,
 		d.Distance,
 		d.KickOffTime,
+		COUNT(DISTINCT d.CustID) AS PlayerCount,
 		SUM(d.BetCount) AS BetCount,
 		CAST(SUM(d.Turnover		* e.Rate) AS MONEY) AS Turnover,
 		CAST(SUM(d.WinLost		* e.Rate) AS MONEY) AS WinLost,
 		CAST(SUM(d.LicenseeWL	* e.Rate) AS MONEY) AS LicenseeWL
-	FROM @Data AS d
+	FROM #Data AS d
 		INNER JOIN @ExchangeRate AS e
 			ON d.WinLostDate BETWEEN e.FromDate AND e.ToDate
 				AND d.Currency = e.ExchangeId
@@ -633,6 +649,6 @@ BEGIN
 
 	DROP TABLE IF EXISTS #BetTypeSel
 	DROP TABLE IF EXISTS #SportBetType
-
+	DROP TABLE IF EXISTS #Data
 END
 GO

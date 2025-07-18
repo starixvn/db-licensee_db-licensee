@@ -28,6 +28,7 @@ AS
 		- 20250217@Kelvin: Win Loss By League - Support Virtual Sports [RedmineID: #217407]
 		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 		- 20250311@Kelvin: Integrate Virtual Sports 7 - Kiron [RedmineID: #219083]
+		- 20250717@Kelvin: Add "Player Count" Column to Win Loss By League Report [RedmineID: #233319]
 
 	Param's Explanation:
 		- @BetTypeList: bettype list separated by ','
@@ -152,9 +153,11 @@ BEGIN
 	IF @LeagueId = -69
 		DELETE FROM #SportBetType WHERE ProductID <> 69
 
-	DECLARE @Data TABLE (
+	CREATE TABLE #Data
+	(
 		Currency	INT,
 		WinLostDate	SMALLDATETIME,
+		CustID		INT,
 		BetCount	BIGINT,
 		Turnover	MONEY,
 		WinLost		MONEY,
@@ -180,9 +183,10 @@ BEGIN
 
 		IF @CustId = -1		-- Licensee level
 		BEGIN
-			INSERT INTO @Data (
+			INSERT INTO #Data (
 				Currency,
 				WinLostDate,
+				CustID,
 				BetCount,
 				Turnover,
 				WinLost,
@@ -191,6 +195,7 @@ BEGIN
 			SELECT
 				b.currency,
 				b.winlostdate,
+				b.CustID,
 				COUNT(1) AS BetCount,
 				SUM(CASE
 						WHEN sbt.ProductID = 1 AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29, 38)
@@ -229,13 +234,15 @@ BEGIN
 				AND ext.LeagueId = @LeagueId
 			GROUP BY
 				b.currency,
-				b.winlostdate
+				b.winlostdate,
+				b.CustID
 		END
 		ELSE IF @CustId <> 0	-- Customer level
 		BEGIN
-			INSERT INTO @Data (
+			INSERT INTO #Data (
 				Currency,
 				WinLostDate,
+				CustID,
 				BetCount,
 				Turnover,
 				WinLost,
@@ -244,6 +251,7 @@ BEGIN
 			SELECT
 				b.currency,
 				b.winlostdate,
+				b.CustID,
 				COUNT(1) AS BetCount,
 				SUM(CASE
 						WHEN sbt.ProductID = 1 AND b.statusID IN (112, 113) AND b.modds IN (-0.25, 0.25) AND b.bettype NOT IN (29, 38)
@@ -282,7 +290,8 @@ BEGIN
 				AND ext.LeagueId = @LeagueId
 			GROUP BY
 				b.currency,
-				b.winlostdate
+				b.winlostdate,
+				b.CustID
 		END
 	END
 
@@ -304,9 +313,10 @@ BEGIN
 
 		IF @CustId = -1		-- Licensee level
 		BEGIN
-			INSERT INTO @Data (
+			INSERT INTO #Data (
 				Currency,
 				WinLostDate,
+				CustID,
 				BetCount,
 				Turnover,
 				WinLost,
@@ -315,6 +325,7 @@ BEGIN
 			SELECT
 				b.currency,
 				b.winlostdate,
+				b.CustID,
 				SUM(b.betcount) AS BetCount,
 				SUM(CASE
 						WHEN b.statusID IN (114, 115) THEN 0.5 * b.stake
@@ -332,13 +343,15 @@ BEGIN
 				AND (b.leagueid = @LeagueId OR @LeagueId IN (-69, -5)) -- -69: BTC, -5: parlay VS
 			GROUP BY
 				b.currency,
-				b.winlostdate
+				b.winlostdate,
+				b.CustID
 		END
 		ELSE IF @CustId <> 0	-- Customer level
 		BEGIN
-			INSERT INTO @Data (
+			INSERT INTO #Data (
 				Currency,
 				WinLostDate,
+				CustID,
 				BetCount,
 				Turnover,
 				WinLost,
@@ -347,6 +360,7 @@ BEGIN
 			SELECT
 				b.currency,
 				b.winlostdate,
+				b.CustID,
 				SUM(b.betcount) AS BetCount,
 				SUM(CASE
 						WHEN b.statusID IN (114, 115) THEN 0.5 * b.stake
@@ -364,7 +378,8 @@ BEGIN
 				AND (b.leagueid = @LeagueId OR @LeagueId IN (-69, -5)) -- -69: BTC, -5: parlay VS
 			GROUP BY
 				b.currency,
-				b.winlostdate
+				b.winlostdate,
+				b.CustID
 		END
 
 	END
@@ -376,7 +391,7 @@ BEGIN
 	SELECT
 		@MinDate = MIN(WinLostDate),
 		@MaxDate = MAX(WinLostDate)
-	FROM @Data
+	FROM #Data
 
 	DECLARE @ExchangeRate TABLE (
 		FromDate	SMALLDATETIME,
@@ -388,7 +403,7 @@ BEGIN
 		GBP			FLOAT,
 		DefaultRate	FLOAT)
 
-	IF EXISTS (SELECT TOP(1) 1 FROM @Data)
+	IF EXISTS (SELECT TOP(1) 1 FROM #Data)
 	BEGIN
 		INSERT INTO @ExchangeRate(FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate)
 		SELECT FromDate, ToDate, ExchangeID, USD, EUR, GBP, Rate, DefaultRate
@@ -399,11 +414,12 @@ BEGIN
 	-- Return result
 	SELECT
 		d.Currency,
+		COUNT(DISTINCT d.CustID) AS PlayerCount,
 		SUM(d.BetCount) AS BetCount,
 		CAST(SUM(d.Turnover		* e.Rate) AS MONEY) AS Turnover,
 		CAST(SUM(d.WinLost		* e.Rate) AS MONEY) AS WinLost,
 		CAST(SUM(d.LicenseeWL	* e.Rate) AS MONEY) AS LicenseeWL
-	FROM @Data AS d
+	FROM #Data AS d
 		INNER JOIN @ExchangeRate AS e
 			ON d.WinLostDate BETWEEN e.FromDate AND e.ToDate
 				AND d.Currency = e.ExchangeId
@@ -413,5 +429,6 @@ BEGIN
 	DROP TABLE IF EXISTS #TempAg
 	DROP TABLE IF EXISTS #SportBetType
 	DROP TABLE IF EXISTS #BetTypeSel
+	DROP TABLE IF EXISTS #Data
 END
 GO
