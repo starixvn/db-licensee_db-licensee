@@ -80,6 +80,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20250529@Kelvin: Integrate ClotPlay [RedmineID: #228149]
 		- 20250529@Kelvin: Integrate AI Gaming [RedmineID: #228561]
 		- 20250630@Kelvin: Integrate GPI Lottery [RedmineID: #231720]
+		- 20250721@Kelvin: Integrate ODIN GAMING [RedmineID: #220120]
 
 */
 RETURNS TABLE
@@ -156,7 +157,8 @@ RETURN
 					(98, 'WLC', 136, 0),	-- W Casino
 					(109, 'CPRNG', 122, 0),	-- ClotPlay
 					(110, 'AIG', 121, 0),	-- AI Gaming
-					(84, 'GPILT', 132, 0)	-- GPI Lottery
+					(84, 'GPILT', 132, 0),	-- GPI Lottery
+					(105, 'ODG', 128, 0)	-- ODIN GAMING
 
 			) d(ProductID, ProductCode, SportType, BetType)
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'
