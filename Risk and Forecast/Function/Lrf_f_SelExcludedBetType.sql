@@ -35,6 +35,7 @@ RETURNS TABLE
 		- 20250402@Kelvin: Integrate Microgaming Live product [RedmineID: #222437]
 		- 20250421@Kelvin: Integrate RichGaming [RedmineID: #224191]
 		- 20250519@Kelvin: Add new Saba Promotion - FIFA CWC Score Challenge [RedmineID: #227537]
+		- 20250725@Kelvin: LAP - Integrate Playtech - Jackpot [RedmineID: #233781]
 
 */
 
@@ -114,4 +115,9 @@ RETURN
 	SELECT 'MGLC', 13995								-- Microgaming Live promotion prize
 	UNION ALL
 	SELECT 'RGRNG', 15899								-- RichGaming promotion prize
+	UNION ALL
+	SELECT 'PTRNG', 12998								-- Jackpot Contribution
+	UNION ALL
+	SELECT 'PTRNG', 12999								-- Jackpot Prize
+
 GO
