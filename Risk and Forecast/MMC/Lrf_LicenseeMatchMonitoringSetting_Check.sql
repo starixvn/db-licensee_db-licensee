@@ -18,6 +18,7 @@ AS
     
     Revisions:
         - 20250521@Tacy: Create SP [RedmineID: #227673]
+        - 20250728@Tacy: Add "Only Once" Option for Alert Notification [RedmineID: #233693]
 
     Param's Explanation:
 */
@@ -58,13 +59,10 @@ BEGIN
     END
 
     -- Validate NotificationInterval    
-	IF @NotificationInterval <= 0
+	IF @NotificationInterval <= -2
     BEGIN
         SET @ErrCode = 13
-        SET @ErrMsg = CASE WHEN @Langkey='en-US'
-							THEN 'NotificationInterval must be greater than 0.'
-							ELSE [CustDB].[dbo].[Lrf_f_Get_MsgNamebyMsgID](200055, @Langkey)
-						END
+        SET @ErrMsg = 'Invalid NotificationInterval.'
         RETURN
     END
 
