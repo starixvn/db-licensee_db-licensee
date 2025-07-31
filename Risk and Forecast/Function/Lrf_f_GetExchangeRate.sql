@@ -36,6 +36,7 @@ AS
 		- 20240507@Kelvin: LAP - Support based currency JPY, MXN, NGN [RedmineID: #200904]
 		- 20241111@Kelvin: LAP - Support BRL base currency [RedmineID: #208662]
 		- 20250314@Kelvin: LAP - Support based PKR [RedmineID: #219424]
+		- 20250716@Kelvin: LAP - Support based ZAR [RedmineID: #232973]
 
 */
 
@@ -131,6 +132,7 @@ BEGIN
 				WHEN @BaseCurrency = 'NGN' THEN ex.NGN
 				WHEN @BaseCurrency = 'BRL' THEN ex.BRL
 				WHEN @BaseCurrency = 'PKR' THEN ex.PKR
+				WHEN @BaseCurrency = 'ZAR' THEN ex.ZAR
 				ELSE 1
 			END AS Rate,
 			CASE
@@ -159,6 +161,7 @@ BEGIN
 				WHEN @DefaultBaseCurrency = 'NGN' THEN ex.NGN
 				WHEN @DefaultBaseCurrency = 'BRL' THEN ex.BRL
 				WHEN @DefaultBaseCurrency = 'PKR' THEN ex.PKR
+				WHEN @DefaultBaseCurrency = 'ZAR' THEN ex.ZAR
 				ELSE 1
 			END AS DefaultRate
 		FROM dbo.ExchangeDailyOanda ex WITH(NOLOCK)
