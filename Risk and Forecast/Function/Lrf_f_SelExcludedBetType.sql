@@ -36,6 +36,7 @@ RETURNS TABLE
 		- 20250421@Kelvin: Integrate RichGaming [RedmineID: #224191]
 		- 20250519@Kelvin: Add new Saba Promotion - FIFA CWC Score Challenge [RedmineID: #227537]
 		- 20250725@Kelvin: LAP - Integrate Playtech - Jackpot [RedmineID: #233781]
+		- 20250801@Kelvin: LAP/MPA - Betradar VS2 - Integrate new VS Tournament [RedmineID: #234844]
 
 */
 
@@ -119,5 +120,6 @@ RETURN
 	SELECT 'PTRNG', 12998								-- Jackpot Contribution
 	UNION ALL
 	SELECT 'PTRNG', 12999								-- Jackpot Prize
-
+	UNION ALL
+	SELECT 'VS2', 2798									-- VS Tournament
 GO
