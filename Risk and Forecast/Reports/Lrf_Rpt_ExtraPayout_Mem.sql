@@ -40,11 +40,13 @@ AS
 		- 20250421@Kelvin: Integrate RichGaming [RedmineID: #224191]
 		- 20250519@Kelvin: Add new Saba Promotion - FIFA CWC Score Challenge [RedmineID: #227537]
 		- 20250725@Kelvin: LAP - Integrate Playtech - Jackpot [RedmineID: #233781]
+		- 20250801@Kelvin: LAP/MPA - Betradar VS2 - Integrate new VS Tournament [RedmineID: #234844]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
 			- 101: Sportsbook - Odds Boost Adjustment (BetType: 997)
 			- 2101: Allbet - Promotion (BetType: 2499)
+			- 2701: VS2 - VS Tournament (BetType: 2798)
 			- 3201: PP - Tournament Prize (BetType: 4299)
 			- 3202: PP - Promotion Prize (BetType: 4300)
 			- 3203: PP - Jackpot Prize (BetType: 4298)
@@ -194,6 +196,7 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10801,%' AND BetType = 15899 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10001,%' AND BetType = 12998 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10002,%' AND BetType = 12999 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,2701,%' AND BetType = 2798 THEN 1
 				ELSE 0
 			END
 
@@ -278,6 +281,7 @@ BEGIN
 				WHEN b.bettype = 15899 THEN 10801
 				WHEN b.bettype = 12998 THEN 10001
 				WHEN b.bettype = 12999 THEN 10002
+				WHEN b.bettype = 2798 THEN 2701
 				ELSE 0
 			END AS PromotionType,
 			b.winlostdate,
@@ -357,6 +361,7 @@ BEGIN
 				WHEN b.bettype = 15899 THEN 10801
 				WHEN b.bettype = 12998 THEN 10001
 				WHEN b.bettype = 12999 THEN 10002
+				WHEN b.bettype = 2798 THEN 2701
 				ELSE 0
 			END,
 			b.winlostdate,
@@ -441,6 +446,7 @@ BEGIN
 				WHEN b.bettype = 15899 THEN 10801
 				WHEN b.bettype = 12998 THEN 10001
 				WHEN b.bettype = 12999 THEN 10002
+				WHEN b.bettype = 2798 THEN 2701
 				ELSE 0
 			END AS PromotionType,
 			b.winlostdate,
@@ -527,6 +533,7 @@ BEGIN
 				WHEN b.bettype = 15899 THEN 10801
 				WHEN b.bettype = 12998 THEN 10001
 				WHEN b.bettype = 12999 THEN 10002
+				WHEN b.bettype = 2798 THEN 2701
 				ELSE 0
 			END,
 			b.winlostdate,
