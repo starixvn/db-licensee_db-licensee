@@ -224,11 +224,6 @@ BEGIN
 			
 			IF @strNonBA  <> ''
 			BEGIN
-				SELECT @DiscountSettings = CAST((SELECT SportType,BetType,Discount
-									FROM @tblSettings
-									FOR XML RAW('r'), ROOT('Root')		
-									) AS VARCHAR(MAX))
-									
 				EXEC CustDB.dbo.[Lrf_CustomerUpdMemberComm_Main] 
 					@strCustID=@strNonBA,
 					@DiscountSettings = @DiscountSettings					
