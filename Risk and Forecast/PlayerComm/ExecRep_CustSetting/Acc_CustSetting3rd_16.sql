@@ -43,6 +43,7 @@ Revisions:
 	- 20240715@Johnson: Apply In-house Replication for Customer Setting [redmine:#207025]	
 	- 20240925@Johnson: Add DBKLC1 [redmine: #207025]
 	- 20241010@Johnson: remove DBKLC1 [redmine: #207025]
+	- 20250804@Tacy: Perf tuning [redmine:#235121]
 Param's Explanation:
 � @ErrCode:
     = 0: Transaction recorded successfully.
@@ -51,7 +52,7 @@ Param's Explanation:
 � @ErrMsg: Error description.
 */
 BEGIN
-	IF @@SERVERNAME NOT IN ('DBCUST','DBSPARE','SITDBCUST','TESTDBCUST','DB-60\DEVDBCUST')
+	IF dbo.f_CheckServerName()=0
 		RETURN;
 		
 	SET NOCOUNT ON;
@@ -59,14 +60,11 @@ BEGIN
 	DECLARE @InputRes_updateComm AS TABLE (custid INT PRIMARY KEY)
 			
 	DECLARE @InputRes_updateComm_batch AS TABLE (custid INT PRIMARY KEY)
-	DECLARE @xml XML
-	
-	SET @xml = CONVERT(XML, @IDs) 
 	
 	INSERT INTO @InputRes_updateComm (custid)
-	SELECT T.C.value('./@id', 'INT')
-	FROM @xml.nodes('/root/r') AS T(C)
-	OPTION (OPTIMIZE FOR (@xml = NULL ))
+	SELECT  TRIM(VALUE)		
+	FROM STRING_SPLIT(@IDs, ',')
+	WHERE TRIM(VALUE)<>''
 	
 	-- param for DCS
 	DECLARE @sporttype SMALLINT, @bettype SMALLINT, @Discount DECIMAL(9,8), @DiscountGroup DECIMAL(9,8)			

@@ -49,6 +49,8 @@ AS
 		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 		- 20240202@Johnson: Restructure Commission [redmine:#179088]
 		- 20241024@Johnson: Fix Log Comm [redmine:#212155]
+		- 20250804@Tacy: Perf tuning [redmine:#235121]
+
 	Param's Explanation:
 
 */
@@ -222,6 +224,11 @@ BEGIN
 						
 			IF @IsexistMember = 1			
 			BEGIN
+				SELECT @DiscountSettings=(SELECT t.SportType, t.BetType
+												, t.Discount, t.Discount_Old
+										  FROM @tblSettings  t
+										  FOR XML RAW('r'), ROOT('Root'))
+
 				--Update List of affected Customers               
 				EXEC [Lrf_CustomerUpdMemberComm] 
 					@LicenseeID=@LicenseeID

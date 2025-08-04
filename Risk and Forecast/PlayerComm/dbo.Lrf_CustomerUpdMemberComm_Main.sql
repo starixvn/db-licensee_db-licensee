@@ -38,6 +38,7 @@ AS
 		- 20230808@Tacy: LAP - Offer Player Commission to VS3 (new) [redmine: #192203]
 		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 		- 20240222@Johnson: Restructure Commission [redmine:#179088]
+		- 20250804@Tacy: Perf tuning [redmine:#235121]
 	Param's Explanation:
 
 */
@@ -60,7 +61,7 @@ BEGIN
 	DECLARE @res_batch_tmp AS TABLE (custid INT )
 	
 	SET @runningCNT = 0
-	SET @batchSize = 600
+	SET @batchSize = 2000
 	
 	DECLARE @InputRes_updateComm_batch AS TABLE (custid INT PRIMARY KEY)
 	DECLARE @AgentID INT = 0
@@ -89,17 +90,17 @@ BEGIN
 			
 			IF @@ROWCOUNT = 0 BREAK
 	
-			SET @ids = (SELECT custid AS '@id'
-							FROM @res_batch_tmp  t
-							FOR XML PATH('r'), ROOT('root')
-							)	
+			SELECT @ids=STUFF((SELECT ',' + CAST(custid AS VARCHAR)
+								FROM @res_batch_tmp
+								FOR XML PATH('')),1,1,'')
+
 			EXEC [Acc_CustSetting3rd_16] 
 				@ids = @ids,
 				@AgentID = @AgentID,
 				@DiscountSettings = @DiscountSettings
 				
-			-- delay 00.100ms after 5 times continuous running
-			IF @runningCNT % 2 = 0 WAITFOR DELAY '00:00:00.280'
+			-- delay 00.100ms after 2 times continuous running
+			IF @runningCNT % 2 = 0 WAITFOR DELAY '00:00:00.100'
 		END
 
 		UPDATE t

@@ -98,7 +98,8 @@ BEGIN
 	INSERT INTO @tblSettings (SportType,BetType,Discount)
 	SELECT t.c.value('@SportType[1]','smallint'),
 		t.c.value('@BetType[1]','smallint'),
-		ISNULL(t.c.value('@Discount[1]','DECIMAL(9,8)'),0)
+		ISNULL(t.c.value('@Discount[1]','DECIMAL(9,8)'),0),
+		ISNULL(t.c.value('@Discount_Old[1]','DECIMAL(9,8)'),0)
 	FROM @xmlDiscountSettings.nodes('/Root/r') as T(c)
 		
 	SELECT  @MacauLicenseeID =  LicenseeID
@@ -194,6 +195,7 @@ BEGIN
 	
 	SELECT @DiscountSettings = CAST((SELECT SportType,BetType,Discount
 									FROM @tblSettings
+									WHERE Discount <> Discount_Old
 									FOR XML RAW('r'), ROOT('Root')		
 									) AS VARCHAR(MAX))
 	
@@ -252,12 +254,10 @@ BEGIN
 
 		DELETE FROM @TempList_batch
 		
-		UPDATE TOP (1000) t
-			SET IsFinished = 1
+		DELETE TOP (1000) t
 		OUTPUT deleted.CustID, deleted.AgentID, deleted.IsGroupedComm
 		INTO @TempList_batch (custID,AgentID,IsGroupedComm)
 		FROM @TempCustID t
-		WHERE IsFinished IS NULL
 		
 		--Check empty batches
 		IF (@@ROWCOUNT = 0)
