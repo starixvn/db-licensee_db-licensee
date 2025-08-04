@@ -1,2 +1,5 @@
-Risk and Forecast\MMC\Lrf_LicenseeMatchMonitoringSetting_Ins.sql
-Risk and Forecast\MMC\Lrf_LicenseeMatchMonitoringSetting_Upd.sql
+Risk and Forecast\PlayerComm\dbo.Lrf_CustomerMoveGroupComm.sql
+Risk and Forecast\PlayerComm\dbo.Lrf_CustomerRemoveGroupComm.sql
+Risk and Forecast\PlayerComm\dbo.Lrf_CustomerSetDefaultComm.sql
+Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeCustCommUpd.sql
+Risk and Forecast\PlayerComm\dbo.Lrf_LicenseeGroupCommDel.sql

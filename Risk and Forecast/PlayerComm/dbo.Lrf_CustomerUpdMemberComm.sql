@@ -62,6 +62,7 @@ AS
 		- 20240111@Tacy: LAP - Merge VS1, VS2, VS3 as Virtual Sports [Redmine: #199523]
 		- 20240220@Johnson: Restructure Commission [redmine:#179088]
 		- 20250227@Virgil: Drop BA functions [RedmineID: #216882]
+		- 20250804@Tacy: Perf tuning [redmine:#235121]
 
 	Param's Explanation:
 		1. To update a member/batch members without GroupCommID
@@ -95,7 +96,7 @@ BEGIN
 	
 	SELECT @xmlDiscountSettings = CAST(@DiscountSettings as XML)
 	
-	INSERT INTO @tblSettings (SportType,BetType,Discount)
+	INSERT INTO @tblSettings (SportType,BetType,Discount,Discount_Old)
 	SELECT t.c.value('@SportType[1]','smallint'),
 		t.c.value('@BetType[1]','smallint'),
 		ISNULL(t.c.value('@Discount[1]','DECIMAL(9,8)'),0),
