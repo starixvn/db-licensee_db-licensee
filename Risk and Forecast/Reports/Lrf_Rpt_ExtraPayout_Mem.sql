@@ -39,9 +39,11 @@ AS
 		- 20250311@Kelvin: Integrate Virtual Sports 7 - Kiron [RedmineID: #219083]
 		- 20250421@Kelvin: Integrate RichGaming [RedmineID: #224191]
 		- 20250519@Kelvin: Add new Saba Promotion - FIFA CWC Score Challenge [RedmineID: #227537]
+		- 20250725@Kelvin: LAP - Integrate Playtech - Jackpot [RedmineID: #233781]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
+			- 101: Sportsbook - Odds Boost Adjustment (BetType: 997)
 			- 2101: Allbet - Promotion (BetType: 2499)
 			- 3201: PP - Tournament Prize (BetType: 4299)
 			- 3202: PP - Promotion Prize (BetType: 4300)
@@ -50,6 +52,7 @@ AS
 			- 3401: Arcadia Gaming - Bonus (BetType: 1906)
 			- 3601: SG - Jackpot Prize (BetType: 4600)
 			- 3602: SG - Jackpot Contribution (BetType: 4599)
+			- 3603: SG - Promotion Prize (BetType: 4598)
 			- 3701: Saba Lucky Spin (BetType: 17000)
 			- 3702: Saba Lucky Spot (BetType: 17001)
 			- 3703: Non - Cash Prize (BetType: 17002)
@@ -73,15 +76,15 @@ AS
 			- 6602: Vgaming - Jackpot Prize (BetType: 3899)
 			- 6603: Vgaming - Jackpot Contribution (BetType: 3898)
 			- 6604: Vgaming - Promotion Prize (BetType: 3897)
-			- 7401: Player Tips (BetType: 8700)
-			- 3603: SG - Promotion Prize (BetType: 4598)
 			- 7301: MGRNG - Promotion Prize (BetType: 8695)
+			- 7401: Player Tips (BetType: 8700)
 			- 7901: Live22 - Promotion Prize (BetType: 7698)
 			- 8701: FastSpin - Promotion Prize (BetType: 11295)
 			- 8901: FACHAI - Promotion Prize (BetType: 11399)
-			- 101: Sportsbook - Odds Boost Adjustment (BetType: 997)
-			- 10301: ASKMESLOT - Promotion Prize (BetType: 15199)
 			- 9501: HOTDOG - Promotion Prize (BetType: 11999)
+			- 10001: Playtech  - Jackpot Contribution (BetType: 12998)
+			- 10002: Playtech  - Jackpot Prize (BetType: 12999)
+			- 10301: ASKMESLOT - Promotion Prize (BetType: 15199)
 			- 10701: Microgaming Live - Promotion Prize (BetType: 13995)
 			- 10801: RichGaming - Promotion Prize (BetType: 15899)
 */
@@ -189,6 +192,8 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,9501,%' AND BetType = 11999 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10701,%' AND BetType = 13995 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10801,%' AND BetType = 15899 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10001,%' AND BetType = 12998 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10002,%' AND BetType = 12999 THEN 1
 				ELSE 0
 			END
 
@@ -271,6 +276,8 @@ BEGIN
 				WHEN b.bettype = 11999 THEN 9501
 				WHEN b.bettype = 13995 THEN 10701
 				WHEN b.bettype = 15899 THEN 10801
+				WHEN b.bettype = 12998 THEN 10001
+				WHEN b.bettype = 12999 THEN 10002
 				ELSE 0
 			END AS PromotionType,
 			b.winlostdate,
@@ -348,6 +355,8 @@ BEGIN
 				WHEN b.bettype = 11999 THEN 9501
 				WHEN b.bettype = 13995 THEN 10701
 				WHEN b.bettype = 15899 THEN 10801
+				WHEN b.bettype = 12998 THEN 10001
+				WHEN b.bettype = 12999 THEN 10002
 				ELSE 0
 			END,
 			b.winlostdate,
@@ -430,6 +439,8 @@ BEGIN
 				WHEN b.bettype = 11999 THEN 9501
 				WHEN b.bettype = 13995 THEN 10701
 				WHEN b.bettype = 15899 THEN 10801
+				WHEN b.bettype = 12998 THEN 10001
+				WHEN b.bettype = 12999 THEN 10002
 				ELSE 0
 			END AS PromotionType,
 			b.winlostdate,
@@ -514,6 +525,8 @@ BEGIN
 				WHEN b.bettype = 11999 THEN 9501
 				WHEN b.bettype = 13995 THEN 10701
 				WHEN b.bettype = 15899 THEN 10801
+				WHEN b.bettype = 12998 THEN 10001
+				WHEN b.bettype = 12999 THEN 10002
 				ELSE 0
 			END,
 			b.winlostdate,
