@@ -31,6 +31,7 @@ RETURNS @tempDate TABLE
 		BRL FLOAT,
 		PKR FLOAT,
 		ZAR FLOAT,
+		KRW FLOAT,
 		actualrate FLOAT,
 	UNIQUE CLUSTERED(exchangedate,	exchangeid))
 AS
@@ -55,6 +56,7 @@ AS
 	- 20241111@Kelvin: LAP - Support BRL base currency [RedmineID: #208662]
 	- 20250314@Kelvin: LAP - Support based PKR [RedmineID: #219424]
 	- 20250716@Kelvin: LAP - Support based ZAR [RedmineID: #232973]
+	- 20250807@Kelvin: LAP - Support based KRW [RedmineID: #235551]
 
 */
 BEGIN
@@ -93,8 +95,8 @@ BEGIN
 	
 	WHILE (@tmpDate<=@tmpToDate AND @tmpDate<=@todate)
 	BEGIN
-		INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR, INH, BDT, INR, USDT, TRY, NPR, PHP, JPY, MXN, NGN, BRL, PKR, ZAR, actualrate)
-		SELECT @tmpDate,a.ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR / 1000 AS IDR, VND / 1000 AS INH, BDT, INR,CASE WHEN a.ExchangeId = 20 THEN @UUS ELSE ISNULL(b.USDT,1) END AS USDT, TRY, NPR, PHP, JPY, MXN, NGN, BRL, PKR, ZAR, actualrate
+		INSERT INTO @tempDate (exchangedate,ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR, INH, BDT, INR, USDT, TRY, NPR, PHP, JPY, MXN, NGN, BRL, PKR, ZAR, KRW, actualrate)
+		SELECT @tmpDate,a.ExchangeId,Code,MYR, USD, EUR, CNY, GBP, HKD, THB, IDR / 1000 AS IDR, VND / 1000 AS INH, BDT, INR,CASE WHEN a.ExchangeId = 20 THEN @UUS ELSE ISNULL(b.USDT,1) END AS USDT, TRY, NPR, PHP, JPY, MXN, NGN, BRL, PKR, ZAR, KRW, actualrate
 		FROM ExchangeDailyOanda a WITH (NOLOCK) 
 			LEFT JOIN ExchangeDaily_Crypto b WITH(NOLOCK) ON a.ExchangeId = b.ExchangeId AND b.ExchangeDate = @LastDate
 		WHERE a.ExchangeDate = @LastDate
