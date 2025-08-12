@@ -139,6 +139,13 @@ BEGIN
 		END
 	END
 
+	SELECT @ProductList = STRING_AGG(b.ProductPrefix, ',')
+	FROM (
+		SELECT DISTINCT ISNULL(b.ProductPrefix, a.Value) AS ProductPrefix
+		FROM STRING_SPLIT(@ProductList, ',') a
+			LEFT JOIN dbo.Lrf_f_GroupProduct() b ON a.Value = b.GroupProductPrefix
+	) b
+
 	-- Get sport/bettype matrix
 	CREATE TABLE #SportBetType (BetType SMALLINT, ProductCode VARCHAR(10), EventType TINYINT)
 
@@ -149,8 +156,9 @@ BEGIN
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
 	INSERT INTO #SportBetType (BetType, ProductCode, EventType)
-	SELECT DISTINCT BetType, ProductPrefix, EventType
-	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest)
+	SELECT DISTINCT BetType, ISNULL(p.GroupProductPrefix, s.ProductPrefix), EventType
+	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest) s
+		LEFT JOIN dbo.Lrf_f_GroupProduct() p ON s.ProductID = p.ProductId
 	WHERE 1 = CASE
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,2101,%' AND BetType = 2499 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3201,%' AND BetType = 4299 THEN 1
@@ -176,11 +184,11 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3713,%' AND BetType = 17012 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3714,%' AND BetType = 17013 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3901,%' AND BetType = 3007 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4201,%' AND ProductPrefix = 'SBC' AND BetType NOT IN (1698, 1699) THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4201,%' AND s.ProductPrefix = 'SBC' AND BetType NOT IN (1698, 1699) THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4202,%' AND BetType = 1699 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4203,%' AND BetType = 1698 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4501,%' AND BetType = 3150 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6601,%' AND ProductPrefix = 'VGA' AND BetType NOT IN (3899, 3898, 3897) THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6601,%' AND s.ProductPrefix = 'VGA' AND BetType NOT IN (3899, 3898, 3897) THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6602,%' AND BetType = 3899 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6603,%' AND BetType = 3898 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6604,%' AND BetType = 3897 THEN 1
