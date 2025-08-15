@@ -40,6 +40,7 @@ AS
 		- 20250519@Kelvin: Add new Saba Promotion - FIFA CWC Score Challenge [RedmineID: #227537]
 		- 20250725@Kelvin: LAP - Integrate Playtech - Jackpot [RedmineID: #233781]
 		- 20250801@Kelvin: LAP/MPA - Betradar VS2 - Integrate new VS Tournament [RedmineID: #234844]
+		- 20250722@Kelvin: Enhancement to speed up integrate new casino product - Phase 2 [RedmineID: #232697]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -120,65 +121,22 @@ BEGIN
 	) b
 
 	-- Get sport/bettype matrix
-	CREATE TABLE #SportBetType (BetType SMALLINT, ProductCode VARCHAR(10), EventType TINYINT)
-
-	CREATE CLUSTERED INDEX IX_BetType ON #SportBetType (BetType)
+	CREATE TABLE #SportBetType (BetType SMALLINT, ProductCode VARCHAR(10), SportType INT, PromotionType INT
+								, PRIMARY KEY(BetType, SportType))
 
 	DECLARE @IsTest BIT = 0
 
 	SELECT @IsTest = dbo.f_CheckSPVersion(@@PROCID)
 
-	INSERT INTO #SportBetType (BetType, ProductCode, EventType)
-	SELECT DISTINCT BetType, ISNULL(p.GroupProductPrefix, s.ProductPrefix), EventType
-	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest) s
+	INSERT INTO #SportBetType (BetType, ProductCode, SportType, PromotionType)
+	SELECT
+		DISTINCT e.BetType, ISNULL(p.GroupProductPrefix, s.ProductPrefix), e.SportType, e.PromotionType
+	FROM
+		dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', @ProductList, @IsTest) s
+		INNER JOIN dbo.Lrf_f_Sel_PromotionExcludedBetType() e ON e.BetType = s.BetType
 		LEFT JOIN dbo.Lrf_f_GroupProduct() p ON s.ProductID = p.ProductId
-	WHERE 1 = CASE
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,2101,%' AND BetType = 2499 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3201,%' AND BetType = 4299 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3202,%' AND BetType = 4300 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3203,%' AND BetType = 4298 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3204,%' AND BetType = 4297 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3401,%' AND BetType = 1906 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3601,%' AND BetType = 4600 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3602,%' AND BetType = 4599 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3603,%' AND BetType = 4598 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3701,%' AND BetType = 17000 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3702,%' AND BetType = 17001 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3703,%' AND BetType = 17002 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3704,%' AND BetType = 17003 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3705,%' AND BetType = 17004 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3706,%' AND BetType = 17006 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3707,%' AND BetType = 17007 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3708,%' AND BetType = 17008 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3709,%' AND BetType = 17009 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3710,%' AND BetType = 17010 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3711,%' AND BetType = 17031 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3712,%' AND BetType = 17011 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3713,%' AND BetType = 17012 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3714,%' AND BetType = 17013 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,3901,%' AND BetType = 3007 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4201,%' AND s.ProductPrefix = 'SBC' AND BetType NOT IN (1698, 1699) THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4202,%' AND BetType = 1699 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4203,%' AND BetType = 1698 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,4501,%' AND BetType = 3150 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6601,%' AND s.ProductPrefix = 'VGA' AND BetType NOT IN (3899, 3898, 3897) THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6602,%' AND BetType = 3899 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6603,%' AND BetType = 3898 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,6604,%' AND BetType = 3897 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7401,%' AND BetType = 8700 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7301,%' AND BetType = 8695 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,7901,%' AND BetType = 7698 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,8701,%' AND BetType = 11295 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,8901,%' AND BetType = 11399 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10301,%' AND BetType = 15199 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,9501,%' AND BetType = 11999 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10701,%' AND BetType = 13995 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10801,%' AND BetType = 15899 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10001,%' AND BetType = 12998 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10002,%' AND BetType = 12999 THEN 1
-				WHEN ',' + @PromotionTypeList + ',' LIKE '%,2701,%' AND BetType = 2798 THEN 1
-				ELSE 0
-			END
+	WHERE
+		EXISTS (SELECT 1 FROM STRING_SPLIT(@PromotionTypeList,',') WHERE value = e.PromotionType)
 
 	DECLARE @Data TABLE (
 		WinLostDate		SMALLDATETIME,
@@ -217,53 +175,7 @@ BEGIN
 			b.transid,
 			CASE WHEN b.bettype = 17007 THEN b.refno ELSE NULL END AS BetID,
 			sbt.ProductCode,
-			CASE
-				WHEN b.bettype = 2499 THEN 2101
-				WHEN b.bettype = 4299 THEN 3201
-				WHEN b.bettype = 4300 THEN 3202
-				WHEN b.bettype = 4298 THEN 3203
-				WHEN b.bettype = 4297 THEN 3204
-				WHEN b.bettype = 1906 THEN 3401
-				WHEN b.bettype = 4600 THEN 3601
-				WHEN b.bettype = 4599 THEN 3602
-				WHEN b.bettype = 4598 THEN 3603
-				WHEN b.bettype = 17000 THEN 3701
-				WHEN b.bettype = 17001 THEN 3702
-				WHEN b.bettype = 17002 THEN 3703
-				WHEN b.bettype = 17003 THEN 3704
-				WHEN b.bettype = 17004 THEN 3705
-				WHEN b.bettype = 17006 THEN 3706
-				WHEN b.bettype = 17007 THEN 3707
-				WHEN b.bettype = 17008 THEN 3708
-				WHEN b.bettype = 17009 THEN 3709
-				WHEN b.bettype = 17010 THEN 3710
-				WHEN b.bettype = 17031 THEN 3711
-				WHEN b.bettype = 17011 THEN 3712
-				WHEN b.bettype = 17012 THEN 3713
-				WHEN b.bettype = 17013 THEN 3714
-				WHEN b.bettype = 3007 THEN 3901
-				WHEN sbt.ProductCode = 'SBC' AND b.matchid = 150 THEN 4201
-				WHEN b.bettype = 1699 THEN 4202
-				WHEN b.bettype = 1698 THEN 4203
-				WHEN b.bettype = 3150 THEN 4501
-				WHEN sbt.ProductCode = 'VGA' AND b.matchid = 173 THEN 6601
-				WHEN b.bettype = 3899 THEN 6602
-				WHEN b.bettype = 3898 THEN 6603
-				WHEN b.bettype = 3897 THEN 6604
-				WHEN b.bettype = 8700 THEN 7401
-				WHEN b.bettype = 8695 THEN 7301
-				WHEN b.bettype = 7698 THEN 7901
-				WHEN b.bettype = 11295 THEN 8701
-				WHEN b.bettype = 11399 THEN 8901
-				WHEN b.bettype = 15199 THEN 10301
-				WHEN b.bettype = 11999 THEN 9501
-				WHEN b.bettype = 13995 THEN 10701
-				WHEN b.bettype = 15899 THEN 10801
-				WHEN b.bettype = 12998 THEN 10001
-				WHEN b.bettype = 12999 THEN 10002
-				WHEN b.bettype = 2798 THEN 2701
-				ELSE 0
-			END AS PromotionType,
+			sbt.PromotionType,
 			CASE
 				WHEN b.bettype IN (4297, 1698, 3898, 4599) THEN b.oddsspread
 				ELSE b.stake
@@ -271,16 +183,10 @@ BEGIN
 			(b.winlost - b.actual_stake) AS Amount,
 			b.awinlost AS SharingAmount
 		FROM dbo.bettrans AS b WITH (NOLOCK, INDEX = IX_custid)
-			INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
+			INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype AND sbt.SportType = b.matchid
 		WHERE b.custid = @CustId
 			AND b.winlostdate BETWEEN @TempFromDate AND @ToDate
 			AND b.statusID IN (111, 112, 113)
-			AND 1 = CASE
-						WHEN sbt.ProductCode = 'SBC' AND b.bettype NOT IN (1698, 1699) AND b.matchid <> 150 THEN 0
-						WHEN sbt.ProductCode = 'VGA' AND b.bettype NOT IN (3898, 3899, 3897) AND b.matchid <> 173 THEN 0
-						ELSE 1
-					END
-					
 	END
 
 	-- bettrans14
@@ -310,53 +216,7 @@ BEGIN
 			b.transid,
 			CASE WHEN b.bettype = 17007 THEN b.refno ELSE -1 END AS BetID,
 			sbt.ProductCode,
-			CASE
-				WHEN b.bettype = 2499 THEN 2101
-				WHEN b.bettype = 4299 THEN 3201
-				WHEN b.bettype = 4300 THEN 3202
-				WHEN b.bettype = 4298 THEN 3203
-				WHEN b.bettype = 4297 THEN 3204
-				WHEN b.bettype = 1906 THEN 3401
-				WHEN b.bettype = 4600 THEN 3601
-				WHEN b.bettype = 4599 THEN 3602
-				WHEN b.bettype = 4598 THEN 3603
-				WHEN b.bettype = 17000 THEN 3701
-				WHEN b.bettype = 17001 THEN 3702
-				WHEN b.bettype = 17002 THEN 3703
-				WHEN b.bettype = 17003 THEN 3704
-				WHEN b.bettype = 17004 THEN 3705
-				WHEN b.bettype = 17006 THEN 3706
-				WHEN b.bettype = 17007 THEN 3707
-				WHEN b.bettype = 17008 THEN 3708
-				WHEN b.bettype = 17009 THEN 3709
-				WHEN b.bettype = 17010 THEN 3710
-				WHEN b.bettype = 17031 THEN 3711
-				WHEN b.bettype = 17011 THEN 3712
-				WHEN b.bettype = 17012 THEN 3713
-				WHEN b.bettype = 17013 THEN 3714
-				WHEN b.bettype = 3007 THEN 3901
-				WHEN sbt.ProductCode = 'SBC' AND b.matchid = 150 THEN 4201
-				WHEN b.bettype = 1699 THEN 4202
-				WHEN b.bettype = 1698 THEN 4203
-				WHEN b.bettype = 3150 THEN 4501
-				WHEN sbt.ProductCode = 'VGA' AND b.matchid = 173 THEN 6601
-				WHEN b.bettype = 3899 THEN 6602
-				WHEN b.bettype = 3898 THEN 6603
-				WHEN b.bettype = 3897 THEN 6604
-				WHEN b.bettype = 8700 THEN 7401
-				WHEN b.bettype = 8695 THEN 7301
-				WHEN b.bettype = 7698 THEN 7901
-				WHEN b.bettype = 11295 THEN 8701
-				WHEN b.bettype = 11399 THEN 8901
-				WHEN b.bettype = 15199 THEN 10301
-				WHEN b.bettype = 11999 THEN 9501
-				WHEN b.bettype = 13995 THEN 10701
-				WHEN b.bettype = 15899 THEN 10801
-				WHEN b.bettype = 12998 THEN 10001
-				WHEN b.bettype = 12999 THEN 10002
-				WHEN b.bettype = 2798 THEN 2701
-				ELSE 0
-			END AS PromotionType,
+			sbt.PromotionType,
 			CASE
 				WHEN b.bettype IN (4297, 1698, 3898, 4599) THEN b.oddsspread
 				ELSE b.stake
@@ -364,15 +224,10 @@ BEGIN
 			(b.winlost - b.actual_stake) AS Amount,
 			b.awinlost AS SharingAmount
 		FROM dbo.bettrans14 AS b WITH (NOLOCK, INDEX = IX_memberStatement14)
-			INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
+			INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype AND sbt.SportType = b.matchid
 		WHERE b.custid = @CustId
 			AND b.winlostdate BETWEEN @TempFromDate AND @TempToDate
 			AND b.statusID IN (111, 112, 113)
-			AND 1 = CASE
-						WHEN sbt.ProductCode = 'SBC' AND b.bettype NOT IN (1698, 1699) AND b.matchid <> 150 THEN 0
-						WHEN sbt.ProductCode = 'VGA' AND b.bettype NOT IN (3898, 3899, 3897) AND b.matchid <> 173 THEN 0
-						ELSE 1
-					END
 	END
 
 	-- bettrans_bk
@@ -397,53 +252,7 @@ BEGIN
 			b.transid,
 			CASE WHEN b.bettype = 17007 THEN b.refno ELSE -1 END AS BetID,
 			sbt.ProductCode,
-			CASE
-				WHEN b.bettype = 2499 THEN 2101
-				WHEN b.bettype = 4299 THEN 3201
-				WHEN b.bettype = 4300 THEN 3202
-				WHEN b.bettype = 4298 THEN 3203
-				WHEN b.bettype = 4297 THEN 3204
-				WHEN b.bettype = 1906 THEN 3401
-				WHEN b.bettype = 4600 THEN 3601
-				WHEN b.bettype = 4599 THEN 3602
-				WHEN b.bettype = 4598 THEN 3603
-				WHEN b.bettype = 17000 THEN 3701
-				WHEN b.bettype = 17001 THEN 3702
-				WHEN b.bettype = 17002 THEN 3703
-				WHEN b.bettype = 17003 THEN 3704
-				WHEN b.bettype = 17004 THEN 3705
-				WHEN b.bettype = 17006 THEN 3706
-				WHEN b.bettype = 17007 THEN 3707
-				WHEN b.bettype = 17008 THEN 3708
-				WHEN b.bettype = 17009 THEN 3709
-				WHEN b.bettype = 17010 THEN 3710
-				WHEN b.bettype = 17031 THEN 3711
-				WHEN b.bettype = 17011 THEN 3712
-				WHEN b.bettype = 17012 THEN 3713
-				WHEN b.bettype = 17013 THEN 3714
-				WHEN b.bettype = 3007 THEN 3901
-				WHEN sbt.ProductCode = 'SBC' AND b.matchid = 150 THEN 4201
-				WHEN b.bettype = 1699 THEN 4202
-				WHEN b.bettype = 1698 THEN 4203
-				WHEN b.bettype = 3150 THEN 4501
-				WHEN sbt.ProductCode = 'VGA' AND b.matchid = 173 THEN 6601
-				WHEN b.bettype = 3899 THEN 6602
-				WHEN b.bettype = 3898 THEN 6603
-				WHEN b.bettype = 3897 THEN 6604
-				WHEN b.bettype = 8700 THEN 7401
-				WHEN b.bettype = 8695 THEN 7301
-				WHEN b.bettype = 7698 THEN 7901
-				WHEN b.bettype = 11295 THEN 8701
-				WHEN b.bettype = 11399 THEN 8901
-				WHEN b.bettype = 15199 THEN 10301
-				WHEN b.bettype = 11999 THEN 9501
-				WHEN b.bettype = 13995 THEN 10701
-				WHEN b.bettype = 15899 THEN 10801
-				WHEN b.bettype = 12998 THEN 10001
-				WHEN b.bettype = 12999 THEN 10002
-				WHEN b.bettype = 2798 THEN 2701
-				ELSE 0
-			END AS PromotionType,
+			sbt.PromotionType,
 			CASE
 				WHEN b.bettype IN (4297, 1698, 3898, 4599) THEN b.oddsspread
 				ELSE b.stake
@@ -451,15 +260,10 @@ BEGIN
 			(b.winlost - b.actual_stake) AS Amount,
 			b.awinlost AS SharingAmount
 		FROM bodb_Archive.dbo.bettrans_bk AS b WITH (NOLOCK, INDEX = IX_custid)
-			INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype
+			INNER JOIN #SportBetType AS sbt ON sbt.BetType = b.bettype AND sbt.SportType = b.matchid
 		WHERE b.custid = @CustId
 			AND b.winlostdate BETWEEN @FromDate AND @TempToDate
 			AND b.statusID IN (111, 112, 113)
-			AND 1 = CASE
-						WHEN sbt.ProductCode = 'SBC' AND b.bettype NOT IN (1698, 1699) AND b.matchid <> 150 THEN 0
-						WHEN sbt.ProductCode = 'VGA' AND b.bettype NOT IN (3898, 3899, 3897) AND b.matchid <> 173 THEN 0
-						ELSE 1
-					END
 	END
 
 	DECLARE @Currency	INT
