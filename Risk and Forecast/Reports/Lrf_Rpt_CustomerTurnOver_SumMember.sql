@@ -44,6 +44,7 @@ AS
 		- 20241024@Kelvin: LAP - Integrate Betby (VS6) [RedmineID: #212446]
 		- 20250117@Kelvin: BetBy - Change from Multiple Odds to Decimal Odds (VS6) [RedmineID: #216783]
 		- 20250311@Kelvin: Remove multi odds VS2 [RedmineID: #219083]
+		- 20250818@Kelvin: Basketball - Offer 32 new bettypes [RedmineID: #235299]
 */
 
 BEGIN
@@ -226,6 +227,7 @@ BEGIN
 								OR b.bettype BETWEEN 401 AND 404 -- add more PH-AIO new bettypes
 								OR b.bettype = 428 -- 2H Odd/Even
 								OR (b.bettype BETWEEN 603 AND 607 OR b.bettype BETWEEN 609 AND 613 OR b.bettype BETWEEN 615 AND 617) -- Basketball bettypes
+								OR bettype IN (654,657,660,663,666,668,670,672,673,674,677,679,680,681,682,683,684) -- Basketball- Phase 5: Player Props Bet Types
 								OR b.bettype BETWEEN 2701 AND 2707 -- Virtual Sport 2
 								OR b.bettype BETWEEN 2800 AND 2829 -- Virtual Sport 2: basketball
 								OR b.bettype BETWEEN 5302 AND 5399 -- Virtual Sport 3 (LG)
