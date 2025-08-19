@@ -100,9 +100,9 @@ BEGIN
 	SELECT t.c.value('@SportType[1]','smallint'),
 		t.c.value('@BetType[1]','smallint'),
 		ISNULL(t.c.value('@Discount[1]','DECIMAL(9,8)'),0),
-		ISNULL(t.c.value('@Discount_Old[1]','DECIMAL(9,8)'),0)
+		ISNULL(t.c.value('@Discount_Old[1]','DECIMAL(9,8)'),-1)
 	FROM @xmlDiscountSettings.nodes('/Root/r') as T(c)
-		
+
 	SELECT  @MacauLicenseeID =  LicenseeID
 	FROM dbo.Licensees WITH (NOLOCK)
 	WHERE LicenseeName ='Macaubet'
