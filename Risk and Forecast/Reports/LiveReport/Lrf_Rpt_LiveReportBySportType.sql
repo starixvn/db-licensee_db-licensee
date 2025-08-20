@@ -20,6 +20,7 @@ AS
 		- 20240509@Evan: Integrate VS4 [RedmineID: #199347]
 		- 20250122@Kelvin: Drop BA functions [RedmineID: #216882]
 		- 20241107@Kelvin: Integrate VS5 [RedmineID: #207582]
+		- 20250509@Kelvin: Enhancement to speed up integrate new casino product [RedmineID: #226292]
 
 	Param's Explanation:
 		@Liveindicator : indicate that whether the report will get live data or not
@@ -36,6 +37,12 @@ AS
 BEGIN
 	SET NOCOUNT ON
 
+	DROP TABLE IF EXISTS #TempAg
+	DROP TABLE IF EXISTS #tmpWinloss
+	DROP TABLE IF EXISTS #TempExchange
+	DROP TABLE IF EXISTS #tmpBettype
+	DROP TABLE IF EXISTS #tmpVS
+
 	DECLARE @TempFromDate	DATETIME,
 			@TempToDate		DATETIME,
 			@FDate			SMALLDATETIME,
@@ -43,41 +50,13 @@ BEGIN
 
 	--to Deal With Parameter Sniffing
 	SELECT	@FDate = @FromDate,
-			@TDate = @ToDate	
+			@TDate = @ToDate
 
-	DECLARE @ExcludedBetType TABLE (
-			  ProductCode VARCHAR(10)
-			, BetType INT
-		)
-	INSERT INTO @ExcludedBetType (ProductCode, BetType)
-	SELECT ProductCode
-		 , BetType
-	FROM Lrf_f_SelExcludedBetType()
-
-	--
-	DROP TABLE IF EXISTS #TempAg
-	DROP TABLE IF EXISTS #tmpWinloss
-	DROP TABLE IF EXISTS #TempExchange
-	DROP TABLE IF EXISTS #tmpBettype
-	DROP TABLE IF EXISTS #tmpVS
-
-	CREATE TABLE #tmpVS (Orid INT,SportType SMALLINT) 
+	
+	/* Get agent list */
+	-----------------------------------------------------------------------------------------------------------------------------------
 	CREATE TABLE #TempAg (CustId INT, Currency INT)
-
 	CREATE CLUSTERED INDEX CIX_TempAg ON #TempAg (CustId);
-
-	CREATE TABLE #tmpWinloss (
-		  winlostdate DATETIME
-		, Currency INT
-		, SportType INT
-		, TurnOver MONEY
-		, Winlost MONEY
-		, LicenseeWL MONEY
-		, Comm MONEY
-		, PlayerComm MONEY
-		, AmtDueTo3rd MONEY
-		, Betcount INT
-	)
 
 	DECLARE @DocHandler INT
 	BEGIN TRY
@@ -94,8 +73,29 @@ BEGIN
 		SELECT ErrCode = 100
 				,ErrMsg = N'Parameter invalid.'
 		RETURN
-	END CATCH; 
+	END CATCH;
+	-----------------------------------------------------------------------------------------------------------------------------------
 
+	/* Get Excluded BetType */
+	-----------------------------------------------------------------------------------------------------------------------------------
+	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR(10), BetType INT)
+
+	INSERT INTO @ExcludedBetType (ProductCode, BetType)
+	SELECT ProductCode
+		 , BetType
+	FROM Lrf_f_SelExcludedBetType()
+	-----------------------------------------------------------------------------------------------------------------------------------
+
+	/* Get Parlay BetType */
+	-----------------------------------------------------------------------------------------------------------------------------------
+	DECLARE @ParlayBetType TABLE (ProductCode VARCHAR (10), BetType INT)
+
+	INSERT INTO @ParlayBetType (ProductCode, BetType)
+	SELECT ProductCode, BetType FROM dbo.Lrf_f_SelParlayBetType()
+	-----------------------------------------------------------------------------------------------------------------------------------
+	
+	/* Get BetType */
+	-----------------------------------------------------------------------------------------------------------------------------------
 	IF @ProductCodes IS NULL
 		SET @ProductCodes = ''
 
@@ -103,13 +103,34 @@ BEGIN
 	SELECT @SBBACheck = (POWER(2*1, 1)
 				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 2))
 	
-	CREATE TABLE #tmpBettype ( Bettype INT, EventType TINYINT, RefTable TINYINT)
-	INSERT INTO #tmpBettype (Bettype, EventType, RefTable)
-	SELECT DISTINCT a.Bettype,a.EventType, a.RefTable
+	CREATE TABLE #tmpBettype ( Bettype INT, ProductCode VARCHAR(10), EventType TINYINT, RefTable TINYINT, IsParLay BIT)
+
+	INSERT INTO #tmpBettype (Bettype, ProductCode, EventType, RefTable, IsParLay)
+	SELECT DISTINCT a.Bettype, ISNULL(lf.GroupProductPrefix,IIF(a.ProductId IN (63,69),'SB',b.ProductPrefix)) AS ProductCode, a.EventType, a.RefTable
+		, CASE WHEN pl.BetType IS NOT NULL THEN 1 ELSE 0 END AS IsParLay
 	FROM dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductCodes,null,null,@SBBACheck) a 
+		INNER JOIN dbo.Products b WITH(NOLOCK) ON a.ProductId = b.ProductID 
+		LEFT JOIN dbo.Lrf_f_GroupProduct() lf ON a.ProductId = lf.ProductId
+		LEFT JOIN @ParlayBetType pl ON a.Bettype = pl.BetType
 	WHERE NOT EXISTS (SELECT 1 FROM @ExcludedBetType e WHERE e.BetType = a.Bettype) AND a.Bettype <> 72
 			AND (a.bettype < 901 OR a.bettype > 904)
 			AND (a.bettype < 911 OR a.bettype > 914)
+	-----------------------------------------------------------------------------------------------------------------------------------
+	
+	CREATE TABLE #tmpVS (Orid INT,SportType SMALLINT)
+	
+	CREATE TABLE #tmpWinloss (
+		  winlostdate DATETIME
+		, Currency INT
+		, SportType INT
+		, TurnOver MONEY
+		, Winlost MONEY
+		, LicenseeWL MONEY
+		, Comm MONEY
+		, PlayerComm MONEY
+		, AmtDueTo3rd MONEY
+		, Betcount INT
+	)
 
 	IF @TDate > @MoveBetsDay
 	BEGIN
@@ -134,7 +155,7 @@ BEGIN
 				WHEN b.bettype = 10 THEN 103 --Outright
 				WHEN b.bettype = 9 THEN 101 --Mix Parlay
 				WHEN b.bettype = 29 THEN 102 --System Parlay
-				WHEN b.bettype IN (2799,10449,11099) THEN 104 --VS Parlay
+				WHEN bt.IsParLay = 1 AND bt.ProductCode = 'VS' THEN 104 --VS Parlay
 				WHEN bt.EventType = 0 THEN ISNULL(b.matchid, @NASportType)
 				WHEN bt.EventType = 1 THEN ISNULL(m.sporttype,@NASportType)
 				WHEN bt.EventType = 3 THEN ISNULL(vs.SportType,@NASportType)
@@ -155,7 +176,7 @@ BEGIN
 			LEFT JOIN #tmpVS vs ON b.oddsid = vs.Orid
 			OUTER APPLY
 			(
-				SELECT ISNULL(CASE WHEN b.bettype IN (9,29,2799,10449,11099) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
+				SELECT ISNULL(CASE WHEN bt.IsParLay = 1 AND bt.ProductCode IN ('SB','VS') THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 			) s
 		WHERE b.winlostdate BETWEEN @TempFromDate AND @TDate
 			AND (@Liveindicator = s.liveindicator OR @Liveindicator = 2)
@@ -166,7 +187,7 @@ BEGIN
 					WHEN b.bettype = 10 THEN 103 --Outright
 					WHEN b.bettype = 9 THEN 101 --Mix Parlay
 					WHEN b.bettype = 29 THEN 102 --System Parlay
-					WHEN b.bettype IN (2799,10449,11099) THEN 104 --VS Parlay
+					WHEN bt.IsParLay = 1 AND bt.ProductCode = 'VS' THEN 104 --VS Parlay
 					WHEN bt.EventType = 0 THEN ISNULL(b.matchid, @NASportType)
 					WHEN bt.EventType = 1 THEN ISNULL(m.sporttype,@NASportType)
 					WHEN bt.EventType = 3 THEN ISNULL(vs.SportType,@NASportType)
@@ -237,7 +258,7 @@ BEGIN
 				   WHEN b.bettype = 10 THEN 103
 				   WHEN b.bettype = 9 THEN 101
 				   WHEN b.bettype = 29 THEN 102
-				   WHEN b.bettype IN (2799,10449,11099) THEN 104
+				   WHEN bt.IsParLay = 1 AND bt.ProductCode = 'VS' THEN 104
 				   ELSE b.sporttype
 			   END AS SportType
 			 , SUM(b.turnover) turnover
@@ -262,7 +283,7 @@ BEGIN
 					WHEN b.bettype = 10 THEN 103
 					WHEN b.bettype = 9 THEN 101
 					WHEN b.bettype = 29 THEN 102
-					WHEN b.bettype IN (2799,10449,11099) THEN 104
+					WHEN bt.IsParLay = 1 AND bt.ProductCode = 'VS' THEN 104
 					ELSE b.sporttype
 			   	END 
 	END

@@ -113,7 +113,33 @@ AS
 BEGIN
 	SET NOCOUNT ON
 
-	-- Get agent list
+	DECLARE @startTime		DATETIME
+		, @tempFromDate		SMALLDATETIME
+		, @tempToDate		SMALLDATETIME
+		, @TotalRows		INT
+		, @currencyName		VARCHAR(10)
+		, @searchCust		BIT
+		, @totalBettrans	INT
+		, @totalSumRpt		INT
+
+	--Set cut off date to convert  bettype 501
+	DECLARE @501CutoffDate SMALLDATETIME = '2021-04-08'
+	
+	--SET start time value
+	SET @startTime 			= GETDATE()
+	
+	SELECT @Username 	=  LTRIM(RTRIM(ISNULL(@Username,'')))
+		, @tempFromDate =  CASE WHEN @FromDate <= @MoveBetsDay THEN DATEADD(DAY,1,@MoveBetsDay)
+								ELSE @FromDate
+							END
+		, @tempToDate 	=  CASE WHEN @ToDate >= @MoveBetsDay THEN @MoveBetsDay 
+								ELSE @ToDate 
+							END
+		, @searchCust	= 0
+		, @Duration		= 0
+
+	/* Get agent list */
+	-----------------------------------------------------------------------------------------------------------------------------------
 	CREATE TABLE #Recommend (CustId INT, Currency INT)
 
 	CREATE CLUSTERED INDEX IX_Recommend ON #Recommend (CustId)
@@ -136,26 +162,119 @@ BEGIN
 
 		RETURN
 	END CATCH;
+	-----------------------------------------------------------------------------------------------------------------------------------
 
+	/* Get Excluded BetType */
+	-----------------------------------------------------------------------------------------------------------------------------------
 	DECLARE @ExcludedBetType TABLE (ProductCode VARCHAR (10), BetType INT)
 	-- Insert Excluded BetType
 	INSERT INTO @ExcludedBetType (ProductCode, BetType)
 	SELECT ProductCode, BetType FROM Lrf_f_SelExcludedBetType()
+	-----------------------------------------------------------------------------------------------------------------------------------
+
+	/* Get Parlay BetType */
+	-----------------------------------------------------------------------------------------------------------------------------------
+	DECLARE @ParlayBetType TABLE (ProductCode VARCHAR (10), BetType INT)
+
+	INSERT INTO @ParlayBetType (ProductCode, BetType)
+	SELECT ProductCode, BetType FROM dbo.Lrf_f_SelParlayBetType()
+	-----------------------------------------------------------------------------------------------------------------------------------
+
+	/* Get BetType */
+	-----------------------------------------------------------------------------------------------------------------------------------
+	DECLARE @isTest BIT = 0
+
+	SELECT @isTest = dbo.f_CheckSPVersion(@@PROCID)
+
+	DECLARE @SportBettype TABLE (ProductID INT, Bettype INT, EventType INT)
+
+	INSERT INTO @SportBettype (ProductID, Bettype, EventType)
+	SELECT ProductID, Bettype, EventType
+	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', '', @isTest)
+	WHERE BetType NOT IN (SELECT BetType FROM @ExcludedBetType e WHERE e.ProductCode = ProductPrefix)
 	
-	DECLARE @startTime		DATETIME
-		, @tempFromDate		SMALLDATETIME
-		, @tempToDate		SMALLDATETIME
-		, @TotalRows		INT
-		, @currencyName		VARCHAR(10)
-		, @searchCust		BIT
-		, @totalBettrans	INT
-		, @totalSumRpt		INT
+	CREATE TABLE #BettypeID ( typeID INT)
+	CREATE TABLE #bettype ( typeID INT, ProductId INT, EventType TINYINT, ProductCode VARCHAR(10), IsParLay BIT)
+	CREATE TABLE #BetTypeSel (ProductCode VARCHAR(10), Bettype INT, ProductId INT);
+
+	-- TODO: Bettype selection
+	;WITH BettypeSel AS (
+		SELECT t.c.value('@pc', 'VARCHAR(10)') AS ProductCode
+			,t.c.value('@bt', 'VARCHAR(MAX)') AS Bettype
+		FROM @BetType.nodes('/ROOT/Bettype') AS t(c)
+		)
+	INSERT INTO #BetTypeSel(ProductCode, Bettype)
+	SELECT a.ProductCode, b.value
+	FROM BettypeSel a
+	CROSS APPLY (
+		SELECT value FROM STRING_SPLIT (a.Bettype,',') 
+	) b;
+
+	UPDATE a 
+	SET a.ProductId = IIF(a.ProductCode = 'VS', 5, t.ProductId)
+	FROM #BetTypeSel a
+		CROSS APPLY (
+			SELECT TOP 1 p.ProductID AS ProductID
+			FROM SportBettypeMatrix p WITH (NOLOCK)
+			WHERE p.BetType = a.Bettype
+		) AS t
+
+	;WITH cte_bettype AS (
+		SELECT DISTINCT sb.BetType, sb.ProductID, sb.EventType
+		FROM #BetTypeSel b
+			LEFT JOIN dbo.Lrf_f_GroupProduct() lfgp ON lfgp.GroupProductId = b.ProductId
+			LEFT JOIN bodb02.dbo.Lrf_f_GroupBettype() l ON l.GroupTypeId = b.Bettype
+			INNER JOIN @SportBettype sb ON sb.BetType = ISNULL(l.Bettype,b.Bettype) AND ISNULL(lfgp.ProductId, b.ProductId) = sb.ProductId
+	)
+	INSERT INTO #bettype (typeID, ProductId, EventType, ProductCode, IsParLay)
+	SELECT a.BetType, a.ProductID, a.EventType, ISNULL(lf.GroupProductPrefix, b.ProductPrefix) AS ProductCode
+		,CASE WHEN pl.BetType IS NOT NULL THEN 1 ELSE 0 END AS IsParLay
+	FROM cte_bettype a
+		INNER JOIN dbo.Products b WITH(NOLOCK) ON a.ProductId = b.ProductID
+		LEFT JOIN dbo.Lrf_f_GroupProduct() lf ON a.ProductId = lf.ProductId
+		LEFT JOIN @ParlayBetType pl ON a.Bettype = pl.BetType
+
+	DROP TABLE #BettypeID
+	DROP TABLE #BetTypeSel
+	-----------------------------------------------------------------------------------------------------------------------------------
+
+	/* Get ProductID */
+	-----------------------------------------------------------------------------------------------------------------------------------
+	CREATE TABLE #ProductID ( sportId INT)
+
+	INSERT INTO #ProductID (sportId)
+	SELECT value AS sportId 
+	FROM STRING_SPLIT(@Product,',')
+	OPTION(MAXRECURSION 0)
 	
-	--SET start time value
-	SET @startTime 			= GETDATE()
-	
-	--Set cut off date to convert  bettype 501
-	DECLARE @501CutoffDate SMALLDATETIME = '2021-04-08'
+	IF NOT EXISTS (SELECT TOP 1 1 FROM #ProductID )
+	BEGIN
+		RETURN;
+	END
+	-----------------------------------------------------------------------------------------------------------------------------------
+
+	/* Get Status */
+	-----------------------------------------------------------------------------------------------------------------------------------
+	SELECT st AS StatusID
+	INTO #Status
+	FROM (
+		----@ShowWin
+		SELECT 112 AS st, 1 AS sh
+		UNION ALL
+		SELECT 114 AS st, 1 AS sh
+		--@ShowLoss
+		UNION ALL
+		SELECT 113 AS st, 2 AS sh
+		UNION ALL
+		SELECT 115 AS st, 2 AS sh
+		--@@ShowDraw
+		UNION ALL
+		SELECT 111 AS st, 3 AS sh
+	) t
+	WHERE (@ShowWin		= 1 AND sh = 1)
+		OR (@ShowLoss	= 1 AND sh = 2)
+		OR (@ShowDraw	= 1 AND sh = 3)
+	-----------------------------------------------------------------------------------------------------------------------------------
 	
 	CREATE TABLE #custData
 	(
@@ -216,107 +335,15 @@ BEGIN
 		, stake			MONEY
 		, playercomm	MONEY
 		, Odds			MONEY
-		, oddstype 		tinyint	
+		, oddstype 		tinyint
 		, EventType		TINYINT
 		, ProductId		INT
 		, currency		INT
 		, transdate		SMALLDATETIME
 	)
 
-	CREATE TABLE #ProductID ( sportId INT)
-
-	INSERT INTO #ProductID (sportId)
-	SELECT value AS sportId 
-	FROM STRING_SPLIT(@Product,',')
-	OPTION(MAXRECURSION 0)
-	
-	IF NOT EXISTS (SELECT TOP 1 1 FROM #ProductID )
-	BEGIN
-		RETURN;
-	END
-
-	SELECT st AS StatusID
-	INTO #Status
-	FROM (
-		----@ShowWin
-		SELECT 112 AS st, 1 AS sh
-		UNION ALL
-		SELECT 114 AS st, 1 AS sh
-		--@ShowLoss
-		UNION ALL
-		SELECT 113 AS st, 2 AS sh
-		UNION ALL
-		SELECT 115 AS st, 2 AS sh
-		--@@ShowDraw
-		UNION ALL
-		SELECT 111 AS st, 3 AS sh
-	) t
-	WHERE (@ShowWin		= 1 AND sh = 1)
-		OR (@ShowLoss	= 1 AND sh = 2)
-		OR (@ShowDraw	= 1 AND sh = 3)
-	
-	-- bettype
-	DECLARE @isTest BIT = 0
-
-	SELECT @isTest = dbo.f_CheckSPVersion(@@PROCID)
-
-	DECLARE @SportBettype TABLE (ProductID INT, Bettype INT, EventType INT)
-
-	INSERT INTO @SportBettype (ProductID, Bettype, EventType)
-	SELECT ProductID, Bettype, EventType
-	FROM dbo.f_SportBettypeMatrix_Sel(0, 0, 0, 2, '', '', @isTest)
-	WHERE BetType NOT IN (SELECT BetType FROM @ExcludedBetType e WHERE e.ProductCode = ProductPrefix)
-	
-	CREATE TABLE #BettypeID ( typeID INT)
-	CREATE TABLE #bettype ( typeID INT, ProductId INT, EventType TINYINT)
-	CREATE TABLE #BetTypeSel (ProductCode VARCHAR(10), Bettype INT, ProductId INT);
-
-	-- TODO: Bettype selection
-	;WITH BettypeSel AS (
-		SELECT t.c.value('@pc', 'VARCHAR(10)') AS ProductCode
-			,t.c.value('@bt', 'VARCHAR(MAX)') AS Bettype
-		FROM @BetType.nodes('/ROOT/Bettype') AS t(c)
-		)
-	INSERT INTO #BetTypeSel(ProductCode, Bettype)
-	SELECT a.ProductCode, b.value
-	FROM BettypeSel a
-	CROSS APPLY (
-		SELECT value FROM STRING_SPLIT (a.Bettype,',') 
-	) b;
-
-	UPDATE a 
-	SET a.ProductId = IIF(a.ProductCode = 'VS', 5, t.ProductId)
-	FROM #BetTypeSel a
-		CROSS APPLY (
-			SELECT TOP 1 p.ProductID AS ProductID
-			FROM SportBettypeMatrix p WITH (NOLOCK)
-			WHERE p.BetType = a.Bettype
-		) AS t
-
-	;WITH cte_bettype AS (
-		SELECT DISTINCT sb.BetType, sb.ProductID, sb.EventType
-		FROM #BetTypeSel b
-			LEFT JOIN dbo.Lrf_f_GroupProduct() lfgp ON lfgp.GroupProductId = b.ProductId
-			LEFT JOIN bodb02.dbo.Lrf_f_GroupBettype() l ON l.GroupTypeId = b.Bettype
-			INNER JOIN @SportBettype sb ON sb.BetType = ISNULL(l.Bettype,b.Bettype) AND ISNULL(lfgp.ProductId, b.ProductId) = sb.ProductId
-	)
-	INSERT INTO #bettype (typeID, ProductId, EventType)
-	SELECT BetType, ProductID, EventType 
-	FROM cte_bettype
-
-	DROP TABLE #BettypeID
-	DROP TABLE #BetTypeSel
-
-	SELECT @Username 	=  LTRIM(RTRIM(ISNULL(@Username,'')))
-		, @tempFromDate =  CASE WHEN @FromDate <= @MoveBetsDay THEN DATEADD(DAY,1,@MoveBetsDay)
-								ELSE @FromDate
-							END
-		, @tempToDate 	=  CASE WHEN @ToDate >= @MoveBetsDay THEN @MoveBetsDay 
-								ELSE @ToDate 
-							END
-		, @searchCust	= 0
-		, @Duration		= 0
-
+	/* Filter recommend by @Username */
+	-----------------------------------------------------------------------------------------------------------------------------------
 	IF LEN(@Username) > 0
 	BEGIN
 		INSERT INTO #tempCust
@@ -343,6 +370,7 @@ BEGIN
 
 		SET @searchCust = 1
 	END
+	-----------------------------------------------------------------------------------------------------------------------------------
 
 	IF @ToDate > @MoveBetsDay
 	BEGIN		
@@ -356,7 +384,7 @@ BEGIN
 			, CASE
 				WHEN b.bettype IN (9, 29, 38) THEN 999
 				WHEN bt.EventType = 0 THEN CASE
-												WHEN b.bettype IN (2799,10449,11099) THEN b.oddsid
+												WHEN bt.IsParLay = 1 AND bt.ProductCode = 'VS' THEN b.oddsid
 												WHEN bt.ProductID = 63 THEN b.matchid
 												ELSE 1
 											END
@@ -379,7 +407,7 @@ BEGIN
 		FROM dbo.bettrans b WITH(NOLOCK)
 			INNER JOIN #recommend rec ON b.Recommend = rec.CustID 
 			INNER JOIN #bettype bt ON b.bettype =  bt.typeid
-			INNER JOIN #Status st ON b.StatusID =  st.StatusID			
+			INNER JOIN #Status st ON b.StatusID =  st.StatusID
 		WHERE b.winlostdate BETWEEN @tempFromDate AND @ToDate
 		OPTION(RECOMPILE)
 

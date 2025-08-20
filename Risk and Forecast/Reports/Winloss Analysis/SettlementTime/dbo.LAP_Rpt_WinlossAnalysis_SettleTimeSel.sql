@@ -47,6 +47,7 @@ AS
 		- 20240915@Bobby: Created [RedmineID: #209631]
 		- 20241206@Kelvin: LAP - Enhance reports showing betfrom data [Redmine: #214849]
 		- 20241107@Kelvin: Integrate VS5 [RedmineID: #207582]
+		- 20250509@Kelvin: Enhancement to speed up integrate new casino product [RedmineID: #226292]
 
 	Param's Explanation:
 		- @SortKey: 0:GroupBy, 1:BetCount, 2:Turnover, 3:NetTurnover, 4:MemWinloss, 5:MemComm, 6:LicWinloss, 7:LicComm, 8:(not use), 9:BetEffective, 10:Margin
@@ -357,6 +358,14 @@ BEGIN
 				+ POWER(2*CASE WHEN ISNULL(@ProductCodes, 'ALL') = 'ALL'  OR ',' + @ProductCodes + ',' LIKE '%,SB,%' THEN 1 ELSE 0 END, 2)),
 			@ProductCheck = @ProductCodes;
 
+	/* Get Parlay BetType */
+	-----------------------------------------------------------------------------------------------------------------------------------
+	DECLARE @ParlayBetType TABLE (ProductCode VARCHAR (10), BetType INT)
+
+	INSERT INTO @ParlayBetType (ProductCode, BetType)
+	SELECT ProductCode, BetType FROM dbo.Lrf_f_SelParlayBetType()
+	-----------------------------------------------------------------------------------------------------------------------------------
+
 	--TODO: Bettype filtering
 	SELECT @BettypeIdsCheck = STRING_AGG(CAST(BetType AS VARCHAR(MAX)), ',') 
 	FROM (SELECT DISTINCT bettype FROM #BetTypeSel) a;
@@ -370,19 +379,24 @@ BEGIN
 		IsContributionBettype	BIT,
 		Product3rdId			SMALLINT,
 		IsPriceBettype			BIT,
-		GroupTypeId				INT
+		GroupTypeId				INT,
+		ProductCode				VARCHAR(10),
+		IsParLay				BIT
 	);
 	CREATE CLUSTERED INDEX CIX_tmpBettype ON #tmpBettype(Bettype, ProductId);
 
-	INSERT INTO #tmpBettype 
+	INSERT INTO #tmpBettype (ProductId, Bettype, RefTable, EventType, IsContributionBettype, Product3rdId, IsPriceBettype, GroupTypeId, ProductCode, IsParLay)
 	SELECT bm.ProductId, bm.Bettype, bm.RefTable, bm.EventType, bm.IsContributionBettype,
 		CASE WHEN bm.ProductID = 1 THEN @SBBACheck ELSE bm.Product3rdID END AS Product3rdId,
-		bm.IsPriceBettype,
-		bm.GroupTypeId
+		bm.IsPriceBettype, bm.GroupTypeId,
+		ISNULL(lf.GroupProductPrefix, b.ProductPrefix) AS ProductCode,
+		CASE WHEN pl.BetType IS NOT NULL THEN 1 ELSE 0 END AS IsParLay
 	FROM dbo.LAP_f_WinlossAnalysis_BettypeMatrix (@ProductCheck, @SportCheck, @BettypeIdsCheck, @SBBACheck) AS bm
 		INNER JOIN dbo.LAP_f_SettlementTime_ProductSel () ps ON ps.ProductId = bm.ProductId
 		INNER JOIN #BetTypeSel bts ON bts.ProductId = bm.ProductId AND bts.Bettype = ISNULL(bm.GroupTypeId, bm.Bettype)
-
+		INNER JOIN dbo.Products b WITH(NOLOCK) ON bm.ProductId = b.ProductID 
+		LEFT JOIN dbo.Lrf_f_GroupProduct() lf ON bm.ProductId = lf.ProductId
+		LEFT JOIN @ParlayBetType pl ON bm.Bettype = pl.BetType
 	;WITH CTE_ProductMap AS (
 		SELECT DISTINCT ISNULL(lf.ProductId,t.ProductId) AS ProductId
 					  , ISNULL(lf.ProductId,t.Product3rdId) AS Product3rdId
@@ -507,8 +521,8 @@ BEGIN
 					CASE 
 						WHEN s.EventType = 0 THEN
 							CASE 
-								WHEN b.matchid = 29 THEN -1 --Parlay Sport
-								WHEN b.matchid IN (2799, 10449, 11099) THEN b.oddsid --VS Sports
+								WHEN s.IsParLay = 1 AND s.ProductCode = 'SB' THEN -1 --Parlay Sport
+								WHEN s.IsParLay = 1 AND s.ProductCode = 'VS' THEN b.oddsid --VS Sports
 								ELSE ISNULL(b.matchid, @NASporttype)
 							END
 						WHEN s.EventType = 1 THEN ISNULL(saba.SabaSportType, m.sporttype)
@@ -517,7 +531,7 @@ BEGIN
 						WHEN s.EventType = 5 THEN m3rd.SportType --175-BTC Sport
 						ELSE @NASporttype
 					END AS SportType,
-					ISNULL(CASE WHEN b.bettype IN(29, 2799, 10449, 11099) THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
+					ISNULL(CASE WHEN s.IsParLay = 1 AND s.ProductCode IN ('SB','VS') THEN b.livehomescore ELSE b.liveindicator END, 0) AS liveindicator
 			) AS ck
 			OUTER APPLY (SELECT TOP 1 bf.PlatformId, IsSelect FROM @PlatformSel bf WHERE b.betfrom = bf.BetFrom) AS bf
 			INNER JOIN #tmpSettleTime st ON b.SettlementTime >= st.SettlementTime AND b.SettlementTime < st.SettlementTimeEnd
