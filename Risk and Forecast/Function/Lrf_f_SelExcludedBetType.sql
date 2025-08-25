@@ -37,89 +37,144 @@ RETURNS TABLE
 		- 20250519@Kelvin: Add new Saba Promotion - FIFA CWC Score Challenge [RedmineID: #227537]
 		- 20250725@Kelvin: LAP - Integrate Playtech - Jackpot [RedmineID: #233781]
 		- 20250801@Kelvin: LAP/MPA - Betradar VS2 - Integrate new VS Tournament [RedmineID: #234844]
+		- 20250722@Kelvin: Enhancement to speed up integrate new casino product - Phase 2 [RedmineID: #232697]
+
+
+		+ @PromotionTypeList: promotion type list separated by ','
+			- 101: Sportsbook - Odds Boost Adjustment (BetType: 997)
+			- 2101: Allbet - Promotion (BetType: 2499)
+			- 2701: VS2 - VS Tournament (BetType: 2798)
+			- 3201: PP - Tournament Prize (BetType: 4299)
+			- 3202: PP - Promotion Prize (BetType: 4300)
+			- 3203: PP - Jackpot Prize (BetType: 4298)
+			- 3204: PP - Jackpot Contribution (BetType: 4297)
+			- 3401: Arcadia Gaming - Bonus (BetType: 1906)
+			- 3601: SG - Jackpot Prize (BetType: 4600)
+			- 3602: SG - Jackpot Contribution (BetType: 4599)
+			- 3603: SG - Promotion Prize (BetType: 4598)
+			- 3701: Saba Lucky Spin (BetType: 17000)
+			- 3702: Saba Lucky Spot (BetType: 17001)
+			- 3703: Non - Cash Prize (BetType: 17002)
+			- 3704: Saba Loyalty Points Exchange (BetType: 17003)
+			- 3705: Saba Red Envelope (BetType: 17004)
+			- 3706: Casino Royale Tournament (BetType: 17006)
+			- 3707: Saba Reward Risk-free Rebate (BetType: 17007)
+			- 3708: Saba Coins Cash Exchange (BetType: 17008)
+			- 3709: Promotion Jackpot Prize (BetType: 17009)
+			- 3710: Promotion Cash Prize (BetType: 17010)
+			- 3711: Number Game Lucky Draw Promotion (BetType: 17031)
+			- 3712: NBA Playoffs Lottery (BetType: 17011)
+			- 3713: Balance Adjustment (BetType: 17012)
+			- 3714: FIFA CWC Score Challenge (BetType: 17013)
+			- 3901: SA Gaming - Tip (BetType: 3007)
+			- 4201: Saba.club - Free Bets (SportType: 150)
+			- 4202: Saba.club - Jackpot Prize (BetType: 1699)
+			- 4203: Saba.club - Jackpot Contribution (BetType: 1698)
+			- 4501: AE Sexy - Lucky Draw (BetType: 3150)
+			- 6601: Vgaming - Free Bets (SportType: 173)
+			- 6602: Vgaming - Jackpot Prize (BetType: 3899)
+			- 6603: Vgaming - Jackpot Contribution (BetType: 3898)
+			- 6604: Vgaming - Promotion Prize (BetType: 3897)
+			- 7301: MGRNG - Promotion Prize (BetType: 8695)
+			- 7401: Player Tips (BetType: 8700)
+			- 7901: Live22 - Promotion Prize (BetType: 7698)
+			- 8701: FastSpin - Promotion Prize (BetType: 11295)
+			- 8901: FACHAI - Promotion Prize (BetType: 11399)
+			- 9501: HOTDOG - Promotion Prize (BetType: 11999)
+			- 10001: Playtech  - Jackpot Contribution (BetType: 12998)
+			- 10002: Playtech  - Jackpot Prize (BetType: 12999)
+			- 10101: Playtech Live - Jackpot Contribution (BetType: 15798)
+			- 10102: Playtech Live - Jackpot Prize (BetType: 15799)
+			- 10301: ASKMESLOT - Promotion Prize (BetType: 15199)
+			- 10701: Microgaming Live - Promotion Prize (BetType: 13995)
+			- 10801: RichGaming - Promotion Prize (BetType: 15899)
 
 */
 
 RETURN
-	SELECT 'SB' AS ProductCode, 999 AS BetType			-- Licensee Spread Setting
+	SELECT 'SB' AS ProductCode	, 999 AS BetType	, 99 AS SportType	, NULL AS PromotionType		-- Licensee Spread Setting
 	UNION ALL
-	SELECT 'SB', 997									-- Odds Boost Bonus
+	SELECT 'SB'					, 997				, 99				, 101						-- Odds Boost Bonus
 	UNION ALL
-	SELECT 'PP', 4297 									-- Pragmatic Play - Promotion Prize
+	SELECT 'PP'					, 4297				, 248				, 3204						-- Pragmatic Play - Promotion Prize
 	UNION ALL
-	SELECT 'PP', 4298 									-- Pragmatic Play - Promotion Prize
+	SELECT 'PP'					, 4298				, 248				, 3203						-- Pragmatic Play - Promotion Prize
 	UNION ALL
-	SELECT 'PP', 4299									-- Pragmatic Play - Promotion Prize
+	SELECT 'PP'					, 4299				, 248				, 3201						-- Pragmatic Play - Promotion Prize
 	UNION ALL
-	SELECT 'PP', 4300	 								-- Pragmatic Play - Promotion Prize
+	SELECT 'PP'					, 4300	 			, 248				, 3202						-- Pragmatic Play - Promotion Prize
 	UNION ALL
-	SELECT 'SPR', 17000									-- Saba Loyalty
+	SELECT 'SPR'				, 17000				, 246				, 3701						-- Saba Loyalty
 	UNION ALL
-	SELECT 'SPR', 17003									-- Saba Loyalty
+	SELECT 'SPR'				, 17003				, 246				, 3704						-- Saba Loyalty
 	UNION ALL
-	SELECT 'SPR', 17004									-- Saba Red Envelope
+	SELECT 'SPR'				, 17004				, 246				, 3705						-- Saba Red Envelope
 	UNION ALL
-	SELECT 'SPR', 17006									-- Casino Royale Tournament
+	SELECT 'SPR'				, 17006				, 246				, 3706						-- Casino Royale Tournament
 	UNION ALL
-	SELECT 'SPR', 17007									-- Saba Reward Risk-free Rebate
+	SELECT 'SPR'				, 17007				, 246				, 3707						-- Saba Reward Risk-free Rebate
 	UNION ALL
-	SELECT 'SPR', 17008									-- Saba Coins Cash Exchange
+	SELECT 'SPR'				, 17008				, 246				, 3708						-- Saba Coins Cash Exchange
 	UNION ALL
-	SELECT 'SPR', 17009									-- Promotion Jackpot Prize
+	SELECT 'SPR'				, 17009				, 246				, 3709						-- Promotion Jackpot Prize
 	UNION ALL
-	SELECT 'SPR', 17010									-- Promotion Cash Prize
+	SELECT 'SPR'				, 17010				, 246				, 3710						-- Promotion Cash Prize
 	UNION ALL
-	SELECT 'SPR', 17031									-- Number Game Lucky Draw Promotion
+	SELECT 'SPR'				, 17031				, 246				, 3711						-- Number Game Lucky Draw Promotion
 	UNION ALL
-	SELECT 'SPR', 17011									-- NBA Playoffs Lottery
+	SELECT 'SPR'				, 17011				, 246				, 3712						-- NBA Playoffs Lottery
 	UNION ALL
-	SELECT 'SPR', 17012									-- Balance Adjustment
+	SELECT 'SPR'				, 17012				, 246				, 3713						-- Balance Adjustment
 	UNION ALL
-	SELECT 'SPR', 17013									-- FIFA CWC Score Challenge
+	SELECT 'SPR'				, 17013				, 246				, 3714						-- FIFA CWC Score Challenge
 	UNION ALL
-	SELECT 'SAG', 3007									-- SA Gaming Tip ticket
+	SELECT 'SAG'				, 3007				, 244				, 3901						-- SA Gaming Tip ticket
 	UNION ALL
-	SELECT 'CC', 1906									-- Arcadia Gaming Bonus
+	SELECT 'CC'					, 1906				, 165				, 3401						-- Arcadia Gaming Bonus
 	UNION ALL
-	SELECT 'SBC', 1698									-- Saba club Jackpot Contribution
+	SELECT 'SBC'				, 1698				, 200				, 4203						-- Saba club Jackpot Contribution
 	UNION ALL
-	SELECT 'SBC', 1699									-- Saba club Jackpot Prize
+	SELECT 'SBC'				, 1699				, 200				, 4202						-- Saba club Jackpot Prize
 	UNION ALL
-	SELECT 'SXG', 3150									-- AE Casino Lucky Draw
+	SELECT 'SXG'				, 3150				, 243				, 4501						-- AE Casino Lucky Draw
 	UNION ALL
-	SELECT 'VGA', 3897									-- Vgaming Promotion Prize
+	SELECT 'VGA'				, 3897				, 171				, 6604						-- Vgaming Promotion Prize
 	UNION ALL
-	SELECT 'VGA', 3898									-- Vgaming Jackpot Contribution
+	SELECT 'VGA'				, 3898				, 171				, 6603						-- Vgaming Jackpot Contribution
 	UNION ALL
-	SELECT 'VGA', 3899									-- Vgaming Jackpot Prize
+	SELECT 'VGA'				, 3899				, 171				, 6602						-- Vgaming Jackpot Prize
 	UNION ALL
-	SELECT 'SG', 4599									-- Spadegaming Jackpot Contribution
+	SELECT 'SG'					, 4598				, 247				, 3603						-- SG promotion prize
 	UNION ALL
-	SELECT 'SG', 4600									-- Spadegaming Jackpot Prize
+	SELECT 'SG'					, 4599				, 247				, 3602						-- Spadegaming Jackpot Contribution
 	UNION ALL
-	SELECT 'AB', 2499									-- Allbet Promotion
+	SELECT 'SG'					, 4600				, 247				, 3601						-- Spadegaming Jackpot Prize
 	UNION ALL
-	SELECT 'SG', 4598									-- SG promotion prize
+	SELECT 'AB'					, 2499				, 211				, 2101						-- Allbet Promotion
 	UNION ALL
-	SELECT 'MGRNG', 8695								-- MG-RNG promotion prize
+	SELECT 'MGRNG'				, 8695				, 155				, 7301						-- MG-RNG promotion prize
 	UNION ALL
-	SELECT 'L22', 7698									-- L22 promotion prize
+	SELECT 'L22'				, 7698				, 227				, 7901						-- L22 promotion prize
 	UNION ALL
-	SELECT 'FS', 11295									-- FastSpin promotion prize
+	SELECT 'FS'					, 11295				, 230				, 8701						-- FastSpin promotion prize
 	UNION ALL
-	SELECT 'FAC', 11399									-- FA CHAI promotion prize
+	SELECT 'FAC'				, 11399				, 146				, 8901						-- FA CHAI promotion prize
 	UNION ALL
-	SELECT 'ASK', 15199									-- ASKMESLOT promotion prize
+	SELECT 'ASK'				, 15199				, 130				, 10301						-- ASKMESLOT promotion prize
 	UNION ALL
-	SELECT 'HOT', 11999									-- HOTDOG promotion prize
+	SELECT 'HOT'				, 11999				, 139				, 9501						-- HOTDOG promotion prize
 	UNION ALL
-	SELECT 'MGLC', 13995								-- Microgaming Live promotion prize
+	SELECT 'MGLC'				, 13995				, 124				, 10701						-- Microgaming Live promotion prize
 	UNION ALL
-	SELECT 'RGRNG', 15899								-- RichGaming promotion prize
+	SELECT 'RGRNG'				, 15899				, 123				, 10801						-- RichGaming promotion prize
 	UNION ALL
-	SELECT 'PTRNG', 12998								-- Jackpot Contribution
+	SELECT 'PTRNG'				, 12998				, 148				, 10001						-- Playtech RNG Jackpot Contribution
 	UNION ALL
-	SELECT 'PTRNG', 12999								-- Jackpot Prize
+	SELECT 'PTRNG'				, 12999				, 148				, 10002						-- Playtech RNG Jackpot Prize
 	UNION ALL
-	SELECT 'VS2', 2798									-- VS Tournament
+	SELECT 'VS2'				, 2798				, 190				, 2701						-- VS Tournament
+	UNION ALL
+	SELECT 'PTLC'				, 15798				, 129				, 10101						-- Playtech Live Jackpot Contribution
+	UNION ALL
+	SELECT 'PTLC'				, 15799				, 129				, 10102						-- Playtech Live Jackpot Prize
 GO
