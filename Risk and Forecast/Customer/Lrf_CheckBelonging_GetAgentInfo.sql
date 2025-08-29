@@ -1,4 +1,4 @@
-/*<info serverAlias="DBEXT-bodb02" executers="bodbLicenseeNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBEXT-bodb02" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[Lrf_CheckBelonging_GetAgentInfo]
 	@CustId		INT		= 0,
@@ -14,6 +14,7 @@ AS
 		- 20190730@Amanda: Create SP to replace SP Lrf_CustomerSelCheckBelonging[Redmine: #112658]
 		- 20200714@Hogan: Add check transid in bettransRnG table [RedmineID: #137290]
 		- 20210727@Kos: Add custid checking [RedmineID: #158106]
+		- 20250829@Hogan: Add check transid in bettransLC table [RedmineID: #137290]
 */
 
 BEGIN
@@ -63,6 +64,27 @@ BEGIN
 				FROM DBARC.bodb_Archive.dbo.bettransRnG_bk WITH (NOLOCK)
 				WHERE transid = @TransId AND custid = @CustId
 			END
+			
+			IF @Recommend IS NULL
+			BEGIN
+				SELECT @Recommend = recommend
+				FROM dbo.bettransLC WITH (NOLOCK)
+				WHERE transid = @TransId AND custid = @CustId
+			END
+
+			IF @Recommend IS NULL
+			BEGIN
+				SELECT @Recommend = recommend
+				FROM dbo.bettransLC14 WITH (NOLOCK)
+				WHERE transid = @TransId AND custid = @CustId
+			END
+
+			IF @Recommend IS NULL
+			BEGIN
+				SELECT @Recommend = recommend
+				FROM DBARC.bodb_Archive.dbo.bettransLC_bk WITH (NOLOCK)
+				WHERE transid = @TransId AND custid = @CustId
+			END
 		END
 		ELSE
 		BEGIN
@@ -102,6 +124,27 @@ BEGIN
 			BEGIN
 				SELECT @Recommend = recommend
 				FROM DBARC.bodb_Archive.dbo.bettransRnG_bk WITH (NOLOCK)
+				WHERE transid = @TransId
+			END
+			
+			IF @Recommend IS NULL
+			BEGIN
+				SELECT @Recommend = recommend
+				FROM dbo.bettransLC WITH (NOLOCK)
+				WHERE transid = @TransId
+			END
+
+			IF @Recommend IS NULL
+			BEGIN
+				SELECT @Recommend = recommend
+				FROM dbo.bettransLC14 WITH (NOLOCK)
+				WHERE transid = @TransId
+			END
+
+			IF @Recommend IS NULL
+			BEGIN
+				SELECT @Recommend = recommend
+				FROM DBARC.bodb_Archive.dbo.bettransLC_bk WITH (NOLOCK)
 				WHERE transid = @TransId
 			END
 		END
