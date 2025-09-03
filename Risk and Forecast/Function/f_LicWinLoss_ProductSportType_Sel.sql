@@ -82,6 +82,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20250630@Kelvin: Integrate GPI Lottery [RedmineID: #231720]
 		- 20250721@Kelvin: Integrate ODIN GAMING [RedmineID: #220120]
 		- 20250812@Kelvin: Integrate Smartsoft [RedmineID: #235842]
+		- 20250820@Kelvin: Integate OFA Live [RedmineID: #236577]
 
 */
 RETURNS TABLE
@@ -160,7 +161,8 @@ RETURN
 					(110, 'AIG', 121, 0),	-- AI Gaming
 					(84, 'GPILT', 132, 0),	-- GPI Lottery
 					(105, 'ODG', 128, 0),	-- ODIN GAMING
-					(99, 'SS', 135, 0)		-- Smartsoft
+					(99, 'SS', 135, 0),		-- Smartsoft
+					(113, 'OFA', 119, 0)	-- OFA Live
 
 			) d(ProductID, ProductCode, SportType, BetType)
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'
