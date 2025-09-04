@@ -37,6 +37,7 @@ RETURNS TABLE
 		- 20250519@Kelvin: Add new Saba Promotion - FIFA CWC Score Challenge [RedmineID: #227537]
 		- 20250725@Kelvin: LAP - Integrate Playtech - Jackpot [RedmineID: #233781]
 		- 20250801@Kelvin: LAP/MPA - Betradar VS2 - Integrate new VS Tournament [RedmineID: #234844]
+		- 20250612@Kelvin: LAP - Integrate Playtech Live Jackpot [RedmineID: #230078]
 
 */
 
@@ -122,4 +123,8 @@ RETURN
 	SELECT 'PTRNG', 12999								-- Jackpot Prize
 	UNION ALL
 	SELECT 'VS2', 2798									-- VS Tournament
+	UNION ALL
+	SELECT 'PTLC', 15798								-- Playtech Live Jackpot Contribution
+	UNION ALL
+	SELECT 'PTLC', 15799								-- Playtech Live Jackpot Prize
 GO
