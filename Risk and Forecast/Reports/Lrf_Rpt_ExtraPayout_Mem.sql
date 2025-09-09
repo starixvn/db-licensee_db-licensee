@@ -41,6 +41,7 @@ AS
 		- 20250519@Kelvin: Add new Saba Promotion - FIFA CWC Score Challenge [RedmineID: #227537]
 		- 20250725@Kelvin: LAP - Integrate Playtech - Jackpot [RedmineID: #233781]
 		- 20250801@Kelvin: LAP/MPA - Betradar VS2 - Integrate new VS Tournament [RedmineID: #234844]
+		- 20250612@Kelvin: LAP - Integrate Playtech Live Jackpot [RedmineID: #230078]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -86,6 +87,8 @@ AS
 			- 9501: HOTDOG - Promotion Prize (BetType: 11999)
 			- 10001: Playtech  - Jackpot Contribution (BetType: 12998)
 			- 10002: Playtech  - Jackpot Prize (BetType: 12999)
+			- 10101: Playtech Live - Jackpot Contribution (BetType: 15798)
+			- 10102: Playtech Live - Jackpot Prize (BetType: 15799)
 			- 10301: ASKMESLOT - Promotion Prize (BetType: 15199)
 			- 10701: Microgaming Live - Promotion Prize (BetType: 13995)
 			- 10801: RichGaming - Promotion Prize (BetType: 15899)
@@ -205,6 +208,8 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10001,%' AND BetType = 12998 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10002,%' AND BetType = 12999 THEN 1
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,2701,%' AND BetType = 2798 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10101,%' AND BetType = 15798 THEN 1
+				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10102,%' AND BetType = 15799 THEN 1
 				ELSE 0
 			END
 
@@ -290,6 +295,8 @@ BEGIN
 				WHEN b.bettype = 12998 THEN 10001
 				WHEN b.bettype = 12999 THEN 10002
 				WHEN b.bettype = 2798 THEN 2701
+				WHEN b.bettype = 15798 THEN 10101
+				WHEN b.bettype = 15799 THEN 10102
 				ELSE 0
 			END AS PromotionType,
 			b.winlostdate,
@@ -370,6 +377,8 @@ BEGIN
 				WHEN b.bettype = 12998 THEN 10001
 				WHEN b.bettype = 12999 THEN 10002
 				WHEN b.bettype = 2798 THEN 2701
+				WHEN b.bettype = 15798 THEN 10101
+				WHEN b.bettype = 15799 THEN 10102
 				ELSE 0
 			END,
 			b.winlostdate,
@@ -455,6 +464,8 @@ BEGIN
 				WHEN b.bettype = 12998 THEN 10001
 				WHEN b.bettype = 12999 THEN 10002
 				WHEN b.bettype = 2798 THEN 2701
+				WHEN b.bettype = 15798 THEN 10101
+				WHEN b.bettype = 15799 THEN 10102
 				ELSE 0
 			END AS PromotionType,
 			b.winlostdate,
@@ -542,6 +553,8 @@ BEGIN
 				WHEN b.bettype = 12998 THEN 10001
 				WHEN b.bettype = 12999 THEN 10002
 				WHEN b.bettype = 2798 THEN 2701
+				WHEN b.bettype = 15798 THEN 10101
+				WHEN b.bettype = 15799 THEN 10102
 				ELSE 0
 			END,
 			b.winlostdate,
