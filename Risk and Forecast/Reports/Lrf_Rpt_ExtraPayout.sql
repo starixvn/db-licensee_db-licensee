@@ -6,6 +6,7 @@ ALTER PROCEDURE [dbo].[Lrf_Rpt_ExtraPayout]
 	@FromDate			SMALLDATETIME,
 	@ToDate				SMALLDATETIME,
 	@MoveBetsDay		SMALLDATETIME,
+	@BalanceUpDay		SMALLDATETIME,
 	@ProductList		VARCHAR(1000)	= '',
 	@PromotionTypeList	VARCHAR(500)	= '',
 	@ReportType			TINYINT			= 1,
@@ -44,10 +45,11 @@ AS
 		- 20250725@Kelvin: LAP - Integrate Playtech - Jackpot [RedmineID: #233781]
 		- 20250801@Kelvin: LAP/MPA - Betradar VS2 - Integrate new VS Tournament [RedmineID: #234844]
 		- 20250612@Kelvin: LAP - Integrate Playtech Live Jackpot [RedmineID: #230078]
+		- 20250924@Kelvin: Enhance to count Total Trans & View Detail of Odds Boost Bonus[RedmineID: #239758]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
-			- 101: Sportsbook - Odds Boost Adjustment (BetType: 997)
+			- 101: Sportsbook - Odds Boost Bonus (BetType: 997)
 			- 2101: Allbet - Promotion (BetType: 2499)
 			- 2701: VS2 - VS Tournament (BetType: 2798)
 			- 3201: PP - Tournament Prize (BetType: 4299)
@@ -102,6 +104,7 @@ BEGIN
 	SET NOCOUNT ON
 
 	-- Get agent list
+	--===================================================================================================================
 	CREATE TABLE #TempAg (CustId INT, Currency INT)
 
 	CREATE CLUSTERED INDEX IX_CustId ON #TempAg (CustId)
@@ -123,8 +126,10 @@ BEGIN
 
 		RETURN
 	END CATCH;
+	--===================================================================================================================
 
 	-- Get member list
+	--===================================================================================================================
 	CREATE TABLE #TempCust (CustId INT PRIMARY KEY)
 
 	IF @Username <> ''
@@ -145,7 +150,10 @@ BEGIN
 			RETURN
 		END
 	END
+	--===================================================================================================================
 
+	--Get SportBetType
+	----===================================================================================================================
 	SELECT @ProductList = STRING_AGG(b.ProductPrefix, ',')
 	FROM (
 		SELECT DISTINCT ISNULL(b.ProductPrefix, a.Value) AS ProductPrefix
@@ -216,6 +224,7 @@ BEGIN
 				WHEN ',' + @PromotionTypeList + ',' LIKE '%,10102,%' AND BetType = 15799 THEN 1
 				ELSE 0
 			END
+	--===================================================================================================================
 
 	DECLARE @Data TABLE (
 		ProductCode		VARCHAR(10),
@@ -225,6 +234,15 @@ BEGIN
 		Turnover		MONEY,
 		Amount			MONEY,
 		SharingAmount	MONEY
+	)
+
+	DROP TABLE IF EXISTS #OddBoostBonus
+	CREATE TABLE #OddBoostBonus
+	(
+		ProductCode		VARCHAR(10),
+		WinLostDate		SMALLDATETIME,
+		Currency		INT,
+		BetCount		INT
 	)
 
 	DECLARE @TempFromDate	SMALLDATETIME,
@@ -250,7 +268,10 @@ BEGIN
 			sbt.ProductCode,
 			b.winlostdate,
 			b.currency,
-			COUNT(1) AS BetCount,
+			SUM(CASE 
+					WHEN b.bettype = 997 AND b.ExtraInfo IS NOT NULL THEN ISNULL(TRY_CAST(JSON_VALUE(b.ExtraInfo, '$[0].TransCount') AS INT), 1)
+					ELSE 1 
+				END) AS BetCount,
 			SUM(CASE
 					WHEN b.bettype IN (4297, 1698, 3898, 4599) THEN b.oddsspread
 					ELSE b.stake
@@ -315,7 +336,10 @@ BEGIN
 			END AS ProductCode,
 			b.winlostdate,
 			b.currency,
-			SUM(b.BetCount) AS BetCount,
+			SUM(CASE
+					WHEN b.bettype = 997 THEN 0 -- do not count Betcount 997 at this step
+					ELSE b.BetCount 
+				END) AS BetCount,
 			SUM(CASE
 					WHEN b.bettype IN (4297, 1698, 3898, 4599) THEN b.BuyBackAmt					
 					ELSE b.turnover
@@ -353,6 +377,83 @@ BEGIN
 			END,
 			b.winlostdate,
 			b.currency
+
+		--Get BetCount Odds Boost Bonus 997 in bettrans14, bettrans_bk
+		--======================================================================================================================================
+		IF EXISTS (SELECT 1 FROM #SportBetType WHERE BetType = 997)
+		BEGIN
+			-- bettrans14
+			IF @FromDate <= @MoveBetsDay AND @ToDate >= @BalanceUpDay
+			BEGIN
+				SET @TempToDate = CASE
+								WHEN @ToDate >= @MoveBetsDay THEN @MoveBetsDay
+								ELSE @ToDate
+							END
+
+				SET @TempFromDate = CASE
+										WHEN @FromDate < @BalanceUpDay THEN @BalanceUpDay
+										ELSE @FromDate
+									END
+
+				INSERT INTO #OddBoostBonus (ProductCode, WinLostDate, Currency, BetCount)
+				SELECT
+					'SB' AS ProductCode,
+					b.winlostdate,
+					b.currency,
+					SUM(CASE 
+							WHEN b.ExtraInfo IS NOT NULL THEN ISNULL(TRY_CAST(JSON_VALUE(b.ExtraInfo, '$[0].TransCount') AS INT), 1)
+							ELSE 1 
+						END) AS BetCount
+				FROM
+					dbo.bettrans14 AS b WITH (NOLOCK)
+					INNER JOIN #TempAg AS a ON a.CustId = b.recommend
+					LEFT JOIN #TempCust AS c ON c.CustId = b.custid
+				WHERE
+					b.winlostdate BETWEEN @TempFromDate AND @TempToDate
+					AND b.bettype = 997
+					AND (@Username = '' OR c.CustId IS NOT NULL)
+				GROUP BY
+					b.winlostdate,
+					b.currency
+			END
+
+			--bettrans_bk
+			IF @FromDate < @BalanceUpDay
+			BEGIN
+				SET @TempToDate = CASE
+									WHEN @ToDate >= DATEADD(dd, -1, @BalanceUpDay) THEN DATEADD(dd, -1, @BalanceUpDay)
+									ELSE @ToDate
+								END
+
+				INSERT INTO #OddBoostBonus (ProductCode, WinLostDate, Currency, BetCount)
+				SELECT
+					'SB' AS ProductCode,
+					b.winlostdate,
+					b.currency,
+					SUM(CASE 
+							WHEN b.ExtraInfo IS NOT NULL THEN ISNULL(TRY_CAST(JSON_VALUE(b.ExtraInfo, '$[0].TransCount') AS INT), 1)
+							ELSE 1 
+						END) AS BetCount
+				FROM
+					DBARC.bodb_Archive.dbo.bettrans_bk AS b WITH (NOLOCK)
+					INNER JOIN #TempAg AS a ON a.CustId = b.recommend
+					LEFT JOIN #TempCust AS c ON c.CustId = b.custid
+				WHERE
+					b.winlostdate BETWEEN @FromDate AND @TempToDate
+					AND b.bettype = 997
+					AND (@Username = '' OR c.CustId IS NOT NULL)
+				GROUP BY
+					b.winlostdate,
+					b.currency
+			END
+
+			--Update BetCount for bettype = 997
+			UPDATE d
+			SET d.BetCount = d.BetCount + o.BetCount
+			FROM @Data d
+			INNER JOIN #OddBoostBonus o ON d.ProductCode = o.ProductCode AND d.WinLostDate = o.WinLostDate AND d.Currency = o.Currency
+		END
+		--======================================================================================================================================
 	END
 
 	-- Get exchange rate
