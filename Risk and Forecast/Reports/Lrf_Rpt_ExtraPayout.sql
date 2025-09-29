@@ -246,10 +246,6 @@ BEGIN
 		BetCount		INT
 	)
 
-	DROP TABLE IF EXISTS #Date997
-	CREATE TABLE #Date997 (WinLostDate SMALLDATETIME)
-
-
 	DECLARE @TempFromDate	SMALLDATETIME,
 		@TempToDate			SMALLDATETIME
 
@@ -407,13 +403,6 @@ BEGIN
 
 				IF EXISTS (SELECT 1 FROM @Data WHERE WinLostDate BETWEEN @TempFromDate AND @TempToDate AND BetCount997 > 0)
 				BEGIN
-					DELETE FROM #Date997
-
-					INSERT INTO #Date997 (WinLostDate)
-					SELECT DISTINCT WinLostDate
-					FROM @Data
-					WHERE WinLostDate BETWEEN @TempFromDate AND @TempToDate AND BetCount997 > 0
-
 					INSERT INTO #OddBoostBonus (ProductCode, WinLostDate, Currency, BetCount)
 					SELECT
 						'SB' AS ProductCode,
@@ -426,10 +415,10 @@ BEGIN
 					FROM
 						dbo.bettrans14 AS b WITH (NOLOCK)
 						INNER JOIN #TempAg AS a ON a.CustId = b.recommend
-						INNER JOIN #Date997 AS d ON d.WinLostDate = b.winlostdate
 						LEFT JOIN #TempCust AS c ON c.CustId = b.custid
 					WHERE
-						b.bettype = 997
+						b.winlostdate BETWEEN @TempFromDate AND @TempToDate
+						AND b.bettype = 997
 						AND (@Username = '' OR c.CustId IS NOT NULL)
 					GROUP BY
 						b.winlostdate,
@@ -447,13 +436,6 @@ BEGIN
 
 				IF EXISTS (SELECT 1 FROM @Data WHERE WinLostDate BETWEEN @FromDate AND @TempToDate AND BetCount997 > 0)
 				BEGIN
-					DELETE FROM #Date997
-
-					INSERT INTO #Date997 (WinLostDate)
-					SELECT DISTINCT WinLostDate
-					FROM @Data
-					WHERE WinLostDate BETWEEN @FromDate AND @TempToDate AND BetCount997 > 0
-
 					INSERT INTO #OddBoostBonus (ProductCode, WinLostDate, Currency, BetCount)
 					SELECT
 						'SB' AS ProductCode,
@@ -466,10 +448,10 @@ BEGIN
 					FROM
 						DBARC.bodb_Archive.dbo.bettrans_bk AS b WITH (NOLOCK)
 						INNER JOIN #TempAg AS a ON a.CustId = b.recommend
-						INNER JOIN #Date997 AS d ON d.WinLostDate = b.winlostdate
 						LEFT JOIN #TempCust AS c ON c.CustId = b.custid
 					WHERE
-						b.bettype = 997
+						b.winlostdate BETWEEN @FromDate AND @TempToDate
+						AND b.bettype = 997
 						AND (@Username = '' OR c.CustId IS NOT NULL)
 					GROUP BY
 						b.winlostdate,
