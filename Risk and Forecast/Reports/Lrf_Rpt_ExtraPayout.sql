@@ -227,13 +227,14 @@ BEGIN
 	--===================================================================================================================
 
 	DECLARE @Data TABLE (
-		ProductCode		VARCHAR(10),
-		WinLostDate		SMALLDATETIME,
-		Currency		INT,
-		BetCount		BIGINT,
-		Turnover		MONEY,
-		Amount			MONEY,
-		SharingAmount	MONEY
+		ProductCode			VARCHAR(10),
+		WinLostDate			SMALLDATETIME,
+		Currency			INT,
+		BetCount			BIGINT,
+		BetCount997			BIGINT,
+		Turnover			MONEY,
+		Amount				MONEY,
+		SharingAmount		MONEY
 	)
 
 	DROP TABLE IF EXISTS #OddBoostBonus
@@ -324,6 +325,7 @@ BEGIN
 			WinLostDate,
 			Currency,
 			BetCount,
+			BetCount997,
 			Turnover,
 			Amount,
 			SharingAmount )
@@ -337,11 +339,15 @@ BEGIN
 			b.winlostdate,
 			b.currency,
 			SUM(CASE
-					WHEN b.bettype = 997 THEN 0 -- do not count Betcount 997 at this step
+					WHEN b.bettype = 997 THEN 0
 					ELSE b.BetCount 
 				END) AS BetCount,
 			SUM(CASE
-					WHEN b.bettype IN (4297, 1698, 3898, 4599) THEN b.BuyBackAmt					
+					WHEN b.bettype = 997 THEN b.BetCount
+					ELSE 0
+				END) AS BetCount997,
+			SUM(CASE
+					WHEN b.bettype IN (4297, 1698, 3898, 4599) THEN b.BuyBackAmt
 					ELSE b.turnover
 				END) AS Turnover,
 			SUM(CASE
@@ -351,7 +357,7 @@ BEGIN
 			SUM(CASE
 					WHEN b.bettype IN (997) THEN 0
 					ELSE b.awinlost
-				END) AS SharingAmount			
+				END) AS SharingAmount
 		FROM
 			bodb_LicenseeReport.dbo.rptLicWinloss2 AS b WITH (NOLOCK)
 			INNER JOIN #TempAg AS a ON a.CustId = b.recommend
@@ -383,7 +389,7 @@ BEGIN
 		IF EXISTS (SELECT 1 FROM #SportBetType WHERE BetType = 997)
 		BEGIN
 			-- bettrans14
-			IF @FromDate <= @MoveBetsDay AND @ToDate >= @BalanceUpDay
+			IF @FromDate <= @MoveBetsDay AND @ToDate >= @BalanceUpDay 
 			BEGIN
 				SET @TempToDate = CASE
 								WHEN @ToDate >= @MoveBetsDay THEN @MoveBetsDay
@@ -395,26 +401,35 @@ BEGIN
 										ELSE @FromDate
 									END
 
-				INSERT INTO #OddBoostBonus (ProductCode, WinLostDate, Currency, BetCount)
-				SELECT
-					'SB' AS ProductCode,
-					b.winlostdate,
-					b.currency,
-					SUM(CASE 
-							WHEN b.ExtraInfo IS NOT NULL THEN ISNULL(TRY_CAST(JSON_VALUE(b.ExtraInfo, '$[0].TransCount') AS INT), 1)
-							ELSE 1 
-						END) AS BetCount
-				FROM
-					dbo.bettrans14 AS b WITH (NOLOCK)
-					INNER JOIN #TempAg AS a ON a.CustId = b.recommend
-					LEFT JOIN #TempCust AS c ON c.CustId = b.custid
-				WHERE
-					b.winlostdate BETWEEN @TempFromDate AND @TempToDate
-					AND b.bettype = 997
-					AND (@Username = '' OR c.CustId IS NOT NULL)
-				GROUP BY
-					b.winlostdate,
-					b.currency
+				IF EXISTS (SELECT 1 FROM @Data WHERE WinLostDate BETWEEN @TempFromDate AND @TempToDate AND BetCount997 > 0)
+				BEGIN
+					;WITH CTE_Date AS
+					(
+						SELECT DISTINCT WinLostDate
+						FROM @Data
+						WHERE WinLostDate BETWEEN @TempFromDate AND @TempToDate AND BetCount997 > 0
+					)
+					INSERT INTO #OddBoostBonus (ProductCode, WinLostDate, Currency, BetCount)
+					SELECT
+						'SB' AS ProductCode,
+						b.winlostdate,
+						b.currency,
+						SUM(CASE 
+								WHEN b.ExtraInfo IS NOT NULL THEN ISNULL(TRY_CAST(JSON_VALUE(b.ExtraInfo, '$[0].TransCount') AS INT), 1)
+								ELSE 1 
+							END) AS BetCount
+					FROM
+						dbo.bettrans14 AS b WITH (NOLOCK)
+						INNER JOIN #TempAg AS a ON a.CustId = b.recommend
+						INNER JOIN CTE_Date AS d ON d.WinLostDate = b.winlostdate
+						LEFT JOIN #TempCust AS c ON c.CustId = b.custid
+					WHERE
+						b.bettype = 997
+						AND (@Username = '' OR c.CustId IS NOT NULL)
+					GROUP BY
+						b.winlostdate,
+						b.currency
+				END
 			END
 
 			--bettrans_bk
@@ -425,29 +440,38 @@ BEGIN
 									ELSE @ToDate
 								END
 
-				INSERT INTO #OddBoostBonus (ProductCode, WinLostDate, Currency, BetCount)
-				SELECT
-					'SB' AS ProductCode,
-					b.winlostdate,
-					b.currency,
-					SUM(CASE 
-							WHEN b.ExtraInfo IS NOT NULL THEN ISNULL(TRY_CAST(JSON_VALUE(b.ExtraInfo, '$[0].TransCount') AS INT), 1)
-							ELSE 1 
-						END) AS BetCount
-				FROM
-					DBARC.bodb_Archive.dbo.bettrans_bk AS b WITH (NOLOCK)
-					INNER JOIN #TempAg AS a ON a.CustId = b.recommend
-					LEFT JOIN #TempCust AS c ON c.CustId = b.custid
-				WHERE
-					b.winlostdate BETWEEN @FromDate AND @TempToDate
-					AND b.bettype = 997
-					AND (@Username = '' OR c.CustId IS NOT NULL)
-				GROUP BY
-					b.winlostdate,
-					b.currency
+				IF EXISTS (SELECT 1 FROM @Data WHERE WinLostDate BETWEEN @FromDate AND @TempToDate AND BetCount997 > 0)
+				BEGIN
+					;WITH CTE_Date AS
+					(
+						SELECT DISTINCT WinLostDate
+						FROM @Data
+						WHERE WinLostDate BETWEEN @FromDate AND @TempToDate AND BetCount997 > 0
+					)
+					INSERT INTO #OddBoostBonus (ProductCode, WinLostDate, Currency, BetCount)
+					SELECT
+						'SB' AS ProductCode,
+						b.winlostdate,
+						b.currency,
+						SUM(CASE 
+								WHEN b.ExtraInfo IS NOT NULL THEN ISNULL(TRY_CAST(JSON_VALUE(b.ExtraInfo, '$[0].TransCount') AS INT), 1)
+								ELSE 1 
+							END) AS BetCount
+					FROM
+						DBARC.bodb_Archive.dbo.bettrans_bk AS b WITH (NOLOCK)
+						INNER JOIN #TempAg AS a ON a.CustId = b.recommend
+						INNER JOIN CTE_Date AS d ON d.WinLostDate = b.winlostdate
+						LEFT JOIN #TempCust AS c ON c.CustId = b.custid
+					WHERE
+						b.bettype = 997
+						AND (@Username = '' OR c.CustId IS NOT NULL)
+					GROUP BY
+						b.winlostdate,
+						b.currency
+				END
 			END
 
-			--Update BetCount for bettype = 997
+			--Update BetCount for Odds Boost Bonus
 			UPDATE d
 			SET d.BetCount = d.BetCount + o.BetCount
 			FROM @Data d
