@@ -27,7 +27,6 @@ BEGIN
 
 	-- Get agent list
 	--===================================================================================================================
-	DROP TABLE IF EXISTS #TempAg
 	CREATE TABLE #TempAg (CustId INT, Currency INT)
 
 	CREATE CLUSTERED INDEX IX_CustId ON #TempAg (CustId)
@@ -53,7 +52,6 @@ BEGIN
 
 	-- Get member list
 	--===================================================================================================================
-	DROP TABLE IF EXISTS #TempCust
 	CREATE TABLE #TempCust (CustId INT PRIMARY KEY)
 
 	IF @Username <> ''
@@ -75,8 +73,8 @@ BEGIN
 		END
 	END
 	--===================================================================================================================
-
-	DECLARE @Data TABLE (
+	CREATE TABLE #Data
+	(
 		WinLostDate		SMALLDATETIME,
 		CustId			INT,
 		Currency		INT,
@@ -98,7 +96,7 @@ BEGIN
 							END
 
 		-- bettrans
-		INSERT INTO @Data 
+		INSERT INTO #Data 
 		(
 			WinLostDate,
 			CustId,
@@ -141,7 +139,7 @@ BEGIN
 								ELSE @FromDate
 							END
 		--bettrans14
-		INSERT INTO @Data 
+		INSERT INTO #Data 
 		(
 			WinLostDate,
 			CustId,
@@ -180,7 +178,7 @@ BEGIN
 								ELSE @ToDate
 							END
 		--bettrans_bk
-		INSERT INTO @Data 
+		INSERT INTO #Data 
 		(
 			WinLostDate,
 			CustId,
@@ -218,7 +216,7 @@ BEGIN
 		ExchangeId	INT,
 		Rate		FLOAT)
 
-	IF EXISTS (SELECT TOP(1) 1 FROM @Data)
+	IF EXISTS (SELECT 1 FROM #Data)
 	BEGIN
 		INSERT INTO @ExchangeRate(FromDate, ToDate, ExchangeID, Rate)
 		SELECT FromDate, ToDate, ExchangeID, Rate
@@ -235,7 +233,7 @@ BEGIN
 		d.ProductCode,
 		d.PromotionType,
 		(d.CustomerAmount * e.Rate) AS BasedCustomerAmount
-	FROM @Data AS d
+	FROM #Data AS d
 		INNER JOIN dbo.Customer AS c WITH (NOLOCK) ON c.custid = d.CustId
 		INNER JOIN @ExchangeRate AS e
 			ON d.WinLostDate BETWEEN e.FromDate AND e.ToDate
@@ -243,5 +241,8 @@ BEGIN
 	ORDER BY 
 		d.WinLostDate ASC
 
+	DROP TABLE IF EXISTS #TempAg
+	DROP TABLE IF EXISTS #TempCust
+	DROP TABLE IF EXISTS #Data
 END
 GO
