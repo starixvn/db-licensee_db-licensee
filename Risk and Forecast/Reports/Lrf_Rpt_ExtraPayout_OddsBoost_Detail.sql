@@ -25,8 +25,6 @@ AS
 BEGIN
 	SET NOCOUNT ON
 
-	DECLARE @HasError BIT = 0
-
 	-- Get agent list
 	--===================================================================================================================
 	DROP TABLE IF EXISTS #TempAg

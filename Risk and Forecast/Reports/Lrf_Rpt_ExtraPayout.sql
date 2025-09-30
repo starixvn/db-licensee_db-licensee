@@ -225,8 +225,8 @@ BEGIN
 				ELSE 0
 			END
 	--===================================================================================================================
-
-	DECLARE @Data TABLE (
+	CREATE TABLE #Data
+	(
 		ProductCode			VARCHAR(10),
 		WinLostDate			SMALLDATETIME,
 		Currency			INT,
@@ -237,7 +237,6 @@ BEGIN
 		SharingAmount		MONEY
 	)
 
-	DROP TABLE IF EXISTS #OddBoostBonus
 	CREATE TABLE #OddBoostBonus
 	(
 		ProductCode		VARCHAR(10),
@@ -257,7 +256,7 @@ BEGIN
 								ELSE @FromDate
 							END
 
-		INSERT INTO @Data (
+		INSERT INTO #Data (
 			ProductCode,
 			WinLostDate,
 			Currency,
@@ -320,7 +319,7 @@ BEGIN
 					ELSE 0
 				END
 
-		INSERT INTO @Data (
+		INSERT INTO #Data (
 			ProductCode,
 			WinLostDate,
 			Currency,
@@ -386,7 +385,7 @@ BEGIN
 
 		--Get BetCount Odds Boost Bonus 997 in bettrans14, bettrans_bk
 		--======================================================================================================================================
-		IF EXISTS (SELECT 1 FROM #SportBetType WHERE BetType = 997)
+		IF EXISTS (SELECT 1 FROM #Data WHERE BetCount997 > 0)
 		BEGIN
 			-- bettrans14
 			IF @FromDate <= @MoveBetsDay AND @ToDate >= @BalanceUpDay 
@@ -401,7 +400,7 @@ BEGIN
 										ELSE @FromDate
 									END
 
-				IF EXISTS (SELECT 1 FROM @Data WHERE WinLostDate BETWEEN @TempFromDate AND @TempToDate AND BetCount997 > 0)
+				IF EXISTS (SELECT 1 FROM #Data WHERE WinLostDate BETWEEN @TempFromDate AND @TempToDate AND BetCount997 > 0)
 				BEGIN
 					INSERT INTO #OddBoostBonus (ProductCode, WinLostDate, Currency, BetCount)
 					SELECT
@@ -434,7 +433,7 @@ BEGIN
 									ELSE @ToDate
 								END
 
-				IF EXISTS (SELECT 1 FROM @Data WHERE WinLostDate BETWEEN @FromDate AND @TempToDate AND BetCount997 > 0)
+				IF EXISTS (SELECT 1 FROM #Data WHERE WinLostDate BETWEEN @FromDate AND @TempToDate AND BetCount997 > 0)
 				BEGIN
 					INSERT INTO #OddBoostBonus (ProductCode, WinLostDate, Currency, BetCount)
 					SELECT
@@ -462,7 +461,7 @@ BEGIN
 			--Update BetCount for Odds Boost Bonus
 			UPDATE d
 			SET d.BetCount = d.BetCount + o.BetCount
-			FROM @Data d
+			FROM #Data d
 			INNER JOIN #OddBoostBonus o ON d.ProductCode = o.ProductCode AND d.WinLostDate = o.WinLostDate AND d.Currency = o.Currency
 		END
 		--======================================================================================================================================
@@ -475,7 +474,7 @@ BEGIN
 		ExchangeId	INT,
 		Rate		FLOAT)
 
-	IF EXISTS (SELECT TOP(1) 1 FROM @Data)
+	IF EXISTS (SELECT TOP(1) 1 FROM #Data)
 	BEGIN
 		INSERT INTO @ExchangeRate(FromDate, ToDate, ExchangeID, Rate)
 		SELECT FromDate, ToDate, ExchangeID, Rate
@@ -499,7 +498,7 @@ BEGIN
 		CAST(SUM(d.Turnover			* e.Rate) AS MONEY) AS BasedTurnover,
 		CAST(SUM(d.Amount			* e.Rate) AS MONEY) AS BasedAmount,
 		CAST(SUM(d.SharingAmount	* e.Rate) AS MONEY) AS BasedSharingAmount
-	FROM @Data AS d
+	FROM #Data AS d
 		INNER JOIN @ExchangeRate AS e
 			ON d.WinLostDate BETWEEN e.FromDate AND e.ToDate
 				AND d.Currency = e.ExchangeId
@@ -513,8 +512,10 @@ BEGIN
 		d.ProductCode
 	ORDER BY ReportType ASC
 
-	DROP TABLE #TempAg
-	DROP TABLE #SportBetType
-	DROP TABLE #TempCust
+	DROP TABLE IF EXISTS #TempAg
+	DROP TABLE IF EXISTS #SportBetType
+	DROP TABLE IF EXISTS #TempCust
+	DROP TABLE IF EXISTS #Data
+	DROP TABLE IF EXISTS #OddBoostBonus
 END
 GO
