@@ -2,7 +2,6 @@
 
 ALTER PROCEDURE [dbo].[Lrf_Rpt_ExtraPayout_OddsBoost_Detail]
 	@AgentList			VARCHAR(MAX),
-	@Username			VARCHAR(50)		= '',
 	@FromDate			SMALLDATETIME,
 	@ToDate				SMALLDATETIME,
 	@MoveBetsDay		SMALLDATETIME,
@@ -50,29 +49,6 @@ BEGIN
 	END CATCH;
 	--===================================================================================================================
 
-	-- Get member list
-	--===================================================================================================================
-	CREATE TABLE #TempCust (CustId INT PRIMARY KEY)
-
-	IF @Username <> ''
-	BEGIN
-		INSERT INTO #TempCust
-		SELECT c.custid
-		FROM dbo.Customer AS c WITH (NOLOCK, INDEX = IX_agent)
-			INNER JOIN #TempAg AS ta ON ta.CustId = c.recommend
-		WHERE c.roleid = 1
-			AND (c.username2 LIKE '%$%' + @Username + '%'
-				OR c.username LIKE '%' + @Username + '%')
-		
-		IF @@ROWCOUNT = 0
-		BEGIN
-			SELECT ErrCode = 102,
-				ErrMsg = N'Username was not found.'
-
-			RETURN
-		END
-	END
-	--===================================================================================================================
 	CREATE TABLE #Data
 	(
 		WinLostDate		SMALLDATETIME,
@@ -116,7 +92,6 @@ BEGIN
 			fOddsBoost.GapAmountBeforePT AS CustomerAmount
 		FROM dbo.bettrans AS b WITH (NOLOCK)
 			INNER JOIN #TempAg AS a ON a.CustId = b.recommend
-			LEFT JOIN #TempCust AS c ON c.CustId = b.custid
 			LEFT JOIN dbo.f_Set_OddsTypeBettypes() fdec -- check for decimal odds only
 				ON b.bettype = fdec.BetType
 			CROSS APPLY dbo.f_Set_Cal_OddBoostAdjustBonus(2, b.odds, b.stake, b.actual_stake, b.scomm, b.winlost, b.awinlost, b.mwinlost, b.swinlost, b.statusID, b.statuswinlost, b.apositiontaking, b.mpositiontaking, b.spositiontaking, b.tpositiontaking, fdec.OddsType, b.ExtraInfo) AS fOddsBoost
@@ -124,7 +99,6 @@ BEGIN
 			AND b.statusID IN (101, 102, 103, 111, 112, 113) -- reject, void, refund, draw, won, lose
 			AND b.OddsType NOT IN (6, 7) -- 6: Exclude Myanmar Odds, 7: Scorebox Odds
 			AND betdaqid = -3
-			AND (@Username = '' OR c.CustId IS NOT NULL)
 	END
 
 	IF @FromDate <= @MoveBetsDay AND @ToDate >= @BalanceUpDay
@@ -159,7 +133,6 @@ BEGIN
 			fOddsBoost.GapAmountBeforePT AS CustomerAmount
 		FROM dbo.bettrans14 AS b WITH (NOLOCK)
 			INNER JOIN #TempAg AS a ON a.CustId = b.recommend
-			LEFT JOIN #TempCust AS c ON c.CustId = b.custid
 			LEFT JOIN dbo.f_Set_OddsTypeBettypes() fdec -- check for decimal odds only
 				ON b.bettype = fdec.BetType
 			CROSS APPLY dbo.f_Set_Cal_OddBoostAdjustBonus(2, b.odds, b.stake, b.actual_stake, b.scomm, b.winlost, b.awinlost, b.mwinlost, b.swinlost, b.statusID, b.statuswinlost, b.apositiontaking, b.mpositiontaking, b.spositiontaking, b.tpositiontaking, fdec.OddsType, b.ExtraInfo) AS fOddsBoost
@@ -167,7 +140,6 @@ BEGIN
 			AND b.statusID IN (101, 102, 103, 111, 112, 113) -- reject, void, refund, draw, won, lose
 			AND b.OddsType NOT IN (6, 7) -- 6: Exclude Myanmar Odds, 7: Scorebox Odds
 			AND betdaqid = -3
-			AND (@Username = '' OR c.CustId IS NOT NULL)
 	END
 
 	--bettrans_bk
@@ -198,7 +170,6 @@ BEGIN
 			fOddsBoost.GapAmountBeforePT AS CustomerAmount
 		FROM bodb_Archive.dbo.bettrans_bk AS b WITH (NOLOCK)
 			INNER JOIN #TempAg AS a ON a.CustId = b.recommend
-			LEFT JOIN #TempCust AS c ON c.CustId = b.custid
 			LEFT JOIN dbo.f_Set_OddsTypeBettypes() fdec -- check for decimal odds only
 				ON b.bettype = fdec.BetType
 			CROSS APPLY dbo.f_Set_Cal_OddBoostAdjustBonus(2, b.odds, b.stake, b.actual_stake, b.scomm, b.winlost, b.awinlost, b.mwinlost, b.swinlost, b.statusID, b.statuswinlost, b.apositiontaking, b.mpositiontaking, b.spositiontaking, b.tpositiontaking, fdec.OddsType, b.ExtraInfo) AS fOddsBoost
@@ -206,7 +177,6 @@ BEGIN
 			AND b.statusID IN (101, 102, 103, 111, 112, 113) -- reject, void, refund, draw, won, lose
 			AND b.OddsType NOT IN (6, 7) -- 6: Exclude Myanmar Odds, 7: Scorebox Odds
 			AND betdaqid = -3
-			AND (@Username = '' OR c.CustId IS NOT NULL)
 	END
 
 	-- Get exchange rate
@@ -242,7 +212,6 @@ BEGIN
 		d.WinLostDate ASC
 
 	DROP TABLE IF EXISTS #TempAg
-	DROP TABLE IF EXISTS #TempCust
 	DROP TABLE IF EXISTS #Data
 END
 GO
