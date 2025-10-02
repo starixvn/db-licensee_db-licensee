@@ -197,11 +197,13 @@ BEGIN
 	-- Return result
 	SELECT
 		d.WinLostDate,
+		d.Currency,
 		SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS [ExternalID],
 		c.username AS [SystemID],
 		d.RefNo,
 		d.ProductCode,
 		d.PromotionType,
+		d.CustomerAmount,
 		(d.CustomerAmount * e.Rate) AS BasedCustomerAmount
 	FROM #Data AS d
 		INNER JOIN dbo.Customer AS c WITH (NOLOCK) ON c.custid = d.CustId
