@@ -197,7 +197,6 @@ BEGIN
 	-- Return result
 	SELECT
 		d.WinLostDate,
-		d.Currency,
 		SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1,LEN(c.username2) - CHARINDEX('$',c.username2)) AS [ExternalID],
 		c.username AS [SystemID],
 		d.RefNo,
