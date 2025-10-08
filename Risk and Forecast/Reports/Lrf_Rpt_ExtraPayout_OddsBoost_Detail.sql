@@ -72,8 +72,9 @@ BEGIN
 								ELSE @FromDate
 							END
 
-		SET @TempToDate = CASE WHEN @ToDate = CONVERT(date, CURRENT_TIMESTAMP) THEN DATEADD(DAY, -1, @ToDate)
-								ELSE @ToDate
+		SET @TempToDate = CASE
+							WHEN @ToDate = CONVERT(DATE, CURRENT_TIMESTAMP) THEN DATEADD(DAY, -1, @ToDate)
+							ELSE @ToDate
 						 END
 
 		-- bettrans
