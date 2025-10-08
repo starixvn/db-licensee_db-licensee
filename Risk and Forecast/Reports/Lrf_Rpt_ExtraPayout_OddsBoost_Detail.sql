@@ -15,6 +15,7 @@ AS
 	DB: DBACC.bodb02
 	Revisions:
 		- 20250924@Kelvin: Enhance to count Total Trans & View Detail of Odds Boost Bonus[RedmineID: #239758]
+		- 20251008@Kelvin: Do not show today’s data because the summary job has not run yet[RedmineID: #239758]
 
 	Param's Explanation:
 		+ @PromotionTypeList: promotion type list separated by ','
@@ -71,6 +72,10 @@ BEGIN
 								ELSE @FromDate
 							END
 
+		SET @TempToDate = CASE WHEN @ToDate = CONVERT(date, CURRENT_TIMESTAMP) THEN DATEADD(DAY, -1, @ToDate)
+								ELSE @ToDate
+						 END
+
 		-- bettrans
 		INSERT INTO #Data 
 		(
@@ -95,7 +100,7 @@ BEGIN
 			LEFT JOIN dbo.f_Set_OddsTypeBettypes() fdec -- check for decimal odds only
 				ON b.bettype = fdec.BetType
 			CROSS APPLY dbo.f_Set_Cal_OddBoostAdjustBonus(2, b.odds, b.stake, b.actual_stake, b.scomm, b.winlost, b.awinlost, b.mwinlost, b.swinlost, b.statusID, b.statuswinlost, b.apositiontaking, b.mpositiontaking, b.spositiontaking, b.tpositiontaking, fdec.OddsType, b.ExtraInfo) AS fOddsBoost
-		WHERE b.winlostdate BETWEEN @TempFromDate AND @ToDate
+		WHERE b.winlostdate BETWEEN @TempFromDate AND @TempToDate
 			AND b.statusID IN (101, 102, 103, 111, 112, 113) -- reject, void, refund, draw, won, lose
 			AND b.OddsType NOT IN (6, 7) -- 6: Exclude Myanmar Odds, 7: Scorebox Odds
 			AND betdaqid = -3
