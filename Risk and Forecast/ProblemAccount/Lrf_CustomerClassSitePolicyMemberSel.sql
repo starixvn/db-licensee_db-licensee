@@ -43,6 +43,6 @@ BEGIN
 			AND cp.SportType NOT IN (9901, 9902)
 		GROUP BY cp.SportType, cp.Currency,cp.SiteID, cp.Platform ) KQ
 	WHERE RowNumber = 1
-	ORDER BY SportType, Platform
+	ORDER BY SportType ASC, Platform ASC
 END
 		
