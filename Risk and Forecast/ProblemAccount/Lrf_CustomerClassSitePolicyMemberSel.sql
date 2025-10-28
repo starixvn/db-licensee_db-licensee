@@ -2,7 +2,7 @@
 ALTER PROCEDURE Lrf_CustomerClassSitePolicyMemberSel
 	@CustomerClass	SMALLINT,
 	@site VARCHAR(50),
-	@CurrencyID	TINYINT,
+	@CurrencyID	SMALLINT,
 	@IsTest BIT = 0
 
 AS
@@ -15,6 +15,7 @@ AS
 			- 20230530@Winfred: LAP - Hide Customer Class [redmine:#185367]
 			- 20240625@Winfred: LAP - Get data from Spread Management [redmine:#207016]
 			- 20240627@Winfred: LAP - Risk Level Information - Get data from Spread Management [redmine:#207016]
+			- 20251014@Kelvin: Upgrade ExchangeId Datatype [Redmine: #222339]
 	*/
 BEGIN
 	SET NOCOUNT ON
@@ -42,6 +43,6 @@ BEGIN
 			AND cp.SportType NOT IN (9901, 9902)
 		GROUP BY cp.SportType, cp.Currency,cp.SiteID, cp.Platform ) KQ
 	WHERE RowNumber = 1
-	ORDER BY SportType, Platform
+	ORDER BY SportType ASC, Platform ASC
 END
 		
