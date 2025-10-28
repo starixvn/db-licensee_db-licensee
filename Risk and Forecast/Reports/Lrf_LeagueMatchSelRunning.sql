@@ -1,8 +1,8 @@
 ﻿/*<info serverAlias="DBBOF-bodb02" executers="wsv_lap" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE Lrf_LeagueMatchSelRunning
-	@SportType				TINYINT	= 1,
-	@IsIncludeTestLeague	BIT		= 0
+	@SportType				SMALLINT	= 1,
+	@IsIncludeTestLeague	BIT			= 0
 AS
 
 /*
@@ -16,6 +16,7 @@ AS
 		- 20211112@Kos: Exclude league and match which IsDeleted = 1 [RedmineID: #163733]
 		- 20220308@Kos: Return league group ID [RedmineID: #167824]
 		- 20000609@Kos: Remove IsDeleted for League and Team [Redmine: #171991]
+		- 20251010@Tacy: Upgrade SprottypeID Datatype [RedmineID: #241348]
 */
 
 BEGIN
