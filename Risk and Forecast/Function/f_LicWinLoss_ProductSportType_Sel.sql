@@ -85,6 +85,7 @@ ALTER FUNCTION [dbo].[f_LicWinLoss_ProductSportType_Sel]
 		- 20250820@Kelvin: Integate OFA Live [RedmineID: #236577]
 		- 20250918@Kelvin: Integate BGaming [RedmineID: #238816]
 		- 20251013@Kelvin: Integrate Gemini [RedmineID: #240161]
+		- 20251024@Kelvin: Integrate Vertex Play [RedmineID: #241886]
 
 */
 RETURNS TABLE
@@ -166,7 +167,8 @@ RETURN
 					(99, 'SS', 135, 0),		-- Smartsoft
 					(113, 'OFA', 119, 0),	-- OFA Live
 					(114, 'BGRNG', 118, 0),	-- BGaming
-					(115, 'GEM', 117, 0)	-- GEMINI
+					(115, 'GEM', 117, 0),	-- GEMINI
+					(116, 'VP', 115, 0)		-- Vertex Play
 			) d(ProductID, ProductCode, SportType, BetType)
 	WHERE ',' + @ProductCodes + ',' LIKE '%,' + CAST(ProductCode AS VARCHAR(10)) + ',%'
 GO
