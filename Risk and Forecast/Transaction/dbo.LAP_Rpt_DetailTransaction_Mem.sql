@@ -67,7 +67,7 @@ BEGIN
 	-- Get bettype translog--
 	DECLARE @Bettype_TransLog TABLE (Bettype SMALLINT)
 
-	INSERT INTO @Bettype_TransLog
+	INSERT INTO @Bettype_TransLog (Bettype)
 	SELECT DISTINCT BetType
 	FROM dbo.SportBettypeMatrix (NOLOCK)
 	WHERE RefTable = 3 --translog
@@ -133,7 +133,7 @@ BEGIN
 		, br.transremark
 		, br.changedAmt
 		, br.totalAmt
-		, rowIdx = ROW_NUMBER() OVER(ORDER BY RowID)
+		, rowIdx = ROW_NUMBER() OVER(ORDER BY RowID ASC)
 		, br.IsResettled
 	FROM (
 		SELECT CASE
@@ -233,7 +233,7 @@ BEGIN
 	WHERE 
 		br.rowIdx BETWEEN @_rowStart AND @_rowEnd
 	ORDER BY 
-		br.rowIdx
+		br.rowIdx ASC
 
 	DROP TABLE #transactionRpt
 END
