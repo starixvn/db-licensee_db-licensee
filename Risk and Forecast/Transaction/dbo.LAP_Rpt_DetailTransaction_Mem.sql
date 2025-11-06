@@ -27,6 +27,7 @@ AS
 		- 20230810@Evan: Show bettrans.refno for settled record of Translog products [RedmineID: #196379]
 		- 20240620@Kelvin: Integrate Saba Coins - add param @ReportViewType [RedmineID: #206840]
 		- 20241227@Kelvin: LAP - Saba Coins phase 2 - Support multiple wallets [RedmineID: #215890]
+		- 20251106@Kelvin: Add SettlementType = 13 [RedmineID: #243741]
 	
 	Param's Explanation:     
 		- @ReportViewType : TINYINT
@@ -66,7 +67,7 @@ BEGIN
 	-- Get bettype translog--
 	DECLARE @Bettype_TransLog TABLE (Bettype SMALLINT)
 
-	INSERT INTO @Bettype_TransLog
+	INSERT INTO @Bettype_TransLog (Bettype)
 	SELECT DISTINCT BetType
 	FROM dbo.SportBettypeMatrix (NOLOCK)
 	WHERE RefTable = 3 --translog
@@ -132,7 +133,7 @@ BEGIN
 		, br.transremark
 		, br.changedAmt
 		, br.totalAmt
-		, rowIdx = ROW_NUMBER() OVER(ORDER BY RowID)
+		, rowIdx = ROW_NUMBER() OVER(ORDER BY RowID ASC)
 		, br.IsResettled
 	FROM (
 		SELECT CASE
@@ -146,7 +147,7 @@ BEGIN
 			 , NewBalance AS totalAmt
 			 , RowID
 			 , CASE
-				   WHEN br.SettlementType IN (2, 3, 10, 11) THEN 1
+				   WHEN br.SettlementType IN (2, 3, 10, 11, 13) THEN 1
 				   ELSE 0
 			   END AS IsResettled
 		FROM BalanceRecord.dbo.BalanceRecord_bk br WITH (NOLOCK)
@@ -157,7 +158,7 @@ BEGIN
 			br.transid = ISNULL(@_TransactionId, br.transid) OR br.refno = ISNULL(@_TransactionId, br.refno))
 			AND 1 = CASE
 				WHEN @_IsResettled = 1 AND
-					br.SettlementType IN (2, 3, 10, 11) THEN 1 -- get re-settled tickets only
+					br.SettlementType IN (2, 3, 10, 11, 13) THEN 1 -- get re-settled tickets only
 				WHEN @_IsResettled = 0 THEN 1 -- get all tickets
 				ELSE 0
 			END			
@@ -178,7 +179,7 @@ BEGIN
 			 , NewBalance AS totalAmt
 			 , RowID
 			 , CASE
-				   WHEN SettlementType IN (2, 3, 10, 11) THEN 1
+				   WHEN SettlementType IN (2, 3, 10, 11, 13) THEN 1
 				   ELSE 0
 			   END AS IsResettled
 		FROM bodb02.dbo.BalanceRecord br WITH (NOLOCK)
@@ -188,7 +189,7 @@ BEGIN
 			(
 			br.transid = ISNULL(@_TransactionId, br.transid) OR br.refno = ISNULL(@_TransactionId, br.refno))
 			AND 1 = CASE 
-						WHEN @_IsResettled = 1 AND SettlementType IN (2,3,10,11) THEN 1 -- get re-settled tickets only
+						WHEN @_IsResettled = 1 AND SettlementType IN (2, 3, 10, 11, 13) THEN 1 -- get re-settled tickets only
 						WHEN @_IsResettled = 0 THEN 1 -- get all tickets
 						ELSE 0
 					END
@@ -232,7 +233,7 @@ BEGIN
 	WHERE 
 		br.rowIdx BETWEEN @_rowStart AND @_rowEnd
 	ORDER BY 
-		br.rowIdx
+		br.rowIdx ASC
 
 	DROP TABLE #transactionRpt
 END
