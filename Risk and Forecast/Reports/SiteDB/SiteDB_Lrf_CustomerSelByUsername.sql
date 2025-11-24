@@ -30,6 +30,7 @@ AS
 		- 20240910@Kelvin: Integrate Odds Boost Voucher [RedmineID: #210613]
 		- 20250227@Virgil: Drop BA functions [RedmineID: #216882]
 		- 20250408@Kelvin: Upgrade ExchangeId Datatype [RedmineID: #222339]
+		- 20251121@Tacy: Enhance performance [Redmine: #245015]
 
 	Parameter's explanations:
 		+ @SpecialLevel: '1,2,3,4,5,6,7,8,9,10' (all)
@@ -76,18 +77,25 @@ BEGIN
 	DROP TABLE IF EXISTS #TotalBalance
 	DROP TABLE IF EXISTS #LicenseeCustDiscount
 	DROP TABLE IF EXISTS #Dep_CustSpecialLevel
+	DROP TABLE IF EXISTS #tmpCommGroups
 
 	CREATE TABLE #TempAg (custid INT)
-	CREATE TABLE #LicenseeCustDiscount (LicenseeID INT, GroupDiscountID INT, CustID INT PRIMARY KEY, GroupName VARCHAR(100))
+	CREATE TABLE #LicenseeCustDiscount (CustID INT PRIMARY KEY CLUSTERED, LicenseeID INT, GroupDiscountID INT, GroupName VARCHAR(100))
 	CREATE TABLE #Dep_CustSpecialLevel(CustID INT PRIMARY KEY, SpecialLevel INT)
-	
+	CREATE TABLE #tmpCommGroups (GroupDiscountID INT PRIMARY KEY)
+
 	DECLARE @DocHandler INT
 	
 	SELECT @LicenseeID	= LicenseeID
 	FROM DBCUST.bodb_Licensee.dbo.Licensees WITH(NOLOCK)
 	WHERE LicenseeName = @LicenseeName
 
-	IF EXISTS (SELECT 1 FROM STRING_SPLIT(@CommGroups,',') WHERE value = 0)
+	INSERT INTO #tmpCommGroups (GroupDiscountID)
+	SELECT CONVERT(INT, value) 
+	FROM STRING_SPLIT(@CommGroups, ',')
+	WHERE LTRIM(RTRIM(value)) <> '';
+
+	IF EXISTS (SELECT 1 FROM #tmpCommGroups WHERE GroupDiscountID = 0)
 	BEGIN
 		SELECT @SQL = ' SELECT LicenseeID, GroupDiscountID, CustID, GroupName
 							FROM OPENQUERY (DBCUST, '' SELECT lc.LicenseeID, lc.GroupDiscountID, lc.CustID, lg.GroupName
@@ -261,8 +269,11 @@ BEGIN
 		DELETE t
 		FROM #TempMember t
 			LEFT JOIN #LicenseeCustDiscount lc ON t.custid=lc.custid
-		WHERE ISNULL(lc.GroupDiscountID,0) NOT IN (SELECT value FROM STRING_SPLIT(@CommGroups,','))		
-			
+		WHERE NOT EXISTS (SELECT 1 
+						  FROM #tmpCommGroups cg 
+						  WHERE ISNULL(lc.GroupDiscountID, 0) = cg.GroupDiscountID
+						)		
+						
 		IF ISNULL(@TotalRows, 0) = 0
 			SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
 
@@ -327,7 +338,10 @@ BEGIN
 		DELETE t
 		FROM #TempMember t
 			LEFT JOIN #LicenseeCustDiscount lc ON t.custid=lc.custid 
-		WHERE ISNULL(lc.GroupDiscountID,0) NOT IN (SELECT value FROM STRING_SPLIT(@CommGroups,','))		
+		WHERE NOT EXISTS (SELECT 1 
+						  FROM #tmpCommGroups cg 
+						  WHERE ISNULL(lc.GroupDiscountID, 0) = cg.GroupDiscountID
+						)		
 		
 		IF ISNULL(@TotalRows, 0) = 0
 			SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
