@@ -50,7 +50,7 @@ BEGIN
 
 	DECLARE @currentDate DATETIME,
 			@LicenseeID	INT,
-			@SQL VARCHAR(MAX),
+			@SQL NVARCHAR(MAX),
 			@IsUncategorizedCC BIT = 0
 
 	SELECT  @currentDate = CONVERT(DATE, GETDATE())
@@ -119,7 +119,7 @@ BEGIN
 	END
 	
 	INSERT INTO #LicenseeCustDiscount(LicenseeID, GroupDiscountID, CustID, GroupName)
-	EXEC( @SQL)
+	EXEC sp_executesql @SQL
 
 	SELECT @SQL = 'SELECT CustID, SpecialLevel
 					FROM OPENQUERY (DBCUST, ''	SELECT sl.CustID, sl.SpecialLevel 
@@ -131,7 +131,7 @@ BEGIN
 					)'
 
 	INSERT INTO  #Dep_CustSpecialLevel(CustID, SpecialLevel)
-	EXEC( @SQL)
+	EXEC sp_executesql @SQL
 
 
 	DECLARE @sporttype	TABLE (SportType INT)
@@ -247,8 +247,7 @@ BEGIN
 									ELSE '' END
 		END 
 
-		--EXEC sp_executesql @strSQL
-		EXEC (@strSQL)
+		EXEC sp_executesql @strSQL;
 
 		SELECT @strSQL = 'INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
 		SELECT c.CustID, lc.currency, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject,c.CustomerClass
@@ -263,8 +262,7 @@ BEGIN
 				) lc ON lc.custid = c.custid			
 		WHERE ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')'
 
-		--EXEC sp_executesql @strSQL
-		EXEC (@strSQL)
+		EXEC sp_executesql @strSQL;
 			
 		DELETE t
 		FROM #TempMember t
@@ -278,7 +276,8 @@ BEGIN
 			SELECT @TotalRows = COUNT(c.custid) FROM #TempMember c
 
 		INSERT INTO #Temp (custid, currency, username, closed, suspended, nickname, SpecialLevel, ugroup ,CustomerClass, RowNumber)
-		SELECT * FROM 
+		SELECT custid, currency, username, closed, suspended, nickname, SpecialLevel, ugroup ,CustomerClass, RowNumber
+		FROM 
 		(
 			SELECT 
 				m.custid, 
@@ -331,9 +330,7 @@ BEGIN
 									ELSE '' END
 		END 
 
-
-		--EXEC sp_executesql @strSQL
-		EXEC (@strSQL)
+		EXEC sp_executesql @strSQL;
 		
 		DELETE t
 		FROM #TempMember t
@@ -368,8 +365,8 @@ BEGIN
 
 
 	-- translog
-	INSERT INTO #OutstandingTranslog
-	SELECT tl.custid, tl.currency, statusID, SUM(actual_stake) actual_stacke
+	INSERT INTO #OutstandingTranslog (Custid, Currency, statusID, actual_stake)
+	SELECT tl.custid, tl.currency, statusID, SUM(actual_stake) AS actual_stacke
 	FROM
 		dbo.translog tl WITH (NOLOCK)
 		INNER JOIN #Temp cl on cl.custid = tl.custid
@@ -379,8 +376,8 @@ BEGIN
 	GROUP BY tl.custid, tl.currency, productID, statusID
 
 	--- bettransRNG
-	INSERT INTO #OutstandingTranslog
-	SELECT g.custid, g.currency, statusID, SUM(g.actual_stake) actual_stacke
+	INSERT INTO #OutstandingTranslog (Custid, Currency, statusID, actual_stake)
+	SELECT g.custid, g.currency, statusID, SUM(g.actual_stake) AS actual_stacke
 	FROM
 		dbo.bettransRnG g WITH (NOLOCK)
 		INNER JOIN #Temp cl on cl.custid = g.custid
@@ -388,8 +385,8 @@ BEGIN
 	GROUP BY g.custid, g.currency, statusID
 
 	--- bettransLC
-	INSERT INTO #OutstandingTranslog
-	SELECT g.custid, g.currency, statusID, SUM(g.actual_stake) actual_stacke
+	INSERT INTO #OutstandingTranslog (Custid, Currency, statusID, actual_stake)
+	SELECT g.custid, g.currency, statusID, SUM(g.actual_stake) AS actual_stacke
 	FROM
 		dbo.bettransLC g WITH (NOLOCK)
 		INNER JOIN #Temp cl on cl.custid = g.custid
@@ -473,7 +470,7 @@ BEGIN
 		)tl ON t.custid = tl.Custid
 		LEFT JOIN #LicenseeCustDiscount lc  ON t.custid=lc.custid
 		
-	ORDER BY t.username
+	ORDER BY t.username ASC
 
 END
 GO
