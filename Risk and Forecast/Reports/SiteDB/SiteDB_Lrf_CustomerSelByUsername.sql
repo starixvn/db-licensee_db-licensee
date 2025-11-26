@@ -57,6 +57,11 @@ BEGIN
 
 	DECLARE @RowCount INT, @RowStart INT, @RowEnd INT
 	
+	IF EXISTS (SELECT 1 
+			FROM STRING_SPLIT(@CustomerClass,',')
+			WHERE value = 0)
+	SELECT @IsUncategorizedCC = 1
+	
 	SELECT  @PageIndex = @PageIndex - 1,
 		@RowStart = @PageSize * @PageIndex + 1,
 		@RowEnd = @RowStart + @PageSize - 1 
@@ -73,20 +78,11 @@ BEGIN
 	DROP TABLE IF EXISTS #LicenseeCustDiscount
 	DROP TABLE IF EXISTS #Dep_CustSpecialLevel
 	DROP TABLE IF EXISTS #tmpCommGroups
-	DROP TABLE IF EXISTS tmpAgentCust
-	DROP TABLE IF EXISTS tmpAgentCust_Batch
 
-	-- Large temp tables
-	CREATE TABLE #TempAg (custid INT PRIMARY KEY CLUSTERED)
+	CREATE TABLE #TempAg (custid INT)
 	CREATE TABLE #LicenseeCustDiscount (CustID INT PRIMARY KEY CLUSTERED, LicenseeID INT, GroupDiscountID INT, GroupName VARCHAR(100))
-	CREATE TABLE #Dep_CustSpecialLevel(CustID INT PRIMARY KEY CLUSTERED, SpecialLevel INT)
-
-	-- Small table variables for parameter parsing
-	CREATE TABLE #tmpCommGroups (GroupDiscountID INT PRIMARY KEY CLUSTERED)
-	DECLARE @tmpSpecialLevel TABLE (SpecialLevel INT PRIMARY KEY)
-	DECLARE @tmpOddsGroups TABLE (OddsGroup VARCHAR(3) PRIMARY KEY)
-	DECLARE @tmpCustomerClass TABLE (CustomerClass SMALLINT PRIMARY KEY)
-	DECLARE @tmpFullCustomerClass TABLE (CustomerClass SMALLINT PRIMARY KEY)
+	CREATE TABLE #Dep_CustSpecialLevel(CustID INT PRIMARY KEY, SpecialLevel INT)
+	CREATE TABLE #tmpCommGroups (GroupDiscountID INT PRIMARY KEY)
 
 	DECLARE @DocHandler INT
 	
@@ -94,35 +90,10 @@ BEGIN
 	FROM DBCUST.bodb_Licensee.dbo.Licensees WITH(NOLOCK)
 	WHERE LicenseeName = @LicenseeName
 
-	-- Populate table variables for parameter parsing
 	INSERT INTO #tmpCommGroups (GroupDiscountID)
 	SELECT CONVERT(INT, value) 
 	FROM STRING_SPLIT(@CommGroups, ',')
-	WHERE TRIM(value) <> '';
-
-	INSERT INTO @tmpSpecialLevel (SpecialLevel)
-	SELECT CONVERT(INT, value)
-	FROM STRING_SPLIT(@SpecialLevel, ',')
-	WHERE TRIM(value) <> '';
-
-	INSERT INTO @tmpOddsGroups (OddsGroup)
-	SELECT TRIM(value)
-	FROM STRING_SPLIT(@OddsGroups, ',')
-	WHERE TRIM(value) <> '';
-
-	INSERT INTO @tmpCustomerClass (CustomerClass)
-	SELECT CONVERT(SMALLINT, value)
-	FROM STRING_SPLIT(@CustomerClass, ',')
-	WHERE TRIM(value) <> '';
-
-	INSERT INTO @tmpFullCustomerClass (CustomerClass)
-	SELECT CONVERT(SMALLINT, value)
-	FROM STRING_SPLIT(@FullCustomerClass, ',')
-	WHERE TRIM(value) <> '';
-
-	IF EXISTS (SELECT 1 FROM @tmpCustomerClass
-			   WHERE CustomerClass = 0)
-		SELECT @IsUncategorizedCC = 1
+	WHERE LTRIM(RTRIM(value)) <> '';
 
 	IF EXISTS (SELECT 1 FROM #tmpCommGroups WHERE GroupDiscountID = 0)
 	BEGIN
@@ -162,6 +133,7 @@ BEGIN
 	INSERT INTO  #Dep_CustSpecialLevel(CustID, SpecialLevel)
 	EXEC sp_executesql @SQL
 
+
 	DECLARE @sporttype	TABLE (SportType INT)
 
 	INSERT INTO @sporttype ( SportType )
@@ -188,9 +160,6 @@ BEGIN
  
 	SET @Username = ISNULL(@Username, '')
 
-	CREATE TABLE #tmpAgentCust		 (custid INT PRIMARY KEY CLUSTERED)
-	CREATE TABLE #tmpAgentCust_Batch (custid INT PRIMARY KEY CLUSTERED)
-
 	CREATE TABLE #Temp
 	(
 		custid					INT PRIMARY KEY,
@@ -207,7 +176,7 @@ BEGIN
 
 	CREATE TABLE #tmpCust
 	(
-		custid	INT PRIMARY KEY CLUSTERED,
+		custid	INT PRIMARY KEY,
 		closed	BIT,
 		reject	BIT,
 		ugroup	VARCHAR(3),
@@ -249,60 +218,51 @@ BEGIN
 	)
 
 	DECLARE @CustID INT, @i INT, @max INT, @LastOffBy INT
-	DECLARE @HasOddsGroupFilter BIT = CASE WHEN EXISTS(SELECT 1 FROM @tmpOddsGroups) THEN 1 ELSE 0 END
-	DECLARE @HasCustomerClassFilter BIT = CASE WHEN EXISTS(SELECT 1 FROM @tmpCustomerClass) THEN 1 ELSE 0 END
+
+	SET @OddsGroups = ISNULL(@OddsGroups, '')
+	--For predicate pushdown
+	DECLARE @OddsGroupsC VARCHAR (100)
+	SELECT @OddsGroupsC = '''' + REPLACE(@OddsGroups, ',', ''',''') + ''''
+	DECLARE @strSQL NVARCHAR(MAX)
 
 	IF LEN(@Username) = 0
 	BEGIN
-		INSERT INTO #tmpAgentCust (custid)
-		SELECT c.custid
-		FROM CustDB.dbo.custInfo c WITH (NOLOCK)
-		WHERE EXISTS (SELECT 1 FROM #TempAg t WHERE t.custid = c.recommend)
-			AND c.RoleID = 1	
-
-		WHILE (1=1)
-		BEGIN
-			TRUNCATE TABLE #tmpAgentCust_Batch
-
-			DELETE TOP (2000) T
-			OUTPUT deleted.CustId INTO #tmpAgentCust_Batch
-			FROM #tmpAgentCust T
-
-			IF @@ROWCOUNT=0
-				BREAK;
-
-			-- Optimized query using temp table joins instead of dynamic SQL
-			INSERT INTO #tmpCust(custid, closed, reject, ugroup, CustomerClass)
-			SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1), ci.CustomerClass
-			FROM #tmpAgentCust_Batch t 
-				INNER JOIN CustDB.dbo.custInfo ci WITH(NOLOCK) ON t.custid = ci.custid
+		SELECT @strSQL = 'INSERT INTO #tmpCust(custid, closed, reject, ugroup,CustomerClass)
+		SELECT ci.custid, ci.closed, ci.reject, RIGHT(c.ugroup, 1),ci.CustomerClass
+		FROM #TempAg t 
+				INNER JOIN CustDB.dbo.custInfo ci WITH(NOLOCK) ON t.custid = ci.recommend
 				INNER JOIN CustDB.dbo.Customer c WITH (NOLOCK, INDEX = IX_custid, FORCESEEK) ON ci.custid = c.custid 
-				LEFT JOIN @tmpOddsGroups og ON RIGHT(c.ugroup, 1) = og.OddsGroup
-				LEFT JOIN @tmpCustomerClass cc ON ISNULL(ci.CustomerClass, 0) = cc.CustomerClass
-				LEFT JOIN @tmpFullCustomerClass fcc ON ISNULL(ci.CustomerClass, 0) = fcc.CustomerClass
-			WHERE ci.roleid = 1 
-				AND c.username NOT LIKE '%CashOut%'
-				AND c.username NOT LIKE '%01OddsAdj%'
-				AND c.username NOT LIKE '%01OddsBoostAdj%'
-				AND c.username NOT LIKE '%ClearBal%'
-				AND c.username NOT LIKE '%BetTrade%'	
-				AND (@HasOddsGroupFilter = 0 OR og.OddsGroup IS NOT NULL)
-				AND (
-					@HasCustomerClassFilter = 0 
-					OR cc.CustomerClass IS NOT NULL
-					OR (@IsUncategorizedCC = 1 AND fcc.CustomerClass IS NULL)
-				)
-		END
+		WHERE ci.roleid=1 
+				AND c.username NOT LIKE ''%CashOut%''
+				AND c.username  NOT LIKE ''%01OddsAdj%''
+				AND c.username  NOT LIKE ''%01OddsBoostAdj%''
+				AND c.username  NOT LIKE ''%ClearBal%''
+				AND c.username  NOT LIKE ''%BetTrade%''	
+				AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + ')) '
+			
+		IF ISNULL(@CustomerClass, '') <> ''
+		BEGIN
+			SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')' +
+							CASE WHEN @IsUncategorizedCC = 1 THEN ' OR ISNULL(ci.CustomerClass,0) NOT IN ('+  @FullCustomerClass + ')'
+									ELSE '' END
+		END 
 
-		-- Optimized TempMember insert using temp table joins
-		INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject, CustomerClass)
-		SELECT c.CustID, c2.currency, ISNULL(sl.SpecialLevel, 0), c2.username2, c2.username, c.ugroup, c.closed, c.reject, c.CustomerClass
-		FROM #tmpCust c
-			INNER JOIN CustDB.dbo.Customer c2 WITH (NOLOCK) ON c.custid = c2.custid
-			INNER JOIN #TempAg t ON c2.recommend = t.custid
-			LEFT JOIN #Dep_CustSpecialLevel sl ON c2.CustID = sl.CustID
-			INNER JOIN @tmpSpecialLevel tsl ON ISNULL(sl.SpecialLevel, 0) = tsl.SpecialLevel
-		WHERE c2.RoleID = 1
+		EXEC sp_executesql @strSQL;
+
+		SELECT @strSQL = 'INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
+		SELECT c.CustID, lc.currency, lc.speciallevel, lc.username2, lc.username, c.ugroup, c.closed, c.reject,c.CustomerClass
+		FROM
+			#tmpCust c
+			INNER JOIN 
+			(SELECT c.custid, c.currency, ISNULL(lc.speciallevel,0) as speciallevel , c.username, c.username2 
+				FROM CustDB.dbo.Customer c WITH (NOLOCK)
+				LEFT JOIN #Dep_CustSpecialLevel lc ON c.CustID = lc.CustID
+				INNER JOIN #TempAg t ON c.recommend = t.custid
+				WHERE c.RoleID = 1
+				) lc ON lc.custid = c.custid			
+		WHERE ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ')'
+
+		EXEC sp_executesql @strSQL;
 			
 		DELETE t
 		FROM #TempMember t
@@ -337,38 +297,40 @@ BEGIN
 	END -- end LEN(username) = 0
 	ELSE
 	BEGIN
-		SET @username = TRIM(@username)
+		SET @username = LTRIM(RTRIM(@username))
+				
+		SELECT @username = REPLACE(@username,'''','''''')
 
-		-- Optimized username search using temp table joins instead of dynamic SQL
-		INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject, CustomerClass)
-		SELECT ci.custid, ci.currency, ISNULL(sl.SpecialLevel, 0), c.username2, c.username, RIGHT(c.ugroup, 1), ci.closed, ci.reject, ci.CustomerClass
-		FROM #TempAg t
-			INNER JOIN CustDB.dbo.Customer c WITH (NOLOCK) ON c.recommend = t.custid
-			INNER JOIN CustDB.dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
-			LEFT JOIN #Dep_CustSpecialLevel sl ON c.custid = sl.custid
-			LEFT JOIN @tmpOddsGroups og ON RIGHT(c.ugroup, 1) = og.OddsGroup
-			LEFT JOIN @tmpCustomerClass cc ON ISNULL(ci.CustomerClass, 0) = cc.CustomerClass
-			LEFT JOIN @tmpFullCustomerClass fcc ON ISNULL(ci.CustomerClass, 0) = fcc.CustomerClass
-			INNER JOIN @tmpSpecialLevel tsl ON ISNULL(sl.SpecialLevel, 0) = tsl.SpecialLevel
-		WHERE 
-			c.RoleID = 1
-			AND (
-				(@searchOption = 1 AND c.username2 LIKE '%$' + @Username + '%') 
-				OR (@searchOption = 2 AND SUBSTRING(c.username2, CHARINDEX('$', c.username2) + 1, LEN(c.username2)) LIKE '%' + @Username + '%') 
-				OR (@searchOption = 3 AND c.username2 LIKE '%$' + @Username)
-				OR (@searchOption = 4 AND (c.username2 LIKE '%$' + @Username OR c.username = @Username))
-			)
-			AND c.username NOT LIKE '%CashOut%'
-			AND c.username NOT LIKE '%01OddsAdj%'
-			AND c.username NOT LIKE '%01OddsBoostAdj%'
-			AND c.username NOT LIKE '%ClearBal%'
-			AND c.username NOT LIKE '%BetTrade%'	
-			AND (@HasOddsGroupFilter = 0 OR og.OddsGroup IS NOT NULL)
-			AND (
-				@HasCustomerClassFilter = 0 
-				OR cc.CustomerClass IS NOT NULL
-				OR (@IsUncategorizedCC = 1 AND fcc.CustomerClass IS NULL)
-			)
+
+		SELECT @strSQL = 'INSERT INTO #TempMember (CustID, currency, speciallevel, username2, username, ugroup, closed, reject,CustomerClass)
+				SELECT ci.custid, ci.currency, ISNULL(lc.SpecialLevel,0) as speciallevel , c.username2, c.username, RIGHT(c.ugroup, 1), ci.closed, ci.reject,ci.CustomerClass
+				FROM #TempAg t
+					INNER JOIN CustDB.dbo.Customer c WITH (NOLOCK) ON c.recommend = t.custid
+					INNER JOIN CustDB.dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
+					LEFT JOIN #Dep_CustSpecialLevel lc ON c.custid = lc.custid
+				WHERE 
+					c.RoleID = 1
+					AND ((1= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND c.username2 LIKE ''%$' + @Username + '%'') 
+						OR (2= '+CONVERT(VARCHAR(10),@searchOption)+ ' AND SUBSTRING(c.username2,CHARINDEX(''$'',c.username2)+1,len(c.username2)) LIKE ''%' + @Username + '%'') 
+						OR (3= '+ CONVERT(VARCHAR(10),@searchOption) +' AND c.username2 LIKE ''%$' + @Username + ''')
+						OR (4= '+ CONVERT(VARCHAR(10),@searchOption) +' AND (c.username2 LIKE ''%$' + @Username + ''' OR c.username = ''' + @Username + ''')) ' 
+						+ ')
+					AND c.username NOT LIKE ''%CashOut%''
+					AND c.username  NOT LIKE ''%01OddsAdj%''
+					AND c.username  NOT LIKE ''%01OddsBoostAdj%''
+					AND c.username  NOT LIKE ''%ClearBal%''
+					AND c.username  NOT LIKE ''%BetTrade%''	
+					AND (''' + @OddsGroups + ''' = '''' OR RIGHT(c.ugroup,1) IN (' + @OddsGroupsC + '))
+					AND ISNULL(lc.speciallevel,0) IN  (' +  @SpecialLevel + ') '
+			
+		IF ISNULL(@CustomerClass, '') <> ''
+		BEGIN
+			SET @strSQL = @strSQL + 'AND ISNULL(ci.CustomerClass,0) IN  (' +  @CustomerClass + ')'+
+							CASE WHEN @IsUncategorizedCC = 1 THEN ' OR ISNULL(ci.CustomerClass,0) NOT IN ('+  @FullCustomerClass + ')'
+									ELSE '' END
+		END 
+
+		EXEC sp_executesql @strSQL;
 		
 		DELETE t
 		FROM #TempMember t
