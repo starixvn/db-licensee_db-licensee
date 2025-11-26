@@ -36,7 +36,7 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 		- 20241213@Kelvin: LAP - Integrate new betfrom W005, W006, W007 & Q001 [Redmine: #213273]
 		- 20250110@Kelvin: LAP - Integrate Betfrom W012 & W013 [Redmine: #216500]
 		- 20250604@Kelvin: Integrate Betfrom Q002 [Redmine: #229562]
-	
+		- 20251114@Tacy: Integrate Betfrom $004 - $006 [Redmine: #244242]
 
 	Param's Explanation:
 			+ @PlatformType: List of platform type (ex: 1,2,3,..)
@@ -62,6 +62,7 @@ ALTER FUNCTION [dbo].[Lrf_f_BetFromType_Sel]
 				18: Mobile Galaxy
 				19: Desktop Compact
 				20: Quick Bet Widget
+				21: Casino Royale
 				88: Others
 				-- Jollysports
 				91: Desktop
@@ -119,6 +120,9 @@ RETURN
 				(19, 'W003',0),
 				(20, 'Q001',0),
 				(20, 'Q002',0),
+				(21, '$004',0),
+				(21, '$005',0),
+				(21, '$006',0),
 				
 				(88, 'v',0),
 				(88, 'd',0),
@@ -181,6 +185,9 @@ RETURN
 				(99, 'Q002',2),
 				(99, 'W012',2),
 				(99, 'W013',2),
+				(99, '$004',2),
+				(99, '$005',2),
+				(99, '$006',2),
 
 				(91, 'A001',2),
 				(92, 'A002',2)
